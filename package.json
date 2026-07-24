@@ -1,0 +1,15 @@
+{
+  "name": "agent",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "build": "pnpm --filter @agent/web build",
+    "dev": "pnpm --filter @agent/web dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm --filter @agent/web lint"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
