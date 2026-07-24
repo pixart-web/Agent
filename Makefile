@@ -1,7 +1,7 @@
 PNPM ?= pnpm
 PYTHON ?= python
 
-.PHONY: up down logs test lint format migrate migration seed typecheck ci
+.PHONY: up down logs test lint format migrate migration seed cleanup-auth typecheck ci
 
 up:
 	docker compose up --build
@@ -13,6 +13,7 @@ logs:
 	docker compose logs -f
 
 test:
+	$(PNPM) test
 	$(PYTHON) -m pytest apps/api
 
 lint:
@@ -33,6 +34,9 @@ migration:
 seed:
 	cd apps/api && $(PYTHON) -m app.scripts.seed_agents
 
+cleanup-auth:
+	cd apps/api && $(PYTHON) -m app.scripts.cleanup_refresh_tokens
+
 typecheck:
 	$(PNPM) typecheck
 
@@ -40,6 +44,7 @@ ci:
 	$(PNPM) format:check
 	$(PNPM) lint
 	$(PNPM) typecheck
+	$(PNPM) test
 	$(PNPM) build
 	$(PYTHON) -m ruff check apps/api
 	$(PYTHON) -m ruff format --check apps/api

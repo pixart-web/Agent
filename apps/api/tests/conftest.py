@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 
 import pytest
@@ -6,12 +7,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+os.environ.setdefault(
+    "AUTH_SECRET_KEY",
+    "test-only-auth-secret-with-at-least-32-characters",
+)
+
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
-from app.models import Agent
+from app.models import Agent, RefreshToken, User
+from app.services.rate_limiter import (
+    RateLimitDecision,
+    RateLimiter,
+    get_rate_limiter,
+)
 
-_ = Agent
+_ = (Agent, RefreshToken, User)
+
+
+class AllowAllRateLimiter(RateLimiter):
+    def check(self, endpoint: str, ip_address: str) -> RateLimitDecision:
+        return RateLimitDecision(allowed=True)
 
 
 @pytest.fixture
@@ -37,6 +53,7 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_rate_limiter] = lambda: AllowAllRateLimiter()
 
     with TestClient(app) as test_client:
         yield test_client

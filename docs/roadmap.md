@@ -3,16 +3,17 @@
 ## Fase 1 — Fundação
 
 - [x] Establish the Next.js and FastAPI monorepo.
-- [x] Provide local PostgreSQL and Redis services.
-- [x] Add baseline linting, formatting, tests, and documentation.
-- [x] Expose the initial agent catalog and system health.
-- [x] Add PostgreSQL persistence, Alembic migrations, readiness, and CI.
+- [x] Provide PostgreSQL, Redis, migrations, readiness, and CI.
+- [x] Persist and seed the initial agent catalog.
 
 ## Fase 2 — Autenticação e utilizadores
 
-- [ ] Introduce user accounts, sessions, and role-based permissions.
-- [ ] Add user and permission migrations.
-- [ ] Add secure audit trails for sensitive actions.
+- [x] Persist normalized users and hashed rotating refresh tokens.
+- [x] Add register, login, refresh, logout, and authenticated-user endpoints.
+- [x] Add Argon2id passwords, JWT access tokens, HttpOnly cookies, and reuse detection.
+- [x] Add Redis rate limiting and explicit refresh-token cleanup.
+- [x] Add login, registration, protected dashboard, tests, migration, CI, and docs.
+- [ ] Add security audit trails when sensitive administrative actions are introduced.
 
 ## Fase 3 — Supervisor e execução de tarefas
 

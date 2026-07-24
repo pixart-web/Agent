@@ -1,69 +1,50 @@
 # Agent
 
-Agent is Pixart's multi-agent operations platform. The project currently provides a
-production-oriented foundation for a web dashboard, a versioned API, persistent agent
-records, dependency readiness checks, migrations, and continuous integration.
-
-Authentication, OpenAI integration, and real agent execution are intentionally outside
-this phase.
+Agent is Pixart's multi-agent operations platform. This monorepo provides a Next.js
+dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure user
+authentication, migrations, and continuous integration. OpenAI integration and real
+agent execution remain deliberately out of scope.
 
 ## Architecture
 
-- **Web:** Next.js 15, App Router, React, and TypeScript.
+- **Web:** Next.js 15 App Router, React, and TypeScript.
 - **API:** FastAPI on Python 3.12.
-- **Persistence:** SQLAlchemy 2 with explicit synchronous sessions and PostgreSQL.
-- **Migrations:** Alembic, configured from the same application settings as the API.
-- **Readiness:** direct PostgreSQL and Redis availability checks.
-- **Local environment:** Docker Compose coordinates web, API, PostgreSQL, and Redis.
+- **Persistence:** SQLAlchemy 2 with explicit sessions and PostgreSQL.
+- **Authentication:** Argon2id passwords, short JWT access tokens, and rotating opaque
+  refresh tokens in HttpOnly cookies.
+- **Infrastructure:** Redis for readiness and authentication rate limiting.
+- **Migrations:** Alembic configured from application settings.
+- **Local environment:** Docker Compose for web, API, PostgreSQL, and Redis.
 - **CI:** independent backend and frontend jobs in GitHub Actions.
 
-Agent reads follow this path:
+Domain requests follow:
 
 ```text
 HTTP route -> service -> repository -> SQLAlchemy session -> PostgreSQL
 ```
 
-See [docs/architecture.md](docs/architecture.md) for system boundaries and
-[docs/roadmap.md](docs/roadmap.md) for planned phases.
+Authentication details are in [docs/authentication.md](docs/authentication.md);
+system boundaries are in [docs/architecture.md](docs/architecture.md).
 
 ## Requirements
 
-### Docker workflow
-
-- Docker Engine or Docker Desktop
-- Docker Compose v2
-- Make (optional, but recommended)
-
-### Native workflow
-
-- Node.js 22+
-- pnpm 11+
-- Python 3.12+
-- PostgreSQL 16+
-- Redis 7+
+With Docker: Docker Engine/Desktop and Compose v2. Make is optional. Without Docker:
+Node.js 22+, pnpm 11+, Python 3.12+, PostgreSQL 16+, and Redis 7+.
 
 ## Installation
 
-Copy the example environment file:
-
 ```bash
 cp .env.example .env
-```
-
-The example uses the Docker hostnames `postgres` and `redis`. For a fully native
-environment, set `DATABASE_URL` and `REDIS_URL` to equivalent `localhost` URLs.
-
-Install dependencies:
-
-```bash
-pnpm install
+pnpm install --frozen-lockfile
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e "apps/api[dev]"
 ```
 
-On Windows PowerShell, activate the environment with
-`.venv/Scripts/Activate.ps1`.
+On Windows PowerShell, activate Python with `.venv/Scripts/Activate.ps1`. The example
+environment uses Docker hostnames `postgres` and `redis`; native development must use
+equivalent `localhost` URLs. Replace the example authentication secret outside local
+development.
 
 ## Run with Docker
 
@@ -71,130 +52,87 @@ On Windows PowerShell, activate the environment with
 make up
 ```
 
-The API entrypoint waits for the Compose health dependencies, applies all migrations,
-runs the idempotent agent seed, and then starts Uvicorn.
-
-Services:
+The API entrypoint applies migrations, runs the idempotent agent seed, then starts
+Uvicorn. Compose waits for healthy PostgreSQL and Redis first.
 
 - Dashboard: <http://localhost:3000>
-- API: <http://localhost:8000>
-- API documentation: <http://localhost:8000/docs>
+- API and OpenAPI: <http://localhost:8000>, <http://localhost:8000/docs>
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 
-Stop or inspect the stack with:
-
-```bash
-make down
-make logs
-```
+Use `make down` and `make logs` to stop or inspect the stack.
 
 ## Run without Docker
 
-Start PostgreSQL and Redis, then point the environment variables to those services.
-Apply migrations and seed the initial records:
+Start PostgreSQL and Redis, configure `.env`, then:
 
 ```bash
 make migrate
 make seed
+cd apps/api && uvicorn app.main:app --reload
 ```
 
-Start the API:
+In another terminal run `pnpm dev`. The login and registration pages still render if
+the API is offline and present accessible request errors.
 
-```bash
-cd apps/api
-uvicorn app.main:app --reload
-```
+## Authentication endpoints
 
-Start the frontend in another terminal:
+| Endpoint                     | Purpose                                     |
+| ---------------------------- | ------------------------------------------- |
+| `POST /api/v1/auth/register` | Create a user and authenticated session     |
+| `POST /api/v1/auth/login`    | Verify credentials and create a session     |
+| `POST /api/v1/auth/refresh`  | Rotate the refresh token and issue access   |
+| `POST /api/v1/auth/logout`   | Revoke the current refresh token and cookie |
+| `GET /api/v1/auth/me`        | Return the Bearer-authenticated active user |
 
-```bash
-pnpm dev
-```
+The dashboard stores the access token in module memory only. The opaque refresh token
+is stored only as a SHA-256 hash in PostgreSQL and sent as an HttpOnly cookie scoped to
+`/api/v1/auth`. See the authentication document for rotation and reuse handling.
 
-The frontend remains usable when the API is offline and reports that state in the
-dashboard.
+## Migrations and maintenance
 
-## Migrations
-
-Alembic reads `DATABASE_URL` through the application settings.
+Alembic reads `DATABASE_URL` from application settings.
 
 ```bash
 cd apps/api
 alembic upgrade head
 alembic downgrade -1
 alembic revision --autogenerate -m "description"
-```
-
-Equivalent Make commands:
-
-```bash
-make migrate
-make migration name="add task table"
-```
-
-## Initial seed
-
-The explicit seed inserts the five initial agents and safely updates their managed
-fields when definitions change. Repeated executions do not create duplicates.
-
-```bash
-cd apps/api
 python -m app.scripts.seed_agents
+python -m app.scripts.cleanup_refresh_tokens
 ```
 
-Or:
-
-```bash
-make seed
-```
+The cleanup command deletes expired tokens and tokens revoked longer than
+`AUTH_CLEANUP_RETENTION_DAYS`; it is explicit and has no scheduler.
 
 ## Health endpoints
 
-- `GET /health` confirms only that the API process is running. It does not access
-  external services.
-- `GET /ready` checks PostgreSQL and Redis. It returns HTTP 200 when both are healthy
-  and HTTP 503 with per-service availability when either dependency is unavailable.
+- `GET /health` is process liveness and does not contact dependencies.
+- `GET /ready` checks PostgreSQL and Redis, returning HTTP 503 with per-service status
+  if either is unavailable.
 
-Neither endpoint exposes credentials, connection URLs, or stack traces.
-Dependency connection attempts use the configurable
-`SERVICE_CONNECT_TIMEOUT_SECONDS` value.
-
-## API endpoints
-
-- `GET /`
-- `GET /health`
-- `GET /ready`
-- `GET /api/v1/agents`
-- `GET /api/v1/agents/{agent_id}`
+Neither response exposes connection strings, credentials, or stack traces.
 
 ## Main commands
 
-| Command                   | Purpose                                          |
-| ------------------------- | ------------------------------------------------ |
-| `make up`                 | Build and start the local Docker stack           |
-| `make down`               | Stop the local Docker stack                      |
-| `make logs`               | Follow Docker Compose logs                       |
-| `make migrate`            | Apply pending Alembic migrations                 |
-| `make migration name="…"` | Generate an Alembic migration                    |
-| `make seed`               | Run the idempotent initial agent seed            |
-| `make test`               | Run the backend Pytest suite                     |
-| `make lint`               | Run ESLint and Ruff                              |
-| `make format`             | Format frontend, documentation, and Python files |
-| `make typecheck`          | Run TypeScript without emitting files            |
-| `make ci`                 | Run the main local CI-equivalent checks          |
+| Command                     | Purpose                                      |
+| --------------------------- | -------------------------------------------- |
+| `make up`, `down`, `logs`   | Operate the Docker Compose stack             |
+| `make migrate`              | Apply pending Alembic migrations             |
+| `make migration name="..."` | Generate an Alembic migration                |
+| `make seed`                 | Seed the five initial agents idempotently    |
+| `make cleanup-auth`         | Remove expired and old revoked refresh data  |
+| `make test`                 | Run frontend and backend tests               |
+| `make lint`, `format`       | Lint or format all project code              |
+| `make typecheck`            | Run TypeScript checks                        |
+| `make ci`                   | Run the principal local CI-equivalent checks |
 
 ## Continuous integration
 
-GitHub Actions runs on pushes and pull requests targeting `main`.
-
-- The backend job installs Python 3.12 dependencies, runs Ruff, validates Alembic in
-  offline mode, and runs Pytest.
-- The frontend job installs Node.js 22 and pnpm through Corepack, restores the pnpm
-  cache, runs ESLint and TypeScript checks, and builds Next.js.
-
-The workflow needs no repository secrets and the backend tests use an isolated SQLite
-database rather than external services.
+GitHub Actions runs on pushes and pull requests to `main`. Backend CI installs Python
+3.12, runs Ruff, validates Alembic offline, and runs Pytest with explicit test settings.
+Frontend CI installs Node.js 22 and pnpm, then runs ESLint, TypeScript, Vitest, and the
+Next.js production build. No job requires repository secrets, PostgreSQL, or Redis.
 
 ## Repository structure
 
@@ -206,14 +144,19 @@ database rather than external services.
 |   |   |-- alembic
 |   |   |-- app
 |   |   |   |-- api
+|   |   |   |-- core
 |   |   |   |-- db
 |   |   |   |-- models
 |   |   |   |-- repositories
 |   |   |   |-- schemas
 |   |   |   |-- scripts
+|   |   |   |-- security
 |   |   |   `-- services
 |   |   `-- tests
 |   `-- web
+|       |-- app
+|       |-- lib
+|       `-- tests
 |-- packages/shared
 |-- docs
 |-- docker-compose.yml
@@ -223,8 +166,9 @@ database rather than external services.
 
 ## Current limitations
 
-- No authentication or authorization.
-- No OpenAI or other model provider integration.
-- No real multi-agent orchestration or background queue.
-- Docker execution requires Docker Engine; static validation alone cannot prove local
-  container startup when Docker is unavailable.
+- No social login, password recovery, organizations, or advanced permissions.
+- No automatic refresh-token cleanup scheduler.
+- Fixed-window rate limiting is intentionally simple.
+- No OpenAI integration or real multi-agent execution.
+- A real PostgreSQL/Redis container flow requires Docker and cannot be proven by static
+  validation alone when Docker is unavailable.
