@@ -1,1 +1,5 @@
-"""Database models will live in this package."""
+"""SQLAlchemy models."""
+
+from app.models.agent import Agent
+
+__all__ = ["Agent"]

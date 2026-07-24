@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     web_origin: str = "http://localhost:3000"
     database_url: str = "postgresql+psycopg://agent:agent@localhost:5432/agent"
     redis_url: str = "redis://localhost:6379/0"
+    service_connect_timeout_seconds: int = 2
 
     model_config = SettingsConfigDict(
         env_file=".env",

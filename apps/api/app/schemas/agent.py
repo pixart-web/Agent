@@ -1,12 +1,26 @@
-from typing import Literal
+from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
-AgentId = Literal["supervisor", "marketing", "sales", "support", "development"]
+AgentId = Annotated[
+    str,
+    Field(min_length=1, max_length=32, pattern=r"^[a-z][a-z0-9-]*$"),
+]
 
 
-class Agent(BaseModel):
-    id: AgentId
+class AgentBase(BaseModel):
     name: str
     description: str
-    status: Literal["ready"] = "ready"
+    status: str = "ready"
+
+
+class AgentSeed(AgentBase):
+    id: AgentId
+
+
+class AgentRead(AgentSeed):
+    model_config = ConfigDict(from_attributes=True)
+
+    created_at: datetime
+    updated_at: datetime

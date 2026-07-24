@@ -7,10 +7,15 @@ WORKDIR /app
 
 COPY apps/api/pyproject.toml .
 COPY apps/api/app ./app
+COPY apps/api/alembic.ini .
+COPY apps/api/alembic ./alembic
 RUN pip install --no-cache-dir .
 
 COPY apps/api/tests ./tests
+COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

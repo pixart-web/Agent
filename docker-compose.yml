@@ -40,6 +40,7 @@ services:
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SERVICE_CONNECT_TIMEOUT_SECONDS: ${SERVICE_CONNECT_TIMEOUT_SECONDS:-2}
     ports:
       - '8000:8000'
     volumes:

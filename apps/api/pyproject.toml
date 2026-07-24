@@ -8,14 +8,19 @@ version = "0.1.0"
 description = "API for the Pixart Agent operating system"
 requires-python = ">=3.12"
 dependencies = [
-  "fastapi>=0.115,<1.0",
+  "alembic>=1.14,<2.0",
+  "fastapi>=0.115.14,<0.116",
+  "psycopg[binary]>=3.2,<4.0",
   "pydantic-settings>=2.6,<3.0",
+  "redis>=5.2,<6.0",
+  "sqlalchemy>=2.0.36,<2.1",
+  "starlette>=0.46.2,<0.47",
   "uvicorn[standard]>=0.32,<1.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "httpx>=0.27,<1.0",
+  "httpx>=0.28.1,<0.29",
   "pytest>=8.3,<9.0",
   "ruff>=0.8,<1.0",
 ]

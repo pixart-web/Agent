@@ -2,55 +2,124 @@
 
 ## System overview
 
-Agent starts as a modular monorepo with a browser-based operations dashboard and a
-versioned HTTP API. PostgreSQL and Redis are part of the local topology from day one,
-while business data persistence and asynchronous processing remain intentionally
-deferred.
+Agent is a modular monorepo with a browser dashboard, a versioned HTTP API, PostgreSQL
+persistence, and Redis readiness. The current domain is deliberately small: it stores
+the five initial agent definitions while preserving boundaries needed for later
+orchestration.
 
 ```text
-Browser -> Next.js web -> FastAPI
-                           |  |
-                           |  +-> Redis (future cache and queues)
-                           +----> PostgreSQL (future system of record)
+Browser
+   |
+   v
+Next.js web
+   |
+   v
+FastAPI route
+   |
+   v
+Service
+   |
+   v
+Repository -> SQLAlchemy session -> PostgreSQL
+
+Readiness service -----------------------> Redis
 ```
 
 ## Frontend
 
-`apps/web` contains a Next.js App Router application written in TypeScript. The first
-dashboard displays API availability and the five initial agents. It uses browser-native
-features and custom CSS rather than a UI framework. `NEXT_PUBLIC_API_URL` defines the
-API base URL.
+`apps/web` contains a Next.js App Router application written in TypeScript. The
+dashboard displays the initial agent team and probes `/health` to communicate whether
+the API process is online. A failed probe changes only the status indicator; the rest
+of the interface continues to render.
+
+`NEXT_PUBLIC_API_URL` defines the API base URL.
 
 ## Backend
 
-`apps/api` contains the FastAPI service. Its packages separate HTTP routes (`api`),
-settings and infrastructure (`core`), future persistence entities (`models`), validated
-contracts (`schemas`), and application behavior (`services`). All configuration is read
-from environment variables, and CORS initially allows the local frontend origin.
+`apps/api` contains the FastAPI service. Responsibilities are separated as follows:
 
-The initial public endpoints are:
+- `api`: HTTP routing, dependency injection, status codes, and response schemas;
+- `services`: use-case decisions and not-found behavior;
+- `repositories`: SQLAlchemy statements and persistence operations;
+- `db`: engine, session factory, declarative base, and infrastructure checks;
+- `models`: internal SQLAlchemy entities;
+- `schemas`: validated Pydantic API contracts;
+- `scripts`: explicit maintenance commands such as the initial seed;
+- `core`: environment-based application settings.
 
-- `GET /`
-- `GET /health`
-- `GET /api/v1/agents`
+Routes never contain SQL. SQLAlchemy entities are converted through Pydantic schemas
+before they become API responses.
 
-## PostgreSQL
+## PostgreSQL and SQLAlchemy
 
-PostgreSQL will become the durable system of record for users, tasks, agent runs,
-artifacts, permissions, and audit data. The foundation only provisions the service; no
-schema or ORM is introduced until the required domain model is clear.
+PostgreSQL is the system of record. SQLAlchemy 2 uses typed `Mapped` fields, modern
+`select` statements, and explicit sessions. Constructing the engine does not open a
+connection; connections are acquired only by requests, migrations, seeds, or readiness
+checks.
+
+`get_db` provides one session per request and closes it at the end of the dependency
+scope. Agent timestamps use timezone-aware columns and UTC application defaults.
+
+## Alembic
+
+Alembic lives in `apps/api/alembic`. Its environment imports the declarative metadata
+and reads `DATABASE_URL` from the same settings object as the API. Migrations remain
+explicit and reversible.
+
+The initial revision creates the `agents` table with identity, descriptive fields,
+status, and UTC-capable timestamps.
+
+## Seed
+
+`python -m app.scripts.seed_agents` runs an explicit, idempotent seed. The repository
+inserts missing initial agents and updates only `name`, `description`, and `status`
+when their managed definitions change.
+
+The seed is not executed by requests. Docker runs it once during each API container
+startup after applying migrations; idempotency makes retries safe.
 
 ## Redis
 
-Redis is reserved for short-lived caching, distributed coordination, rate limiting, and
-future task queues. No queue framework is selected during the foundation phase.
+Redis is currently checked by `/ready` and reserved for future caching, distributed
+coordination, rate limiting, and queues. No queue framework is selected yet.
+
+## Liveness and readiness
+
+- `/health` is a liveness endpoint. It proves that FastAPI can serve requests without
+  contacting dependencies.
+- `/ready` checks PostgreSQL with `SELECT 1` and Redis with `PING`. It returns HTTP 503
+  if either dependency is unavailable and reports each service independently.
+
+Errors are reduced to `healthy` or `unavailable`; connection strings, credentials, and
+stack traces are never included.
+
+## Docker startup
+
+Compose requires the `postgres` and `redis` containers to become healthy before
+starting the API. The API entrypoint then:
+
+1. runs `alembic upgrade head`;
+2. runs the idempotent seed;
+3. replaces itself with the Uvicorn process.
+
+The internal hostnames are `postgres` and `redis`.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` contains independent backend and frontend jobs:
+
+- Python 3.12, dependency installation, Ruff, Alembic offline validation, and Pytest;
+- Node.js 22, Corepack/pnpm, dependency cache, ESLint, TypeScript, and Next.js build.
+
+Tests use SQLite in memory and FastAPI dependency overrides, so CI requires no
+PostgreSQL, Redis, or secrets.
 
 ## Future multi-agent orchestration
 
 A later orchestration layer will receive tasks, ask the Supervisor to plan and delegate
 work, execute specialized capabilities, persist state, and expose progress to the
-dashboard. It should keep agent definitions separate from providers and tools so that
-models, integrations, and execution policies can evolve independently.
+dashboard. Agent definitions remain separate from model providers and tools so those
+concerns can evolve independently.
 
 ## Initial agent responsibilities
 
