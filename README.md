@@ -2,10 +2,10 @@
 
 Agent is Pixart's multi-agent operations platform. This monorepo provides a Next.js
 dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure user
-authentication, migrations, and continuous integration. OpenAI integration and real
-agent execution remain deliberately out of scope. Authenticated users can persist an
-operational command, structure one plan, assign ordered tasks to the agent catalog,
-and move those tasks through an audited state machine.
+authentication, migrations, continuous integration, and an AI-assisted Supervisor.
+Authenticated users can turn an operational command into a structured, versioned plan,
+review its assigned tasks, approve it, or request a revised proposal. Real task
+execution remains deliberately out of scope.
 
 ## Architecture
 
@@ -14,8 +14,10 @@ and move those tasks through an audited state machine.
 - **Persistence:** SQLAlchemy 2 with explicit sessions and PostgreSQL.
 - **Authentication:** Argon2id passwords, short JWT access tokens, and rotating opaque
   refresh tokens in HttpOnly cookies.
-- **Workflow:** owned commands, one-to-one plans, agent tasks, and immutable status
-  history.
+- **Workflow:** owned commands, versioned plans, agent tasks, immutable status history,
+  and explicit human approval.
+- **AI:** provider-neutral structured generation with an initial OpenAI Responses API
+  adapter, domain validation, and audited Supervisor runs.
 - **Infrastructure:** Redis for readiness and authentication rate limiting.
 - **Migrations:** Alembic configured from application settings.
 - **Local environment:** Docker Compose for web, API, PostgreSQL, and Redis.
@@ -28,7 +30,9 @@ HTTP route -> service -> repository -> SQLAlchemy session -> PostgreSQL
 ```
 
 Authentication details are in [docs/authentication.md](docs/authentication.md);
-workflow rules are in [docs/workflow.md](docs/workflow.md); system boundaries are in
+workflow rules are in [docs/workflow.md](docs/workflow.md); Supervisor behavior is in
+[docs/supervisor.md](docs/supervisor.md); provider setup is in
+[docs/ai-providers.md](docs/ai-providers.md); system boundaries are in
 [docs/architecture.md](docs/architecture.md).
 
 ## Requirements
@@ -111,8 +115,24 @@ ownership at every level; a foreign command, plan, or task is returned as not fo
 | `POST /api/v1/tasks/{id}/transition`     | Apply a validated transition        |
 
 The authenticated UI is available at `/dashboard/commands`, with creation at
-`/dashboard/commands/new` and detail at `/dashboard/commands/{id}`. Plans and tasks are
-deliberately created manually in this phase; no task is executed.
+`/dashboard/commands/new` and detail at `/dashboard/commands/{id}`. Command detail can
+generate a Supervisor proposal, show tasks and usage metadata, approve the plan, request
+changes, and inspect prior versions. No task is executed.
+
+## Supervisor planning
+
+`POST /api/v1/commands/{id}/generate-plan` creates a draft plan through the configured
+provider. `POST /api/v1/commands/{id}/regenerate-plan` supersedes a current draft using
+bounded feedback. Approval moves the plan and tasks to `ready`; rejection keeps the
+historical version and returns the command to `pending`. Runs and plan versions are
+available through `GET /commands/{id}/supervisor-runs`, `GET /commands/{id}/plans`, and
+`GET /plans/{id}`.
+
+Set `AI_PROVIDER=openai`, `OPENAI_MODEL`, and `OPENAI_API_KEY` to use the provider.
+FastAPI still starts and `/health` remains healthy without a key; an AI request then
+fails safely with HTTP 503. CI uses an injected fake and makes no external AI call. The
+command text is sent to the configured provider, so do not submit passwords, API keys,
+or other secrets.
 
 ## Migrations and maintenance
 
@@ -125,6 +145,7 @@ alembic downgrade -1
 alembic revision --autogenerate -m "description"
 python -m app.scripts.seed_agents
 python -m app.scripts.cleanup_refresh_tokens
+python -m app.scripts.test_supervisor_provider  # optional, requires OPENAI_API_KEY
 ```
 
 The cleanup command deletes expired tokens and tokens revoked longer than
@@ -147,6 +168,7 @@ Neither response exposes connection strings, credentials, or stack traces.
 | `make migration name="..."` | Generate an Alembic migration                |
 | `make seed`                 | Seed the five initial agents idempotently    |
 | `make cleanup-auth`         | Remove expired and old revoked refresh data  |
+| `make test-ai`              | Run the optional real provider smoke test    |
 | `make test`                 | Run frontend and backend tests               |
 | `make lint`, `format`       | Lint or format all project code              |
 | `make typecheck`            | Run TypeScript checks                        |
@@ -155,7 +177,8 @@ Neither response exposes connection strings, credentials, or stack traces.
 ## Continuous integration
 
 GitHub Actions runs on pushes and pull requests to `main`. Backend CI installs Python
-3.12, runs Ruff, validates Alembic offline, and runs Pytest with explicit test settings.
+3.12, runs Ruff, validates Alembic upgrade and the newest downgrade offline, and runs
+Pytest with an explicitly fake AI provider.
 Frontend CI installs Node.js 22 and pnpm, then runs ESLint, TypeScript, Vitest, and the
 Next.js production build. No job requires repository secrets, PostgreSQL, or Redis.
 
@@ -168,6 +191,7 @@ Next.js production build. No job requires repository secrets, PostgreSQL, or Red
 |   |-- api
 |   |   |-- alembic
 |   |   |-- app
+|   |   |   |-- ai
 |   |   |   |-- api
 |   |   |   |-- core
 |   |   |   |-- db
@@ -194,6 +218,9 @@ Next.js production build. No job requires repository secrets, PostgreSQL, or Red
 - No social login, password recovery, organizations, or advanced permissions.
 - No automatic refresh-token cleanup scheduler.
 - Fixed-window rate limiting is intentionally simple.
-- No OpenAI integration or real multi-agent execution.
+- The OpenAI provider requires a separately supplied key and enabled compatible model;
+  normal tests never call it.
+- Prompt injection has defense in depth, not a claim of complete prevention.
+- No background work or real multi-agent task execution.
 - A real PostgreSQL/Redis container flow requires Docker and cannot be proven by static
   validation alone when Docker is unavailable.

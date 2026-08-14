@@ -6,6 +6,8 @@
 Browser -> Next.js -> FastAPI route -> service -> repository -> PostgreSQL
                                       |
                                       +-> Redis rate limiter
+                                      |
+                                      +-> SupervisorService -> LLMProvider -> OpenAI
 
 GET /ready -> readiness service -> PostgreSQL + Redis
 ```
@@ -45,8 +47,8 @@ commit or rollback. Routes translate domain errors into safe public errors.
 
 ## Command planning workflow
 
-The persistent aggregate is `Command -> Plan -> Task -> TaskStatusHistory`. A command
-belongs directly to a user. A plan inherits ownership from its unique command; tasks
+The persistent aggregate is `Command -> Plan[] -> Task -> TaskStatusHistory`. A command
+belongs directly to a user. Versioned plans inherit ownership from their command; tasks
 and history inherit it through the complete join path. Repository reads always include
 that ownership path, so a guessed UUID from another account receives HTTP 404.
 
@@ -60,11 +62,12 @@ State mutations use pessimistic row locks. Task transitions and PATCH operations
 the owned task with `FOR UPDATE`; plan/task creation and command cancellation serialize
 on the owning command. Validation, timestamp updates, history insertion, and commit stay
 inside the same transaction, with explicit rollback on failure. Terminal commands cannot
-receive additional plans or tasks.
+receive additional plans or tasks. A partial unique index permits only one current plan
+per command while preserving cancelled versions.
 
-Risk is descriptive in 3A: green, yellow, and red are visible to operators but do not
-yet trigger execution or approval automation. Shared TypeScript contracts mirror the
-public schemas and transition map used by the UI.
+The Supervisor creates only draft/pending records. `RiskPolicy` raises obvious
+under-classifications and approval is explicit. Risk remains descriptive because no
+task execution exists yet. Shared TypeScript contracts mirror the public schemas.
 
 ## Authentication transactions
 
@@ -85,7 +88,22 @@ Constructing the engine does not open a connection.
 Alembic reads `DATABASE_URL` from the same settings. Revision `20260724_0001` creates
 agents; `20260724_0002` independently creates users and refresh tokens with reversible
 constraints, foreign keys, and indexes; `20260814_0003` creates the workflow tables,
-enum checks, ownership links, ordering indexes, and a complete downgrade.
+enum checks, ownership links, ordering indexes, and a complete downgrade. Revision
+`20260814_0004` evolves plans to one-to-many versioning and creates `supervisor_runs`.
+
+## Supervisor and AI boundary
+
+`SupervisorService` depends on the `LLMProvider` protocol, not the OpenAI SDK. The
+OpenAI adapter uses structured output parsed directly into Pydantic schemas. Prompts
+are code-versioned as `supervisor-plan-v1`, the agent catalog is loaded dynamically,
+and provider metadata is persisted without raw prompts, raw responses, or API keys.
+
+Generation uses two database transactions. The first locks the command, validates it,
+creates a running `SupervisorRun`, sets `planning`, and commits. The external request
+runs without a database lock. The second locks the command again, checks cancellation
+and competing plans, then atomically writes the plan, ordered tasks, initial history,
+and completed run. Failure marks the run failed and restores `pending` when no plan
+exists. PostgreSQL locking plus uniqueness prevents duplicate current plans.
 
 ## Redis
 
@@ -112,9 +130,9 @@ no service containers or secrets.
 
 ## Future orchestration
 
-A later Supervisor layer will derive plans and tasks from commands, delegate them,
-invoke specialized capabilities, and produce artifacts. Phase 3A persists the manual
-control plane and audit trail only: it performs no model call and executes no task.
+Phase 3B derives proposed plans and tasks but performs no tool call or task execution.
+Phase 3C will add a separately controlled execution engine, artifacts, and additional
+approval enforcement.
 Authentication is kept separate from agent execution so both can evolve independently.
 
 | Agent           | Initial responsibility                                             |

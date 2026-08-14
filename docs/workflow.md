@@ -1,14 +1,14 @@
 # Command, plan, and task workflow
 
-Phase 3A introduces the persistent, authenticated control plane for Agent. A user can
-record an operational instruction, describe its plan, assign ordered tasks to the five
-configured agents, and audit every status change. Planning and transitions are manual;
-there is no OpenAI call or automatic execution.
+Phase 3A introduced the persistent, authenticated control plane. Phase 3B adds a
+provider-neutral Supervisor that proposes plans and ordered tasks for human review.
+Transitions and execution remain explicit; generation never executes a task.
 
 ## Domain model
 
 - A `Command` stores the user's instruction and belongs to exactly one user.
-- A `Plan` describes the objective and has a unique foreign key to one command.
+- A `Plan` describes the objective and belongs to a command with a unique version.
+  Only one plan can be current; rejected or superseded versions remain auditable.
 - A `Task` belongs to a plan, references an existing agent, and records ordering,
   priority, risk, execution timestamps, and an optional failure message.
 - `TaskStatusHistory` is append-only audit data for the initial state and every accepted
@@ -16,9 +16,9 @@ there is no OpenAI call or automatic execution.
 
 Commands use `pending`, `planning`, `in_progress`, `completed`, `failed`, or
 `cancelled`. Plans use `draft`, `ready`, `in_progress`, `completed`, `failed`, or
-`cancelled`. This phase creates commands as pending, plans as draft, and tasks as
-pending. Command cancellation is explicit; plan and task automation is reserved for
-the Supervisor.
+`cancelled`. Generation creates plans as draft and tasks as pending. Approval
+atomically changes the plan and tasks to ready and the command to in progress.
+Replanning cancels only the current draft and creates the next version.
 
 ## Task state machine
 
@@ -103,9 +103,11 @@ The workflow client uses the existing in-memory access token and synchronized re
 flow. It never stores tokens in browser storage. API errors are presented without
 internal exceptions or database details.
 
-## Future Supervisor flow
+## Supervisor flow
 
-In a later subphase, the Supervisor will turn a command into a proposed plan and task
-graph, apply risk and approval policies, and delegate executable tasks. Background
-workers, model calls, artifacts, and automatic state progression remain intentionally
-out of scope for 3A.
+The Supervisor receives the original command, the active agent catalog, and — during
+replanning — a bounded summary plus user feedback. Its structured proposal is checked
+for sizes, sequences, valid agents, critical assignments, and minimum risk before an
+atomic write. The provider call occurs between two short transactions, so PostgreSQL
+locks are not held during network latency. See `docs/supervisor.md` for failure and
+concurrency behavior. Background workers, artifacts, and execution remain out of scope.

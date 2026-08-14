@@ -19,6 +19,8 @@ jobs:
       APP_ENV: test
       AUTH_SECRET_KEY: test-only-auth-secret-with-at-least-32-characters
       AUTH_RATE_LIMIT_ENABLED: 'false'
+      AI_PROVIDER: fake
+      OPENAI_MODEL: fake-supervisor-v1
 
     steps:
       - name: Check out repository
@@ -41,7 +43,9 @@ jobs:
 
       - name: Validate Alembic offline
         working-directory: apps/api
-        run: python -m alembic upgrade head --sql > /dev/null
+        run: |
+          python -m alembic upgrade head --sql > /dev/null
+          python -m alembic downgrade 20260814_0004:20260814_0003 --sql > /dev/null
 
       - name: Run Pytest
         run: python -m pytest apps/api
