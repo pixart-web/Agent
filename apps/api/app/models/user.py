@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.core.time import utc_now
 from app.db.base import Base
+from app.security.email import normalize_email
 
 
 class User(Base):
@@ -46,5 +47,5 @@ class User(Base):
     )
 
     @validates("email")
-    def normalize_email(self, _key: str, value: str) -> str:
-        return value.strip().lower()
+    def normalize_email_value(self, _key: str, value: str) -> str:
+        return normalize_email(value)

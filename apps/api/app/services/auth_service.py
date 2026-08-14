@@ -13,6 +13,7 @@ from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate
 from app.security.access_tokens import create_access_token
+from app.security.email import normalize_email
 from app.security.passwords import hash_password, verify_password_or_dummy
 from app.security.refresh_tokens import generate_refresh_token, hash_refresh_token
 
@@ -71,7 +72,7 @@ class AuthService:
         user_agent: str | None,
         ip_address: str | None,
     ) -> AuthResult:
-        normalized_email = str(data.email).strip().lower()
+        normalized_email = normalize_email(str(data.email))
         if self.users.get_by_email(normalized_email) is not None:
             raise DuplicateEmailError
 
@@ -111,7 +112,7 @@ class AuthService:
         user_agent: str | None,
         ip_address: str | None,
     ) -> AuthResult:
-        user = self.users.get_by_email(email)
+        user = self.users.get_by_email(normalize_email(email))
         password_hash = user.password_hash if user is not None else None
         if not verify_password_or_dummy(password, password_hash):
             raise InvalidCredentialsError

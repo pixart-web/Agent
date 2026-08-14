@@ -13,6 +13,7 @@ from app.main import app
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.security.access_tokens import create_access_token
+from app.security.email import normalize_email
 from app.security.refresh_tokens import hash_refresh_token
 from app.services.rate_limiter import (
     RateLimitDecision,
@@ -71,6 +72,10 @@ def test_duplicate_email_is_conflict(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+def test_normalize_email_strips_and_lowercases() -> None:
+    assert normalize_email("  User@Example.com  ") == "user@example.com"
+
+
 @pytest.mark.parametrize(
     "password",
     ["short1", "onlylettersxx", "1234567890"],
@@ -83,18 +88,40 @@ def test_invalid_password_is_rejected(client: TestClient, password: str) -> None
     assert response.status_code == 422
 
 
-def test_login_updates_last_login_and_returns_user(
+@pytest.mark.parametrize(
+    "email",
+    [
+        "User@Example.com",
+        "user@example.com",
+        "  user@example.com  ",
+        "uSeR@eXaMpLe.CoM",
+    ],
+)
+def test_login_accepts_normalized_email_capitalization(
+    client: TestClient,
+    email: str,
+) -> None:
+    register(client)
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "securePassword123"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user"]["email"] == "user@example.com"
+
+
+def test_login_updates_last_login(
     client: TestClient,
     db_session: Session,
 ) -> None:
     register(client)
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "USER@EXAMPLE.COM", "password": "securePassword123"},
+        json={"email": "user@example.com", "password": "securePassword123"},
     )
 
     assert response.status_code == 200
-    assert response.json()["user"]["email"] == "user@example.com"
     user = db_session.scalar(select(User))
     assert user is not None
     assert user.last_login_at is not None
