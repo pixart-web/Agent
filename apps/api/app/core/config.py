@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     auth_rate_limit_window_seconds: int = Field(default=60, gt=0)
     auth_rate_limit_fail_open: bool = True
     auth_cleanup_retention_days: int = Field(default=7, ge=0)
+    ai_provider: Literal["openai", "fake"] = "openai"
+    openai_api_key: str | None = None
+    openai_model: str = Field(default="gpt-5.4-mini", min_length=1)
+    ai_request_timeout_seconds: float = Field(default=60, gt=0)
+    ai_max_retries: int = Field(default=2, ge=0, le=5)
+    supervisor_max_tasks: int = Field(default=20, ge=1, le=100)
+    supervisor_max_command_chars: int = Field(default=10_000, ge=100, le=100_000)
+    supervisor_max_feedback_chars: int = Field(default=5_000, ge=100, le=50_000)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -33,10 +41,18 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("auth_cookie_domain", mode="before")
+    @field_validator("auth_cookie_domain", "openai_api_key", mode="before")
     @classmethod
-    def empty_cookie_domain_is_none(cls, value: object) -> object:
+    def empty_optional_string_is_none(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator("openai_model")
+    @classmethod
+    def require_non_empty_model(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("OPENAI_MODEL must not be empty")
+        return normalized
 
     @property
     def web_origin_list(self) -> list[str]:

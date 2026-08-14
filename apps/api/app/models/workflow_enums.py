@@ -43,6 +43,14 @@ class RiskLevel(StrEnum):
     RED = "red"
 
 
+class SupervisorRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 TERMINAL_COMMAND_STATUSES = frozenset(
     {
         CommandStatus.COMPLETED,
