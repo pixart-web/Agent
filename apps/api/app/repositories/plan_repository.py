@@ -33,3 +33,19 @@ class PlanRepository:
             .where(Plan.id == plan_id, Command.user_id == user_id)
         )
         return self.session.scalar(statement)
+
+    def get_owned_with_command_for_update(
+        self,
+        plan_id: UUID,
+        user_id: UUID,
+    ) -> tuple[Plan, Command] | None:
+        statement = (
+            select(Plan, Command)
+            .join(Command, Command.id == Plan.command_id)
+            .where(Plan.id == plan_id, Command.user_id == user_id)
+            .with_for_update(of=Command)
+        )
+        row = self.session.execute(statement).one_or_none()
+        if row is None:
+            return None
+        return row[0], row[1]

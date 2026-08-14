@@ -38,11 +38,17 @@ class CommandService:
         return command
 
     def cancel(self, command_id: UUID, user_id: UUID) -> Command:
-        command = self.get_owned(command_id, user_id)
-        if command.status in {CommandStatus.COMPLETED, CommandStatus.CANCELLED}:
-            raise WorkflowConflictError("Command cannot be cancelled from its current state")
-        command.status = CommandStatus.CANCELLED
-        command.completed_at = utc_now()
-        self.session.commit()
+        try:
+            command = self.commands.get_owned_for_update(command_id, user_id)
+            if command is None:
+                raise WorkflowNotFoundError("Command not found")
+            if command.status in {CommandStatus.COMPLETED, CommandStatus.CANCELLED}:
+                raise WorkflowConflictError("Command cannot be cancelled from its current state")
+            command.status = CommandStatus.CANCELLED
+            command.completed_at = utc_now()
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         self.session.refresh(command)
         return command

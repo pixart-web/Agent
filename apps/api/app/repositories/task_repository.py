@@ -24,6 +24,16 @@ class TaskRepository:
         )
         return self.session.scalar(statement)
 
+    def get_owned_for_update(self, task_id: UUID, user_id: UUID) -> Task | None:
+        statement = (
+            select(Task)
+            .join(Plan, Plan.id == Task.plan_id)
+            .join(Command, Command.id == Plan.command_id)
+            .where(Task.id == task_id, Command.user_id == user_id)
+            .with_for_update(of=Task)
+        )
+        return self.session.scalar(statement)
+
     def list_for_plan_owned(self, plan_id: UUID, user_id: UUID) -> list[Task]:
         statement = (
             select(Task)

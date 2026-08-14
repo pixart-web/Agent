@@ -56,6 +56,12 @@ statements. Status is excluded from generic task updates and changes only throug
 state machine in `TaskService`. Every accepted transition and the initial
 `null -> pending` event are appended to history with the acting user.
 
+State mutations use pessimistic row locks. Task transitions and PATCH operations select
+the owned task with `FOR UPDATE`; plan/task creation and command cancellation serialize
+on the owning command. Validation, timestamp updates, history insertion, and commit stay
+inside the same transaction, with explicit rollback on failure. Terminal commands cannot
+receive additional plans or tasks.
+
 Risk is descriptive in 3A: green, yellow, and red are visible to operators but do not
 yet trigger execution or approval automation. Shared TypeScript contracts mirror the
 public schemas and transition map used by the UI.

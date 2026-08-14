@@ -41,3 +41,12 @@ class RiskLevel(StrEnum):
     GREEN = "green"
     YELLOW = "yellow"
     RED = "red"
+
+
+TERMINAL_COMMAND_STATUSES = frozenset(
+    {
+        CommandStatus.COMPLETED,
+        CommandStatus.FAILED,
+        CommandStatus.CANCELLED,
+    }
+)

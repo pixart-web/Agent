@@ -1,12 +1,21 @@
 from collections.abc import Iterator
+from unittest.mock import MagicMock, patch
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 
 from app.models.agent import Agent
+from app.models.command import Command
 from app.models.task_status_history import TaskStatusHistory
+from app.models.workflow_enums import CommandStatus, TaskStatus
+from app.repositories.task_repository import TaskRepository
+from app.schemas.task import TaskTransition, TaskUpdate
+from app.services.task_service import TaskService
+from app.services.workflow_errors import WorkflowConflictError
 
 PASSWORD = "securePassword123"
 
@@ -272,16 +281,91 @@ def test_valid_transitions_set_timestamps_and_history(
 
 def test_invalid_transition_returns_conflict(
     client: TestClient,
+    db_session: Session,
     workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
 ) -> None:
     headers, _, plan = workflow
     task = create_task(client, headers, str(plan["id"]))
+    history_before = list(db_session.scalars(select(TaskStatusHistory)))
     response = client.post(
         f"/api/v1/tasks/{task['id']}/transition",
         headers=headers,
         json={"status": "completed"},
     )
     assert response.status_code == 409
+    history_after = list(db_session.scalars(select(TaskStatusHistory)))
+    assert len(history_after) == len(history_before) == 1
+
+
+def test_task_repository_for_update_uses_postgresql_row_lock() -> None:
+    session = MagicMock(spec=Session)
+    repository = TaskRepository(session)
+
+    repository.get_owned_for_update(uuid4(), uuid4())
+
+    statement = session.scalar.call_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "FOR UPDATE OF tasks" in sql
+
+
+def test_transition_uses_locked_read_and_rolls_back_invalid_change(
+    client: TestClient,
+    db_session: Session,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    headers, command, plan = workflow
+    task = create_task(client, headers, str(plan["id"]))
+    service = TaskService(db_session)
+
+    with (
+        patch.object(
+            service.tasks,
+            "get_owned_for_update",
+            wraps=service.tasks.get_owned_for_update,
+        ) as locked_read,
+        patch.object(service.tasks, "get_owned", wraps=service.tasks.get_owned) as plain_read,
+        patch.object(db_session, "rollback", wraps=db_session.rollback) as rollback,
+        pytest.raises(WorkflowConflictError),
+    ):
+        service.transition(
+            UUID(str(task["id"])),
+            UUID(str(command["user_id"])),
+            TaskTransition(status=TaskStatus.COMPLETED),
+        )
+
+    locked_read.assert_called_once()
+    plain_read.assert_not_called()
+    rollback.assert_called_once()
+    history = list(db_session.scalars(select(TaskStatusHistory)))
+    assert [entry.to_status for entry in history] == [TaskStatus.PENDING]
+
+
+def test_task_patch_uses_locked_read(
+    client: TestClient,
+    db_session: Session,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    headers, command, plan = workflow
+    task = create_task(client, headers, str(plan["id"]))
+    service = TaskService(db_session)
+
+    with (
+        patch.object(
+            service.tasks,
+            "get_owned_for_update",
+            wraps=service.tasks.get_owned_for_update,
+        ) as locked_read,
+        patch.object(service.tasks, "get_owned", wraps=service.tasks.get_owned) as plain_read,
+    ):
+        updated = service.update(
+            UUID(str(task["id"])),
+            UUID(str(command["user_id"])),
+            TaskUpdate(title="Updated under lock"),
+        )
+
+    assert updated.title == "Updated under lock"
+    locked_read.assert_called_once()
+    plain_read.assert_not_called()
 
 
 def test_failed_task_retry_clears_completion_and_error(
@@ -344,3 +428,61 @@ def test_command_filters_and_pagination(client: TestClient) -> None:
     assert page.status_code == 200
     assert len(page.json()) == 1
     assert invalid_limit.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "terminal_status",
+    [CommandStatus.COMPLETED, CommandStatus.FAILED, CommandStatus.CANCELLED],
+)
+def test_terminal_command_cannot_receive_plan(
+    terminal_status: CommandStatus,
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    headers = register_user(client, f"plan-{terminal_status.value}@example.com")
+    command = create_command(client, headers)
+    command_model = db_session.get(Command, UUID(str(command["id"])))
+    assert command_model is not None
+    command_model.status = terminal_status
+    db_session.commit()
+
+    response = client.post(
+        f"/api/v1/commands/{command['id']}/plan",
+        headers=headers,
+        json={"title": "Too late", "objective": "Must be rejected"},
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.parametrize(
+    "terminal_status",
+    [CommandStatus.COMPLETED, CommandStatus.FAILED, CommandStatus.CANCELLED],
+)
+def test_terminal_command_cannot_receive_task(
+    terminal_status: CommandStatus,
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    headers = register_user(client, f"task-{terminal_status.value}@example.com")
+    seed_agent(db_session)
+    command = create_command(client, headers)
+    plan = create_plan(client, headers, str(command["id"]))
+    command_model = db_session.get(Command, UUID(str(command["id"])))
+    assert command_model is not None
+    command_model.status = terminal_status
+    db_session.commit()
+
+    response = client.post(
+        f"/api/v1/plans/{plan['id']}/tasks",
+        headers=headers,
+        json={
+            "agent_id": "marketing",
+            "title": "Too late",
+            "instructions": "Must be rejected",
+            "sequence": 1,
+        },
+    )
+
+    assert response.status_code == 409
+    assert list(db_session.scalars(select(TaskStatusHistory))) == []

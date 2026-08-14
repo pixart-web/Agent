@@ -21,6 +21,17 @@ class CommandRepository:
         )
         return self.session.scalar(statement)
 
+    def get_owned_for_update(self, command_id: UUID, user_id: UUID) -> Command | None:
+        statement = (
+            select(Command)
+            .where(
+                Command.id == command_id,
+                Command.user_id == user_id,
+            )
+            .with_for_update(of=Command)
+        )
+        return self.session.scalar(statement)
+
     def list_owned(
         self,
         user_id: UUID,

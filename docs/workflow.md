@@ -71,6 +71,22 @@ repositories never commit; services own the transaction. Task creation writes th
 and its `null -> pending` history record atomically. A transition changes timestamps
 and appends history in the same transaction.
 
+Task transitions acquire a PostgreSQL row lock with `SELECT ... FOR UPDATE OF tasks`
+before reading the current state. The lock remains held while the service validates the
+transition, changes timestamps, appends history, and commits. Concurrent transitions on
+the same task therefore serialize and the second transaction validates against the
+newly committed state. Task PATCH uses the same locked read to avoid lost updates.
+
+Plan creation and task creation lock the owning command while checking its lifecycle.
+Commands in `completed`, `failed`, or `cancelled` cannot receive new plans or tasks and
+return HTTP 409. Command cancellation takes the same command lock, preventing a race
+between cancellation and adding more work.
+
+SQLite ignores `FOR UPDATE`, so the isolated test suite cannot reproduce PostgreSQL
+row-lock scheduling. Tests instead compile the repository statement with the PostgreSQL
+dialect, verify that mutation services use the locked path, and assert rollback and
+history invariants. Real contention behavior remains a PostgreSQL integration concern.
+
 ## API and frontend flow
 
 The command list supports `limit`, `offset`, and an optional `status` filter, with a

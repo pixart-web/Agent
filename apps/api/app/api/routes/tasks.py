@@ -42,7 +42,7 @@ def create_task(
 ) -> TaskRead:
     try:
         task = TaskService(db).create(plan_id, user.id, data)
-    except WorkflowNotFoundError as error:
+    except (WorkflowNotFoundError, WorkflowConflictError) as error:
         raise_workflow_http_error(error)
     return TaskRead.model_validate(task)
 
