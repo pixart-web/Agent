@@ -1,13 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.time import utc_now
 from app.db.base import Base
-
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
 
 
 class Agent(Base):
