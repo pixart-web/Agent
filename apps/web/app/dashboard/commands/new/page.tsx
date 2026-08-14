@@ -59,6 +59,9 @@ export default function NewCommandPage() {
             maxLength={10000}
             placeholder="Create a campaign to sell websites to restaurants."
           />
+          <p className="form-hint">
+            Não incluas palavras-passe, chaves API ou outros segredos no pedido.
+          </p>
           {error && (
             <p className="form-message" role="alert">
               {error}

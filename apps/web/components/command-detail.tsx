@@ -9,11 +9,13 @@ export function CommandDetail({
   plan,
   tasks,
   agents,
+  statusLabel,
 }: {
   command: Command;
   plan: Plan | null;
   tasks: WorkflowTask[];
   agents: Agent[];
+  statusLabel?: string;
 }) {
   const agentNames = Object.fromEntries(
     agents.map((agent) => [agent.id, agent.name]),
@@ -24,7 +26,7 @@ export function CommandDetail({
       <section className="workflow-panel">
         <div className="workflow-panel__heading">
           <p className="eyebrow">Command</p>
-          <StatusBadge status={command.status} />
+          <StatusBadge status={command.status} label={statusLabel} />
         </div>
         <h1 className="workflow-title">{command.input}</h1>
       </section>
