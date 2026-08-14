@@ -1,49 +1,21 @@
 'use client';
 
 import { AGENT_CATALOG } from '@agent/shared';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import {
-  getCurrentUser,
-  logout,
-  refreshAccessToken,
-} from '../../lib/auth-client';
-import type { User } from '../../lib/auth-types';
+import { DashboardNav } from '../../components/dashboard-nav';
+import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
 type ApiState = 'checking' | 'online' | 'offline';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading } = useAuthenticatedUser();
   const [apiState, setApiState] = useState<ApiState>('checking');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-
-    async function initialize() {
-      try {
-        const refreshed = await refreshAccessToken();
-        if (!refreshed) {
-          router.replace('/login');
-          return;
-        }
-        const currentUser = await getCurrentUser();
-        if (!currentUser) {
-          router.replace('/login');
-          return;
-        }
-        if (active) {
-          setUser(currentUser);
-          setLoading(false);
-        }
-      } catch {
-        router.replace('/login');
-      }
-    }
 
     async function checkApi() {
       try {
@@ -54,19 +26,13 @@ export default function DashboardPage() {
       }
     }
 
-    void initialize();
     void checkApi();
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
 
-  async function handleLogout() {
-    await logout();
-    router.replace('/login');
-  }
-
-  if (loading) {
+  if (loading || !user) {
     return (
       <main className="loading-page">
         <p aria-live="polite">Restoring your secure session…</p>
@@ -76,21 +42,7 @@ export default function DashboardPage() {
 
   return (
     <main>
-      <header className="dashboard-nav">
-        <div>
-          <span className="brand-mark">Agent</span>
-          <span className="nav-user">
-            {user?.full_name} · {user?.email}
-          </span>
-        </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={handleLogout}
-        >
-          Log out
-        </button>
-      </header>
+      <DashboardNav user={user} />
 
       <section className="hero">
         <div>

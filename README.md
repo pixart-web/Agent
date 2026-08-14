@@ -3,7 +3,9 @@
 Agent is Pixart's multi-agent operations platform. This monorepo provides a Next.js
 dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure user
 authentication, migrations, and continuous integration. OpenAI integration and real
-agent execution remain deliberately out of scope.
+agent execution remain deliberately out of scope. Authenticated users can persist an
+operational command, structure one plan, assign ordered tasks to the agent catalog,
+and move those tasks through an audited state machine.
 
 ## Architecture
 
@@ -12,6 +14,8 @@ agent execution remain deliberately out of scope.
 - **Persistence:** SQLAlchemy 2 with explicit sessions and PostgreSQL.
 - **Authentication:** Argon2id passwords, short JWT access tokens, and rotating opaque
   refresh tokens in HttpOnly cookies.
+- **Workflow:** owned commands, one-to-one plans, agent tasks, and immutable status
+  history.
 - **Infrastructure:** Redis for readiness and authentication rate limiting.
 - **Migrations:** Alembic configured from application settings.
 - **Local environment:** Docker Compose for web, API, PostgreSQL, and Redis.
@@ -24,7 +28,8 @@ HTTP route -> service -> repository -> SQLAlchemy session -> PostgreSQL
 ```
 
 Authentication details are in [docs/authentication.md](docs/authentication.md);
-system boundaries are in [docs/architecture.md](docs/architecture.md).
+workflow rules are in [docs/workflow.md](docs/workflow.md); system boundaries are in
+[docs/architecture.md](docs/architecture.md).
 
 ## Requirements
 
@@ -88,6 +93,26 @@ the API is offline and present accessible request errors.
 The dashboard stores the access token in module memory only. The opaque refresh token
 is stored only as a SHA-256 hash in PostgreSQL and sent as an HttpOnly cookie scoped to
 `/api/v1/auth`. See the authentication document for rotation and reuse handling.
+
+## Command workflow
+
+All workflow endpoints require a valid Bearer access token. The backend resolves
+ownership at every level; a foreign command, plan, or task is returned as not found.
+
+| Endpoint                                 | Purpose                             |
+| ---------------------------------------- | ----------------------------------- |
+| `POST /api/v1/commands`                  | Create an owned pending command     |
+| `GET /api/v1/commands`                   | List commands with safe pagination  |
+| `GET /api/v1/commands/{id}`              | Read an owned command               |
+| `POST /api/v1/commands/{id}/cancel`      | Cancel a non-terminal command       |
+| `POST`, `GET /api/v1/commands/{id}/plan` | Create or read the command plan     |
+| `POST`, `GET /api/v1/plans/{id}/tasks`   | Add or list ordered tasks           |
+| `GET`, `PATCH /api/v1/tasks/{id}`        | Read or edit non-status task fields |
+| `POST /api/v1/tasks/{id}/transition`     | Apply a validated transition        |
+
+The authenticated UI is available at `/dashboard/commands`, with creation at
+`/dashboard/commands/new` and detail at `/dashboard/commands/{id}`. Plans and tasks are
+deliberately created manually in this phase; no task is executed.
 
 ## Migrations and maintenance
 

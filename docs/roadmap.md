@@ -17,9 +17,10 @@
 
 ## Fase 3 — Supervisor e execução de tarefas
 
-- [ ] Define the task and execution lifecycle.
-- [ ] Implement Supervisor planning and delegation.
-- [ ] Persist progress, artifacts, errors, and approvals.
+- [x] **3A:** Persist owned commands, one-to-one plans, tasks, explicit transitions,
+      status history, authenticated UI, migration, and tests.
+- [ ] **3B:** Implement Supervisor planning and delegation.
+- [ ] Extend persisted progress with artifacts and approval decisions.
 - [ ] Add safe background execution and cancellation.
 
 ## Fase 4 — Agentes especializados
