@@ -27,9 +27,9 @@
 
 ## Fase 4 — Agentes especializados
 
-- [ ] Implement Marketing, Sales, Support, and Development capabilities.
-- [ ] Define per-agent tools, boundaries, and evaluation criteria.
-- [ ] Add reusable workflows and human approval checkpoints.
+- [x] Implement Marketing, Sales, Support, and Development capabilities.
+- [x] Define per-agent tools, boundaries, and evaluation criteria.
+- [x] Add reusable workflows and human approval checkpoints.
 
 ## Fase 5 — Integrações externas
 

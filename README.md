@@ -242,3 +242,14 @@ approvals, dependencies, progress, and Command activity. The dashboard exposes
 Only safe internal and simulated tools exist. No real external integration or automatic
 agent tool selection is included.
 validation alone when Docker is unavailable.
+
+## Specialized Agents
+
+Phase 4 adds operational Marketing, Sales, Support, and Development agents. Specialists
+receive bounded, untrusted Task context and produce schema-validated action proposals;
+they never call tools. Per-agent allowlists, tool schemas and the existing risk policy are
+revalidated server-side before version-pinned TaskActions are stored.
+
+The dashboard exposes agent metrics and capabilities, while Task detail shows run model,
+tokens, latency, summary and proposed actions. See [specialized agents](docs/agents.md).
+Real external integrations remain out of scope.

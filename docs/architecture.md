@@ -161,3 +161,11 @@ They do not receive a universal service container or unrestricted credentials.
 The system is deliberately at-least-once at the transport boundary and exactly-once at
 the execution state boundary for completed attempts. Fingerprints bind human decisions to
 the exact approved action. Audit rows are append-only and have no update/delete API.
+
+## Specialized agent architecture
+
+A versioned specialist prompt and bounded AgentTaskContext pass through the provider's
+structured-output interface. AgentRunnerService records AgentRun before releasing locks,
+then validates the returned proposal against the Agent Registry and Tool Registry. The
+provider never sees secrets and never receives a callable tool. Proposed actions enter
+the existing Execution Engine unchanged.

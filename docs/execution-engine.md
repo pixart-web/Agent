@@ -51,3 +51,9 @@ Only registered tool names and versions execute. Inputs and outputs pass through
 `sanitize_execution_payload`; common password, token, cookie, credential, API-key, and
 secret fields are replaced with `[REDACTED]`. Logs and audits contain identifiers and
 safe metadata, not full payloads or stack traces.
+
+## Specialized-agent boundary
+
+AgentRun produces only proposed TaskActions. Green, yellow and red proposals follow the
+same dispatch, approval, outbox and worker path as manually created actions. The agent
+cannot enqueue Celery, invoke a handler, lower tool risk, or bypass an approval.

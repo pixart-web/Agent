@@ -127,3 +127,11 @@ the policy documented in [execution-engine.md](execution-engine.md).
 
 Command cancellation cancels work that has not started and pending approvals. Running
 handlers are best effort and do not revive cancelled Commands.
+
+## Phase 4 agent workflow
+
+A ready Task with completed dependencies may start one AgentRun. The assigned specialist
+returns ordered Action proposals; validation enforces unique positive sequences,
+allowlisted versioned tools, schemas and effective risk. The Task remains ready during
+analysis because running denotes real Action execution. Reassignment is explicit and
+blocked after actions or execution begin.
