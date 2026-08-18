@@ -18,10 +18,16 @@ export function DashboardNav({ user }: { user: User }) {
     <header className="dashboard-nav">
       <div>
         <Link className="brand-mark" href="/dashboard">
-          Agent
+          Kiko
         </Link>
         <Link className="nav-link" href="/dashboard/commands">
           Commands
+        </Link>
+        <Link className="nav-link" href="/dashboard/executions">
+          Executions
+        </Link>
+        <Link className="nav-link" href="/dashboard/approvals">
+          Approvals
         </Link>
         <span className="nav-user">
           {user.full_name} · {user.email}

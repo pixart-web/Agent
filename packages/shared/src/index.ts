@@ -168,3 +168,112 @@ export const TASK_TRANSITIONS: Record<TaskStatus, readonly TaskStatus[]> = {
   completed: [],
   cancelled: [],
 };
+
+export type TaskActionStatus =
+  | 'proposed'
+  | 'waiting_approval'
+  | 'approved'
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export type TaskExecutionStatus =
+  | 'created'
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'retry_scheduled'
+  | 'cancelled'
+  | 'waiting_approval';
+
+export type ApprovalStatus =
+  'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+
+export type ActorType =
+  'user' | 'kiko' | 'supervisor' | 'agent' | 'worker' | 'system';
+
+export type TaskAction = {
+  id: string;
+  task_id: string;
+  tool_name: string;
+  tool_version: string;
+  input_payload: Record<string, unknown>;
+  risk_level: RiskLevel;
+  status: TaskActionStatus;
+  created_by_type: ActorType;
+  created_by_id: string | null;
+  action_fingerprint: string;
+  correlation_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TaskExecution = {
+  id: string;
+  task_id: string;
+  task_action_id: string;
+  attempt_number: number;
+  status: TaskExecutionStatus;
+  tool_name: string;
+  tool_version: string;
+  input_payload: Record<string, unknown>;
+  output_payload: Record<string, unknown> | null;
+  error_code: string | null;
+  error_message: string | null;
+  queued_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  worker_id: string | null;
+  duration_ms: number | null;
+  correlation_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ApprovalRequest = {
+  id: string;
+  user_id: string;
+  task_id: string;
+  task_action_id: string;
+  risk_level: RiskLevel;
+  title: string;
+  description: string;
+  status: ApprovalStatus;
+  action_fingerprint: string;
+  requested_at: string;
+  decided_at: string | null;
+  decided_by_user_id: string | null;
+  decision_reason: string | null;
+  expires_at: string | null;
+  correlation_id: string;
+};
+
+export type DispatchResponse = {
+  action: TaskAction;
+  execution: TaskExecution | null;
+  approval: ApprovalRequest | null;
+};
+
+export type AuditLog = {
+  id: string;
+  actor_type: ActorType;
+  actor_id: string | null;
+  event_type: string;
+  resource_type: string;
+  resource_id: string;
+  metadata_payload: Record<string, unknown>;
+  created_at: string;
+  correlation_id: string;
+};
+
+export type PlanProgress = {
+  total_tasks: number;
+  completed_tasks: number;
+  failed_tasks: number;
+  running_tasks: number;
+  waiting_approval_tasks: number;
+  progress_percentage: number;
+};

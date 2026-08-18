@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Agent | Pixart AI Operating System',
-  description: 'Multi-agent operations platform for Pixart.',
+  title: 'Kiko | Pixart AI Operating System',
+  description:
+    'Kiko coordinates safe, auditable multi-agent operations for Pixart.',
 };
 
 export default function RootLayout({
