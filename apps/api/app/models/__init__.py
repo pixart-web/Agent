@@ -1,6 +1,7 @@
 """SQLAlchemy models."""
 
 from app.models.agent import Agent
+from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
 from app.models.command import Command
@@ -16,6 +17,7 @@ from app.models.task_status_history import TaskStatusHistory
 from app.models.user import User
 
 __all__ = [
+    "AgentRun",
     "Agent",
     "Command",
     "ApprovalRequest",
