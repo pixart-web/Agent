@@ -277,3 +277,52 @@ export type PlanProgress = {
   waiting_approval_tasks: number;
   progress_percentage: number;
 };
+
+export type AgentRunStatus =
+  'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export type AgentRun = {
+  id: string;
+  task_id: string;
+  agent_id: string;
+  user_id: string;
+  status: AgentRunStatus;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  user_feedback: string | null;
+  proposal_summary: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  latency_ms: number | null;
+  error_code: string | null;
+  error_message: string | null;
+  correlation_id: string;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type AgentRunResponse = { run: AgentRun; actions: TaskAction[] };
+
+export type AgentCapabilities = {
+  id: string;
+  name: string;
+  description: string;
+  prompt_version: string;
+  allowed_tools: string[];
+  default_risk_policy: RiskLevel;
+  max_actions: number;
+};
+
+export type AgentOverview = {
+  capabilities: AgentCapabilities;
+  tasks_pending: number;
+  tasks_running: number;
+  tasks_waiting_approval: number;
+  tasks_failed: number;
+  recent_runs: AgentRun[];
+  completed_runs: number;
+  failed_runs: number;
+  success_rate: number;
+};

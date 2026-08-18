@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.time import utc_now
+from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
 from app.models.plan import Plan
 from app.models.task import Task
@@ -11,6 +12,8 @@ from app.models.task_action import TaskAction
 from app.models.task_execution import TaskExecution
 from app.models.task_status_history import TaskStatusHistory
 from app.models.workflow_enums import (
+    ActorType,
+    AgentRunStatus,
     ApprovalStatus,
     PlanStatus,
     TaskActionStatus,
@@ -18,12 +21,14 @@ from app.models.workflow_enums import (
     TaskStatus,
 )
 from app.repositories.task_status_history_repository import TaskStatusHistoryRepository
+from app.services.audit_service import AuditService
 
 
 class ExecutionCancellationService:
     def __init__(self, session: Session) -> None:
         self.session = session
         self.history = TaskStatusHistoryRepository(session)
+        self.audit = AuditService(session)
 
     def cancel_for_command(self, command_id: UUID, user_id: UUID) -> None:
         plans = list(
@@ -47,6 +52,28 @@ class ExecutionCancellationService:
                 self._cancel_task(task, user_id)
 
     def _cancel_task(self, task: Task, user_id: UUID) -> None:
+        active_runs = self.session.scalars(
+            select(AgentRun)
+            .where(
+                AgentRun.task_id == task.id,
+                AgentRun.status.in_([AgentRunStatus.PENDING, AgentRunStatus.RUNNING]),
+            )
+            .with_for_update(of=AgentRun)
+        )
+        for run in active_runs:
+            run.status = AgentRunStatus.CANCELLED
+            run.error_code = "command_cancelled"
+            run.error_message = "Command cancelled during agent analysis"
+            run.completed_at = utc_now()
+            self.audit.record(
+                actor_type=ActorType.SYSTEM,
+                actor_id=None,
+                event_type="agent_run_cancelled",
+                resource_type="agent_run",
+                resource_id=run.id,
+                metadata={"task_id": str(task.id), "agent_id": run.agent_id},
+                correlation_id=run.correlation_id,
+            )
         actions = list(
             self.session.scalars(
                 select(TaskAction)

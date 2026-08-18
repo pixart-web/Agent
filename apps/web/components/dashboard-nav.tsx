@@ -25,6 +25,9 @@ export function DashboardNav({ user }: { user: User }) {
         </Link>
         <Link className="nav-link" href="/dashboard/executions">
           Executions
+          <Link className="nav-link" href="/dashboard/agents">
+            Agents
+          </Link>
         </Link>
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals

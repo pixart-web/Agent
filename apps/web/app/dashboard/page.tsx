@@ -1,13 +1,45 @@
 'use client';
 
-import { AGENT_CATALOG } from '@agent/shared';
+import { AGENT_CATALOG, type AgentId, type AgentOverview } from '@agent/shared';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../components/dashboard-nav';
+import { getAgentOverview } from '../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
 type ApiState = 'checking' | 'online' | 'offline';
 
+function AgentMetrics({ agentId }: { agentId: AgentId }) {
+  const [overview, setOverview] = useState<AgentOverview | null>(null);
+
+  useEffect(() => {
+    if (agentId === 'supervisor') return;
+    void getAgentOverview(agentId)
+      .then(setOverview)
+      .catch(() => undefined);
+  }, [agentId]);
+
+  return (
+    <dl className="agent-metrics">
+      <div>
+        <dt>Pending</dt>
+        <dd>{overview?.tasks_pending ?? 0}</dd>
+      </div>
+      <div>
+        <dt>Running</dt>
+        <dd>{overview?.tasks_running ?? 0}</dd>
+      </div>
+      <div>
+        <dt>Approval</dt>
+        <dd>{overview?.tasks_waiting_approval ?? 0}</dd>
+      </div>
+      <div>
+        <dt>Failed</dt>
+        <dd>{overview?.tasks_failed ?? 0}</dd>
+      </div>
+    </dl>
+  );
+}
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export default function DashboardPage() {
@@ -83,6 +115,7 @@ export default function DashboardPage() {
               </div>
               <h3>{agent.name}</h3>
               <p>{agent.description}</p>
+              <AgentMetrics agentId={agent.id} />
             </article>
           ))}
         </div>

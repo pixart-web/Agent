@@ -960,3 +960,56 @@ h1 {
     width: 100%;
   }
 }
+
+.agent-run-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.agent-run-controls input {
+  flex: 1;
+}
+.proposal-preview {
+  display: grid;
+  gap: 10px;
+  padding-left: 22px;
+}
+.proposal-preview li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+}
+.agent-card--link {
+  color: inherit;
+  text-decoration: none;
+}
+.agent-card--link:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.agent-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 18px 0 0;
+}
+.agent-metrics div {
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+.agent-metrics dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.agent-metrics dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+.tool-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
