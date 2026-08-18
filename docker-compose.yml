@@ -35,7 +35,7 @@ services:
       dockerfile: apps/api/Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      APP_NAME: ${APP_NAME:-Agent API}
+      APP_NAME: ${APP_NAME:-Kiko API}
       APP_ENV: ${APP_ENV:-development}
       WEB_ORIGINS: ${WEB_ORIGINS:-http://localhost:3000}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
@@ -53,6 +53,17 @@ services:
       AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
       AUTH_RATE_LIMIT_FAIL_OPEN: ${AUTH_RATE_LIMIT_FAIL_OPEN:-true}
       AUTH_CLEANUP_RETENTION_DAYS: ${AUTH_CLEANUP_RETENTION_DAYS:-7}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-}
+      EXECUTION_DEFAULT_TIMEOUT_SECONDS: ${EXECUTION_DEFAULT_TIMEOUT_SECONDS:-60}
+      EXECUTION_MAX_RETRIES: ${EXECUTION_MAX_RETRIES:-3}
+      EXECUTION_STALE_AFTER_SECONDS: ${EXECUTION_STALE_AFTER_SECONDS:-900}
+      OUTBOX_POLL_INTERVAL_SECONDS: ${OUTBOX_POLL_INTERVAL_SECONDS:-2}
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-50}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
     ports:
       - '8000:8000'
     volumes:
@@ -74,6 +85,57 @@ services:
       timeout: 5s
       retries: 5
 
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    entrypoint: []
+    command: celery -A app.execution.celery_app:celery_app worker --loglevel=INFO
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?Set AUTH_SECRET_KEY in .env}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-}
+      EXECUTION_MAX_RETRIES: ${EXECUTION_MAX_RETRIES:-3}
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+
+  outbox-dispatcher:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    entrypoint: []
+    command: python -m app.scripts.run_outbox_dispatcher
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?Set AUTH_SECRET_KEY in .env}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-}
+      OUTBOX_POLL_INTERVAL_SECONDS: ${OUTBOX_POLL_INTERVAL_SECONDS:-2}
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-50}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stop_grace_period: 15s
   postgres:
     image: postgres:16-alpine
     environment:

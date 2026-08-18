@@ -9,6 +9,7 @@ description = "API for the Pixart Agent operating system"
 requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.14,<2.0",
+  "celery[redis]>=5.4,<6.0",
   "argon2-cffi>=23.1,<26.0",
   "email-validator>=2.2,<3.0",
   "fastapi>=0.115.14,<0.116",
@@ -32,6 +33,7 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-q"
 pythonpath = ["."]
+markers = ["integration: requires PostgreSQL and Redis services"]
 testpaths = ["tests"]
 
 [tool.ruff]
