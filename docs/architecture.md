@@ -142,3 +142,22 @@ Authentication is kept separate from agent execution so both can evolve independ
 | **Sales**       | Support pipeline, proposals, outreach, and commercial follow-up    |
 | **Support**     | Triage requests, organize knowledge, and assist customer service   |
 | **Development** | Support delivery, technical planning, quality, and maintenance     |
+
+## Execution architecture
+
+The Execution Engine sits between proposed agent work and every handler:
+
+```text
+Kiko / Agent -> TaskAction -> risk and approval -> OutboxEvent
+             -> Redis/Celery -> idempotent worker -> registered ToolHandler
+             -> sanitized TaskExecution result -> workflow state propagation
+```
+
+PostgreSQL owns action, approval, attempt, outbox, dependency, and audit state. Celery
+messages contain only execution identifiers. Tool handlers receive a constrained
+`ExecutionContext` with user, command, task, action, execution, and correlation IDs.
+They do not receive a universal service container or unrestricted credentials.
+
+The system is deliberately at-least-once at the transport boundary and exactly-once at
+the execution state boundary for completed attempts. Fingerprints bind human decisions to
+the exact approved action. Audit rows are append-only and have no update/delete API.

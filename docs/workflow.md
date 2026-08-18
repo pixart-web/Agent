@@ -111,3 +111,19 @@ for sizes, sequences, valid agents, critical assignments, and minimum risk befor
 atomic write. The provider call occurs between two short transactions, so PostgreSQL
 locks are not held during network latency. See `docs/supervisor.md` for failure and
 concurrency behavior. Background workers, artifacts, and execution remain out of scope.
+
+## Phase 3C execution workflow
+
+After Plan approval, ready Tasks may receive manual/internal `TaskAction` proposals.
+Dispatch recalculates effective risk and checks dependencies. Green actions create a
+queued attempt and outbox record atomically. Yellow and red actions enter
+`waiting_approval`; red additionally requires an explicit confirmation.
+
+The outbox dispatcher sends the execution ID to Celery. The worker claims state with row
+locks, executes only a registered tool outside the database transaction, sanitizes the
+result, and records a new audit event. Retryable failures create a later immutable
+attempt. Terminal success/failure propagates through Task, Plan, and Command according to
+the policy documented in [execution-engine.md](execution-engine.md).
+
+Command cancellation cancels work that has not started and pending approvals. Running
+handlers are best effort and do not revive cancelled Commands.

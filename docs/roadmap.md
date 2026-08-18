@@ -21,8 +21,9 @@
       status history, authenticated UI, migration, and tests.
 - [x] **3B:** Add provider-neutral Supervisor planning, structured OpenAI output,
       versioned plans, human approval/replanning, risk guardrails, UI, and audited runs.
-- [ ] **3C:** Add safe background execution, artifacts, cancellation, and per-task
-      approval enforcement.
+- [x] **3C:** Add registered internal tools, Celery workers, transactional outbox,
+      fingerprinted approvals, retries, dependencies, cancellation, audit logs,
+      execution dashboards, PostgreSQL/Redis integration tests, and state propagation.
 
 ## Fase 4 — Agentes especializados
 
