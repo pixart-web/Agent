@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from sqlalchemy import select
@@ -19,6 +21,10 @@ class AgentRepository:
 
     def list(self) -> list[Agent]:
         statement = select(Agent).order_by(Agent.created_at, Agent.id)
+        return list(self.session.scalars(statement))
+
+    def list_active(self) -> list[Agent]:
+        statement = select(Agent).where(Agent.status == "ready").order_by(Agent.id)
         return list(self.session.scalars(statement))
 
     def get(self, agent_id: str) -> Agent | None:

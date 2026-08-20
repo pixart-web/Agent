@@ -1,7 +1,7 @@
 PNPM ?= pnpm
 PYTHON ?= python
 
-.PHONY: up down logs test lint format migrate migration seed cleanup-auth typecheck ci
+.PHONY: up down logs test lint format migrate migration seed cleanup-auth test-ai typecheck ci
 
 up:
 	docker compose up --build
@@ -37,6 +37,9 @@ seed:
 cleanup-auth:
 	cd apps/api && $(PYTHON) -m app.scripts.cleanup_refresh_tokens
 
+test-ai:
+	cd apps/api && $(PYTHON) -m app.scripts.test_supervisor_provider
+
 typecheck:
 	$(PNPM) typecheck
 
@@ -49,4 +52,5 @@ ci:
 	$(PYTHON) -m ruff check apps/api
 	$(PYTHON) -m ruff format --check apps/api
 	cd apps/api && $(PYTHON) -m alembic upgrade head --sql
+	cd apps/api && $(PYTHON) -m alembic downgrade 20260814_0004:20260814_0003 --sql
 	$(PYTHON) -m pytest apps/api

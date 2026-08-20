@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.time import utc_now
 from app.models.task import Task
 from app.models.task_status_history import TaskStatusHistory
-from app.models.workflow_enums import TERMINAL_COMMAND_STATUSES, TaskStatus
+from app.models.workflow_enums import TERMINAL_COMMAND_STATUSES, PlanStatus, TaskStatus
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.task_repository import TaskRepository
@@ -73,9 +73,11 @@ class TaskService:
             )
             if plan_and_command is None:
                 raise WorkflowNotFoundError("Plan not found")
-            _, command = plan_and_command
+            plan, command = plan_and_command
             if command.status in TERMINAL_COMMAND_STATUSES:
                 raise WorkflowConflictError("A terminal command cannot receive new tasks")
+            if not plan.is_current or plan.status != PlanStatus.DRAFT:
+                raise WorkflowConflictError("Tasks can only be added to the current draft plan")
             self._require_agent(data.agent_id)
 
             task = Task(plan_id=plan_id, **data.model_dump())

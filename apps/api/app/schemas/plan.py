@@ -26,6 +26,12 @@ class PlanRead(BaseModel):
     command_id: UUID
     title: str
     objective: str
+    reasoning_summary: str | None
     status: PlanStatus
+    version: int
+    is_current: bool
+    rejection_reason: str | None
+    approved_at: datetime | None
+    approved_by_user_id: UUID | None
     created_at: datetime
     updated_at: datetime

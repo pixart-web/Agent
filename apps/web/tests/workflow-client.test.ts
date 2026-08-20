@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { authFetch } from '../lib/auth-client';
 import {
+  approvePlan,
   createCommand,
+  generateSupervisorPlan,
   listCommands,
+  listPlans,
+  regenerateSupervisorPlan,
   transitionTask,
   WorkflowApiError,
 } from '../lib/workflow-client';
@@ -74,6 +78,48 @@ describe('workflow client', () => {
 
     await expect(transitionTask('task-1', 'completed')).rejects.toEqual(
       new WorkflowApiError('Invalid task status transition.', 409),
+    );
+  });
+
+  it('generates and regenerates supervisor plans through centralized endpoints', async () => {
+    mockedAuthFetch.mockImplementation(async () =>
+      jsonResponse({ plan: { id: 'plan-1' } }, 201),
+    );
+
+    await generateSupervisorPlan('command-1');
+    await regenerateSupervisorPlan('command-1', 'Prefer organic outreach');
+
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/commands/command-1/generate-plan',
+      { method: 'POST' },
+    );
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/commands/command-1/regenerate-plan',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: 'Prefer organic outreach' }),
+      },
+    );
+  });
+
+  it('lists versions and approves a selected plan', async () => {
+    mockedAuthFetch.mockImplementation(async () => jsonResponse([]));
+
+    await listPlans('command-1');
+    await approvePlan('plan-1');
+
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/commands/command-1/plans',
+      {},
+    );
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/plans/plan-1/approve',
+      { method: 'POST' },
     );
   });
 });

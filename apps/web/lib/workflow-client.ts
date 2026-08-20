@@ -4,6 +4,8 @@ import type {
   CommandStatus,
   Plan,
   RiskLevel,
+  SupervisorPlanResponse,
+  SupervisorRun,
   TaskDetail,
   TaskPriority,
   TaskStatus,
@@ -90,6 +92,49 @@ export function createPlan(
 
 export function getPlan(commandId: string): Promise<Plan> {
   return request(`/api/v1/commands/${commandId}/plan`);
+}
+
+export function listPlans(commandId: string): Promise<Plan[]> {
+  return request(`/api/v1/commands/${commandId}/plans`);
+}
+
+export function getPlanById(planId: string): Promise<Plan> {
+  return request(`/api/v1/plans/${planId}`);
+}
+
+export function generateSupervisorPlan(
+  commandId: string,
+): Promise<SupervisorPlanResponse> {
+  return request(`/api/v1/commands/${commandId}/generate-plan`, {
+    method: 'POST',
+  });
+}
+
+export function regenerateSupervisorPlan(
+  commandId: string,
+  feedback: string,
+): Promise<SupervisorPlanResponse> {
+  return request(
+    `/api/v1/commands/${commandId}/regenerate-plan`,
+    jsonRequest('POST', { feedback }),
+  );
+}
+
+export function approvePlan(planId: string): Promise<Plan> {
+  return request(`/api/v1/plans/${planId}/approve`, { method: 'POST' });
+}
+
+export function rejectPlan(planId: string, reason: string): Promise<Plan> {
+  return request(
+    `/api/v1/plans/${planId}/reject`,
+    jsonRequest('POST', { reason }),
+  );
+}
+
+export function listSupervisorRuns(
+  commandId: string,
+): Promise<SupervisorRun[]> {
+  return request(`/api/v1/commands/${commandId}/supervisor-runs`);
 }
 
 export function createTask(

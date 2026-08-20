@@ -83,11 +83,48 @@ export type Command = {
 export type Plan = {
   id: string;
   command_id: string;
+  version: number;
+  is_current: boolean;
   title: string;
   objective: string;
+  reasoning_summary: string | null;
+  rejection_reason: string | null;
   status: PlanStatus;
   created_at: string;
   updated_at: string;
+  approved_at: string | null;
+  approved_by_user_id: string | null;
+};
+
+export type SupervisorRunStatus =
+  'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export type SupervisorRun = {
+  id: string;
+  command_id: string;
+  user_id: string;
+  status: SupervisorRunStatus;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  estimated_cost: string | null;
+  currency: string | null;
+  latency_ms: number | null;
+  request_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  user_feedback: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type SupervisorPlanResponse = {
+  plan: Plan;
+  tasks: WorkflowTask[];
+  run: SupervisorRun;
 };
 
 export type WorkflowTask = {

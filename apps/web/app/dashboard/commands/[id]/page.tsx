@@ -8,6 +8,7 @@ import {
   type Command,
   type Plan,
   type RiskLevel,
+  type SupervisorRun,
   type TaskDetail,
   type TaskPriority,
   type TaskStatus,
@@ -17,16 +18,21 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { CommandDetail } from '../../../../components/command-detail';
 import { DashboardNav } from '../../../../components/dashboard-nav';
+import { SupervisorPlanReview } from '../../../../components/supervisor-plan-review';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import {
+  approvePlan,
   cancelCommand,
   createPlan,
   createTask,
+  generateSupervisorPlan,
   getCommand,
-  getPlan,
   getTask,
   listAgents,
+  listPlans,
+  listSupervisorRuns,
   listTasks,
+  regenerateSupervisorPlan,
   transitionTask,
   type Agent,
   WorkflowApiError,
@@ -37,6 +43,13 @@ export default function CommandDetailPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
   const [command, setCommand] = useState<Command | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [planVersions, setPlanVersions] = useState<Plan[]>([]);
+  const [supervisorRun, setSupervisorRun] = useState<SupervisorRun | null>(
+    null,
+  );
+  const [supervisorPlanning, setSupervisorPlanning] = useState(false);
+  const [supervisorError, setSupervisorError] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [tasks, setTasks] = useState<TaskDetail[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,24 +76,25 @@ export default function CommandDetailPage() {
         getCommand(commandId),
         listAgents(),
       ]);
-      let loadedPlan: Plan | null = null;
+      const [versions, runs] = await Promise.all([
+        listPlans(commandId),
+        listSupervisorRuns(commandId),
+      ]);
+      const loadedPlan = versions.find((item) => item.is_current) ?? null;
       let loadedTasks: TaskDetail[] = [];
-      try {
-        loadedPlan = await getPlan(commandId);
+      if (loadedPlan) {
         const taskList = await listTasks(loadedPlan.id);
         loadedTasks = await Promise.all(
           taskList.map((task) => getTask(task.id)),
         );
-      } catch (loadError) {
-        if (!(
-          loadError instanceof WorkflowApiError && loadError.status === 404
-        )) {
-          throw loadError;
-        }
       }
       setCommand(loadedCommand);
       setAgents(loadedAgents);
       setPlan(loadedPlan);
+      setPlanVersions(versions);
+      setSupervisorRun(
+        runs.find((run) => run.status === 'completed') ?? runs[0] ?? null,
+      );
       setTasks(loadedTasks);
       if (loadedAgents[0]) setAgentId(loadedAgents[0].id);
     } catch (loadError) {
@@ -114,6 +128,60 @@ export default function CommandDetailPage() {
           ? submitError.message
           : 'Unable to create the plan.',
       );
+    }
+  }
+
+  async function handleGeneratePlan() {
+    setSupervisorPlanning(true);
+    setSupervisorError('');
+    try {
+      await generateSupervisorPlan(commandId);
+      await loadWorkflow();
+    } catch (generateError) {
+      setSupervisorError(
+        generateError instanceof WorkflowApiError
+          ? generateError.message
+          : 'Não foi possível gerar o plano. Tenta novamente.',
+      );
+    } finally {
+      setSupervisorPlanning(false);
+    }
+  }
+
+  async function handleApprovePlan() {
+    if (!plan) return;
+    setSupervisorPlanning(true);
+    setSupervisorError('');
+    try {
+      await approvePlan(plan.id);
+      await loadWorkflow();
+    } catch (approveError) {
+      setSupervisorError(
+        approveError instanceof WorkflowApiError
+          ? approveError.message
+          : 'Não foi possível aprovar o plano.',
+      );
+    } finally {
+      setSupervisorPlanning(false);
+    }
+  }
+
+  async function handleRegeneratePlan() {
+    if (!feedback.trim()) return;
+    setSupervisorPlanning(true);
+    setSupervisorError('');
+    try {
+      await regenerateSupervisorPlan(commandId, feedback.trim());
+      setFeedback('');
+      await loadWorkflow();
+    } catch (regenerateError) {
+      setSupervisorError(
+        regenerateError instanceof WorkflowApiError
+          ? regenerateError.message
+          : 'Não foi possível rever o plano.',
+      );
+    } finally {
+      setSupervisorPlanning(false);
     }
   }
 
@@ -187,9 +255,30 @@ export default function CommandDetailPage() {
         <>
           <CommandDetail
             command={command}
+            plan={null}
+            tasks={[]}
+            agents={agents}
+            statusLabel={
+              command.status === 'planning'
+                ? plan
+                  ? 'Waiting for approval'
+                  : 'Supervisor planning'
+                : undefined
+            }
+          />
+          <SupervisorPlanReview
             plan={plan}
             tasks={tasks}
+            versions={planVersions}
+            run={supervisorRun}
             agents={agents}
+            planning={supervisorPlanning}
+            error={supervisorError}
+            feedback={feedback}
+            onFeedbackChange={setFeedback}
+            onGenerate={() => void handleGeneratePlan()}
+            onApprove={() => void handleApprovePlan()}
+            onRegenerate={() => void handleRegeneratePlan()}
           />
           {!['completed', 'cancelled'].includes(command.status) && (
             <button
@@ -206,8 +295,8 @@ export default function CommandDetailPage() {
       )}
 
       {command && !plan && (
-        <section className="workflow-panel workflow-form-panel">
-          <h2>Create the plan</h2>
+        <details className="workflow-panel workflow-form-panel">
+          <summary>Create a plan manually</summary>
           <form className="workflow-form" onSubmit={handlePlanSubmit}>
             <label>
               Title
@@ -230,10 +319,10 @@ export default function CommandDetailPage() {
               Create plan
             </button>
           </form>
-        </section>
+        </details>
       )}
 
-      {plan && (
+      {plan?.status === 'draft' && (
         <section className="workflow-panel workflow-form-panel">
           <h2>Add a task</h2>
           <form

@@ -17,11 +17,12 @@
 
 ## Fase 3 — Supervisor e execução de tarefas
 
-- [x] **3A:** Persist owned commands, one-to-one plans, tasks, explicit transitions,
+- [x] **3A:** Persist owned commands, plans, tasks, explicit transitions,
       status history, authenticated UI, migration, and tests.
-- [ ] **3B:** Implement Supervisor planning and delegation.
-- [ ] Extend persisted progress with artifacts and approval decisions.
-- [ ] Add safe background execution and cancellation.
+- [x] **3B:** Add provider-neutral Supervisor planning, structured OpenAI output,
+      versioned plans, human approval/replanning, risk guardrails, UI, and audited runs.
+- [ ] **3C:** Add safe background execution, artifacts, cancellation, and per-task
+      approval enforcement.
 
 ## Fase 4 — Agentes especializados
 
