@@ -1,11 +1,12 @@
-# Agent
+# Kiko — Pixart AI Operating System
 
-Agent is Pixart's multi-agent operations platform. This monorepo provides a Next.js
+Kiko is Pixart's AI operating system. This monorepo provides a Next.js
 dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure user
 authentication, migrations, continuous integration, and an AI-assisted Supervisor.
 Authenticated users can turn an operational command into a structured, versioned plan,
-review its assigned tasks, approve it, or request a revised proposal. Real task
-execution remains deliberately out of scope.
+review its assigned tasks, approve it, request revisions, and run safe registered internal
+tools through an audited Execution Engine. Real external-service integrations remain
+deliberately out of scope.
 
 ## Architecture
 
@@ -223,4 +224,21 @@ Next.js production build. No job requires repository secrets, PostgreSQL, or Red
 - Prompt injection has defense in depth, not a claim of complete prevention.
 - No background work or real multi-agent task execution.
 - A real PostgreSQL/Redis container flow requires Docker and cannot be proven by static
-  validation alone when Docker is unavailable.
+
+## Execution Engine
+
+Phase 3C adds registered, schema-bound internal tools, effective-risk enforcement,
+fingerprinted approvals, immutable execution attempts, controlled retries, task
+dependencies, audit events, automatic workflow progression, and best-effort cancellation.
+PostgreSQL remains authoritative; a transactional outbox bridges commits to Celery over
+Redis. The worker and outbox dispatcher run as separate Docker Compose services.
+
+Authenticated execution endpoints cover Task Actions, dispatch/cancel, attempts,
+approvals, dependencies, progress, and Command activity. The dashboard exposes
+`/dashboard/executions` and `/dashboard/approvals`. See
+[execution engine](docs/execution-engine.md), [tools](docs/tools.md), and
+[approvals](docs/approvals.md).
+
+Only safe internal and simulated tools exist. No real external integration or automatic
+agent tool selection is included.
+validation alone when Docker is unavailable.

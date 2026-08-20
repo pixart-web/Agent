@@ -45,10 +45,58 @@ jobs:
         working-directory: apps/api
         run: |
           python -m alembic upgrade head --sql > /dev/null
-          python -m alembic downgrade 20260814_0004:20260814_0003 --sql > /dev/null
+          python -m alembic downgrade 20260818_0005:20260814_0004 --sql > /dev/null
 
       - name: Run Pytest
         run: python -m pytest apps/api
+
+  integration:
+    name: PostgreSQL and Redis integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: agent
+          POSTGRES_USER: agent
+          POSTGRES_PASSWORD: agent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agent -d agent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: test
+      AUTH_SECRET_KEY: test-only-auth-secret-with-at-least-32-characters
+      DATABASE_URL: postgresql+psycopg://agent:agent@localhost:5432/agent
+      INTEGRATION_DATABASE_URL: postgresql+psycopg://agent:agent@localhost:5432/agent
+      INTEGRATION_REDIS_URL: redis://localhost:6379/1
+      AI_PROVIDER: fake
+      OPENAI_MODEL: fake-supervisor-v1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - run: python -m pip install -e "apps/api[dev]"
+      - name: Apply real migrations
+        working-directory: apps/api
+        run: python -m alembic upgrade head
+      - name: Test locking, outbox, and Redis
+        run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
 
   frontend:
     name: Frontend

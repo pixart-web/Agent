@@ -51,6 +51,52 @@ class SupervisorRunStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class TaskActionStatus(StrEnum):
+    PROPOSED = "proposed"
+    WAITING_APPROVAL = "waiting_approval"
+    APPROVED = "approved"
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class TaskExecutionStatus(StrEnum):
+    CREATED = "created"
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    RETRY_SCHEDULED = "retry_scheduled"
+    CANCELLED = "cancelled"
+    WAITING_APPROVAL = "waiting_approval"
+
+
+class ApprovalStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+class OutboxStatus(StrEnum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    PROCESSED = "processed"
+    FAILED = "failed"
+
+
+class ActorType(StrEnum):
+    USER = "user"
+    KIKO = "kiko"
+    SUPERVISOR = "supervisor"
+    AGENT = "agent"
+    WORKER = "worker"
+    SYSTEM = "system"
+
+
 TERMINAL_COMMAND_STATUSES = frozenset(
     {
         CommandStatus.COMPLETED,

@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Agent API"
+    app_name: str = "Kiko API"
     app_env: str = "development"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     supervisor_max_tasks: int = Field(default=20, ge=1, le=100)
     supervisor_max_command_chars: int = Field(default=10_000, ge=100, le=100_000)
     supervisor_max_feedback_chars: int = Field(default=5_000, ge=100, le=50_000)
+    celery_broker_url: str = "redis://redis:6379/1"
+    celery_result_backend: str | None = None
+    execution_default_timeout_seconds: int = Field(default=60, gt=0)
+    execution_max_retries: int = Field(default=3, ge=0, le=10)
+    execution_stale_after_seconds: int = Field(default=900, ge=30)
+    outbox_poll_interval_seconds: float = Field(default=2, gt=0)
+    outbox_batch_size: int = Field(default=50, ge=1, le=500)
+    outbox_max_attempts: int = Field(default=10, ge=1, le=100)
 
     model_config = SettingsConfigDict(
         env_file=".env",

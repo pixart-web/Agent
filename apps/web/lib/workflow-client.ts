@@ -13,6 +13,16 @@ import type {
 } from '@agent/shared';
 
 import { authFetch } from './auth-client';
+import type {
+  ApprovalRequest,
+  ApprovalStatus,
+  AuditLog,
+  DispatchResponse,
+  PlanProgress,
+  TaskAction,
+  TaskExecution,
+  TaskExecutionStatus,
+} from '@agent/shared';
 
 export type Agent = {
   id: AgentId;
@@ -185,6 +195,92 @@ export function transitionTask(
     `/api/v1/tasks/${taskId}/transition`,
     jsonRequest('POST', { status, reason: reason || null }),
   );
+}
+export function createTaskAction(
+  taskId: string,
+  data: {
+    tool_name: string;
+    tool_version?: string;
+    input_payload: Record<string, unknown>;
+    risk_level?: RiskLevel;
+  },
+): Promise<TaskAction> {
+  return request(`/api/v1/tasks/${taskId}/actions`, jsonRequest('POST', data));
+}
+
+export function listTaskActions(taskId: string): Promise<TaskAction[]> {
+  return request(`/api/v1/tasks/${taskId}/actions`);
+}
+
+export function dispatchAction(actionId: string): Promise<DispatchResponse> {
+  return request(`/api/v1/actions/${actionId}/dispatch`, { method: 'POST' });
+}
+
+export function cancelAction(actionId: string): Promise<TaskAction> {
+  return request(`/api/v1/actions/${actionId}/cancel`, { method: 'POST' });
+}
+
+export function listActionExecutions(
+  actionId: string,
+): Promise<TaskExecution[]> {
+  return request(`/api/v1/actions/${actionId}/executions`);
+}
+
+export function listExecutions(
+  options: {
+    status?: TaskExecutionStatus;
+    agent?: string;
+    risk?: RiskLevel;
+  } = {},
+): Promise<TaskExecution[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.agent) query.set('agent', options.agent);
+  if (options.risk) query.set('risk', options.risk);
+  const suffix = query.size ? `?${query.toString()}` : '';
+  return request(`/api/v1/executions${suffix}`);
+}
+
+export function listApprovals(
+  options: { status?: ApprovalStatus; risk_level?: RiskLevel } = {},
+): Promise<ApprovalRequest[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.risk_level) query.set('risk_level', options.risk_level);
+  const suffix = query.size ? `?${query.toString()}` : '';
+  return request(`/api/v1/approvals${suffix}`);
+}
+
+export function approveAction(
+  approvalId: string,
+  confirmHighRisk: boolean,
+  reason?: string,
+): Promise<DispatchResponse> {
+  return request(
+    `/api/v1/approvals/${approvalId}/approve`,
+    jsonRequest('POST', {
+      confirm_high_risk: confirmHighRisk,
+      reason: reason || null,
+    }),
+  );
+}
+
+export function rejectAction(
+  approvalId: string,
+  reason?: string,
+): Promise<ApprovalRequest> {
+  return request(
+    `/api/v1/approvals/${approvalId}/reject`,
+    jsonRequest('POST', { reason: reason || null }),
+  );
+}
+
+export function getPlanProgress(planId: string): Promise<PlanProgress> {
+  return request(`/api/v1/plans/${planId}/progress`);
+}
+
+export function listCommandActivity(commandId: string): Promise<AuditLog[]> {
+  return request(`/api/v1/commands/${commandId}/activity`);
 }
 
 export function listAgents(): Promise<Agent[]> {

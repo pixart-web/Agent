@@ -19,6 +19,7 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { CommandDetail } from '../../../../components/command-detail';
 import { DashboardNav } from '../../../../components/dashboard-nav';
 import { SupervisorPlanReview } from '../../../../components/supervisor-plan-review';
+import { TaskExecutionPanel } from '../../../../components/task-execution-panel';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import {
   approvePlan,
@@ -280,6 +281,9 @@ export default function CommandDetailPage() {
             onApprove={() => void handleApprovePlan()}
             onRegenerate={() => void handleRegeneratePlan()}
           />
+          {plan?.status !== 'draft' && tasks.length > 0 && (
+            <TaskExecutionPanel commandId={commandId} tasks={tasks} />
+          )}
           {!['completed', 'cancelled'].includes(command.status) && (
             <button
               className="danger-button"

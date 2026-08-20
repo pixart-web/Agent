@@ -47,7 +47,7 @@ export default function DashboardPage() {
       <section className="hero">
         <div>
           <p className="eyebrow">Pixart operations</p>
-          <h1>Agent</h1>
+          <h1>Kiko</h1>
           <p className="subtitle">Pixart AI Operating System</p>
         </div>
 

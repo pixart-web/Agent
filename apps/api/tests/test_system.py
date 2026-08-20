@@ -9,8 +9,8 @@ def test_root(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == {
-        "service": "agent-api",
-        "message": "Pixart Agent API",
+        "service": "kiko-api",
+        "message": "Kiko — Pixart AI Operating System",
     }
 
 

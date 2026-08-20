@@ -7,6 +7,7 @@ from app.models.command import Command
 from app.models.workflow_enums import CommandStatus
 from app.repositories.command_repository import CommandRepository
 from app.schemas.command import CommandCreate
+from app.services.execution_cancellation_service import ExecutionCancellationService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
 
 
@@ -14,6 +15,7 @@ class CommandService:
     def __init__(self, session: Session) -> None:
         self.session = session
         self.commands = CommandRepository(session)
+        self.execution_cancellation = ExecutionCancellationService(session)
 
     def create(self, user_id: UUID, data: CommandCreate) -> Command:
         command = Command(user_id=user_id, input=data.input)
@@ -46,6 +48,7 @@ class CommandService:
                 raise WorkflowConflictError("Command cannot be cancelled from its current state")
             command.status = CommandStatus.CANCELLED
             command.completed_at = utc_now()
+            self.execution_cancellation.cancel_for_command(command.id, user_id)
             self.session.commit()
         except Exception:
             self.session.rollback()

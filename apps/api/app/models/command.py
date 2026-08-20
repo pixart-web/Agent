@@ -50,3 +50,8 @@ class Command(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    correlation_id: Mapped[UUID | None] = mapped_column(
+        nullable=True,
+        default=uuid4,
+        index=True,
+    )

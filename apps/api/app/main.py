@@ -11,6 +11,14 @@ from app.ai.exceptions import (
 )
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.execution.exceptions import (
+    ExecutionError,
+    ToolInputValidationError,
+    ToolNotFoundError,
+    ToolPermissionError,
+    ToolTimeoutError,
+    ToolVersionError,
+)
 
 settings = get_settings()
 
@@ -46,9 +54,24 @@ async def ai_error_handler(_request: Request, error: AIError) -> JSONResponse:
     )
 
 
+@app.exception_handler(ExecutionError)
+async def execution_error_handler(_request: Request, error: ExecutionError) -> JSONResponse:
+    if isinstance(error, ToolNotFoundError):
+        status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(error, ToolPermissionError):
+        status_code = status.HTTP_403_FORBIDDEN
+    elif isinstance(error, (ToolInputValidationError, ToolVersionError)):
+        status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    elif isinstance(error, ToolTimeoutError):
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        status_code = status.HTTP_409_CONFLICT
+    return JSONResponse(status_code=status_code, content={"detail": str(error)})
+
+
 @app.get("/", tags=["system"])
 async def root() -> dict[str, str]:
-    return {"service": "agent-api", "message": "Pixart Agent API"}
+    return {"service": "kiko-api", "message": "Kiko — Pixart AI Operating System"}
 
 
 app.include_router(api_router)

@@ -807,3 +807,156 @@ h1 {
     margin-top: 4px;
   }
 }
+
+.approval-grid,
+.execution-list,
+.execution-workbench {
+  display: grid;
+  gap: 18px;
+}
+
+.approval-card--yellow {
+  border-color: #e7bd62;
+  background: linear-gradient(145deg, #fff8e8, var(--surface));
+}
+
+.approval-card--red {
+  border-color: #df7777;
+  background: linear-gradient(145deg, #fff0f0, var(--surface));
+}
+
+.high-risk-warning {
+  padding: 12px;
+  border-radius: 10px;
+  color: #862f2f;
+  background: #ffe0e0;
+  font-weight: 750;
+}
+
+.risk-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  font-weight: 650;
+}
+
+.approval-actions,
+.action-composer,
+.execution-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.execution-filters {
+  margin-bottom: 24px;
+}
+
+.execution-filters select,
+.action-composer select,
+.action-composer input {
+  min-width: 180px;
+}
+
+.action-composer input {
+  flex: 1;
+}
+
+.execution-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.execution-meta div {
+  display: grid;
+  gap: 4px;
+}
+
+.execution-meta dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.execution-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.attempt-list {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--muted);
+}
+
+.activity-timeline summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.activity-timeline ol {
+  display: grid;
+  gap: 12px;
+  padding-left: 22px;
+}
+
+.activity-timeline time {
+  display: inline-block;
+  min-width: 110px;
+  color: var(--muted);
+}
+
+.workflow-badge--yellow,
+.workflow-badge--waiting_approval,
+.workflow-badge--retry_scheduled {
+  color: #77520b;
+  background: #fff0bf;
+}
+
+.workflow-badge--red,
+.workflow-badge--failed {
+  color: #8f3030;
+  background: #ffe0e0;
+}
+
+.workflow-badge--succeeded,
+.workflow-badge--completed,
+.workflow-badge--approved {
+  color: #246141;
+  background: #ddf6e8;
+}
+
+.workflow-badge--running,
+.workflow-badge--queued,
+.workflow-badge--processing {
+  color: #284ca0;
+  background: #e5ecff;
+}
+
+@media (max-width: 640px) {
+  .approval-actions,
+  .action-composer,
+  .execution-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .execution-filters select,
+  .action-composer select,
+  .action-composer input {
+    width: 100%;
+  }
+}
