@@ -113,7 +113,7 @@ class TaskService:
             task = self._get_owned_for_update(task_id, user_id)
             values = data.model_dump(exclude_unset=True, exclude_none=True)
             if "agent_id" in values:
-                self._require_agent(values["agent_id"])
+                raise WorkflowConflictError("Use the explicit reassign-agent endpoint")
             for field, value in values.items():
                 setattr(task, field, value)
             self.session.commit()

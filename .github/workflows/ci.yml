@@ -45,7 +45,7 @@ jobs:
         working-directory: apps/api
         run: |
           python -m alembic upgrade head --sql > /dev/null
-          python -m alembic downgrade 20260818_0005:20260814_0004 --sql > /dev/null
+          python -m alembic downgrade 20260818_0006:20260818_0005 --sql > /dev/null
 
       - name: Run Pytest
         run: python -m pytest apps/api

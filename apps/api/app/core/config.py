@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     outbox_batch_size: int = Field(default=50, ge=1, le=500)
     outbox_max_attempts: int = Field(default=10, ge=1, le=100)
 
+    agent_max_context_chars: int = Field(default=20_000, ge=1_000, le=100_000)
+    agent_max_actions_per_task: int = Field(default=10, ge=1, le=50)
+    agent_max_feedback_chars: int = Field(default=5_000, ge=100, le=50_000)
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,3 +1,4 @@
+import type { AgentOverview, AgentRun, AgentRunResponse } from '@agent/shared';
 import type {
   AgentId,
   Command,
@@ -285,4 +286,38 @@ export function listCommandActivity(commandId: string): Promise<AuditLog[]> {
 
 export function listAgents(): Promise<Agent[]> {
   return request('/api/v1/agents');
+}
+
+export function runAgent(taskId: string): Promise<AgentRunResponse> {
+  return request('/api/v1/tasks/' + taskId + '/run-agent', {
+    method: 'POST',
+  });
+}
+
+export function rerunAgent(
+  taskId: string,
+  feedback?: string,
+): Promise<AgentRunResponse> {
+  return request(
+    '/api/v1/tasks/' + taskId + '/rerun-agent',
+    jsonRequest('POST', { feedback: feedback || null }),
+  );
+}
+
+export function listAgentRuns(taskId: string): Promise<AgentRun[]> {
+  return request('/api/v1/tasks/' + taskId + '/agent-runs');
+}
+
+export function getAgentOverview(agentId: string): Promise<AgentOverview> {
+  return request('/api/v1/agents/' + agentId + '/overview');
+}
+
+export function reassignTaskAgent(
+  taskId: string,
+  agentId: string,
+): Promise<WorkflowTask> {
+  return request(
+    '/api/v1/tasks/' + taskId + '/reassign-agent',
+    jsonRequest('POST', { agent_id: agentId }),
+  );
 }

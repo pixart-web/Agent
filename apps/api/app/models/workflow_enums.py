@@ -43,6 +43,14 @@ class RiskLevel(StrEnum):
     RED = "red"
 
 
+class AgentRunStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 class SupervisorRunStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"

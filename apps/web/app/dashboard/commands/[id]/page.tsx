@@ -15,6 +15,7 @@ import {
 } from '@agent/shared';
 import { useParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { TaskAgentPanel } from '../../../../components/task-agent-panel';
 
 import { CommandDetail } from '../../../../components/command-detail';
 import { DashboardNav } from '../../../../components/dashboard-nav';
@@ -281,6 +282,9 @@ export default function CommandDetailPage() {
             onApprove={() => void handleApprovePlan()}
             onRegenerate={() => void handleRegeneratePlan()}
           />
+          {plan?.status !== 'draft' && tasks.length > 0 && (
+            <TaskAgentPanel tasks={tasks} />
+          )}
           {plan?.status !== 'draft' && tasks.length > 0 && (
             <TaskExecutionPanel commandId={commandId} tasks={tasks} />
           )}
