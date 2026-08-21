@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -46,13 +46,21 @@ class Settings(BaseSettings):
     agent_max_context_chars: int = Field(default=20_000, ge=1_000, le=100_000)
     agent_max_actions_per_task: int = Field(default=10, ge=1, le=50)
     agent_max_feedback_chars: int = Field(default=5_000, ge=100, le=50_000)
+    github_integration_enabled: bool = False
+    github_token: SecretStr | None = None
+    github_allowed_repositories: str = "pixart-web/Agent"
+    github_api_timeout_seconds: float = Field(default=30, gt=0, le=120)
+    github_protected_branches: str = "main"
+    github_allowed_branch_prefixes: str = "feature/,fix/,chore/,docs/"
+    github_max_file_bytes: int = Field(default=500_000, ge=1_000, le=5_000_000)
+    github_max_output_chars: int = Field(default=100_000, ge=1_000, le=1_000_000)
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    @field_validator("auth_cookie_domain", "openai_api_key", mode="before")
+    @field_validator("auth_cookie_domain", "openai_api_key", "github_token", mode="before")
     @classmethod
     def empty_optional_string_is_none(cls, value: object) -> object:
         return None if value == "" else value
@@ -69,6 +77,22 @@ class Settings(BaseSettings):
     def web_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.web_origins.split(",") if origin.strip()]
 
+    @property
+    def github_allowed_repository_list(self) -> list[str]:
+        return [
+            item.strip() for item in self.github_allowed_repositories.split(",") if item.strip()
+        ]
+
+    @property
+    def github_protected_branch_list(self) -> list[str]:
+        return [item.strip() for item in self.github_protected_branches.split(",") if item.strip()]
+
+    @property
+    def github_allowed_branch_prefix_list(self) -> list[str]:
+        return [
+            item.strip() for item in self.github_allowed_branch_prefixes.split(",") if item.strip()
+        ]
+
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
         if not self.web_origin_list:
@@ -77,6 +101,8 @@ class Settings(BaseSettings):
             raise ValueError("WEB_ORIGINS cannot contain a wildcard with credentials")
         if self.auth_cookie_samesite == "none" and not self.auth_cookie_secure:
             raise ValueError("SameSite=None requires AUTH_COOKIE_SECURE=true")
+        if self.github_integration_enabled and not self.github_allowed_repository_list:
+            raise ValueError("GitHub integration requires at least one allowed repository")
         if self.app_env.lower() == "production":
             insecure_markers = ("development", "example", "change-me", "replace")
             if any(marker in self.auth_secret_key.lower() for marker in insecure_markers):
