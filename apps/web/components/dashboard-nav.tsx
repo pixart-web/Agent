@@ -25,12 +25,15 @@ export function DashboardNav({ user }: { user: User }) {
         </Link>
         <Link className="nav-link" href="/dashboard/executions">
           Executions
-          <Link className="nav-link" href="/dashboard/agents">
-            Agents
-          </Link>
+        </Link>
+        <Link className="nav-link" href="/dashboard/agents">
+          Agents
         </Link>
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals
+        </Link>
+        <Link className="nav-link" href="/dashboard/integrations">
+          Integrations
         </Link>
         <span className="nav-user">
           {user.full_name} · {user.email}

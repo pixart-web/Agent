@@ -1,4 +1,9 @@
-import type { AgentOverview, AgentRun, AgentRunResponse } from '@agent/shared';
+import type {
+  AgentOverview,
+  AgentRun,
+  AgentRunResponse,
+  GitHubIntegrationStatus,
+} from '@agent/shared';
 import type {
   AgentId,
   Command,
@@ -320,4 +325,8 @@ export function reassignTaskAgent(
     '/api/v1/tasks/' + taskId + '/reassign-agent',
     jsonRequest('POST', { agent_id: agentId }),
   );
+}
+
+export function getGitHubIntegrationStatus(): Promise<GitHubIntegrationStatus> {
+  return request('/api/v1/integrations/github/status');
 }

@@ -14,6 +14,7 @@ from app.execution.exceptions import ExecutionError, ToolTimeoutError
 from app.execution.policies import RetryPolicy, action_fingerprint
 from app.execution.registry import ToolRegistry
 from app.execution.tools.registry import build_tool_registry
+from app.integrations.credentials import CredentialProvider, EnvironmentCredentialProvider
 from app.models.command import Command
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
@@ -45,11 +46,13 @@ class ExecutionWorker:
         registry: ToolRegistry | None = None,
         retry_policy: RetryPolicy,
         worker_id: str | None = None,
+        credential_provider: CredentialProvider | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.registry = registry or build_tool_registry()
         self.retry_policy = retry_policy
         self.worker_id = worker_id or socket.gethostname()
+        self.credential_provider = credential_provider or EnvironmentCredentialProvider()
 
     def execute(self, execution_id: UUID) -> TaskExecution | None:
         claimed = self._claim(execution_id)
@@ -159,6 +162,7 @@ class ExecutionWorker:
                 action_id=action.id,
                 execution_id=execution.id,
                 correlation_id=action.correlation_id,
+                credentials=self.credential_provider,
             )
             session.commit()
             logger.info(
@@ -217,6 +221,31 @@ class ExecutionWorker:
                 },
                 correlation_id=action.correlation_id,
             )
+            github_event = self._github_audit_event(action.tool_name)
+            if github_event is not None:
+                metadata: dict[str, object] = {
+                    "tool": action.tool_name,
+                    "execution_id": str(execution.id),
+                }
+                for key in ("repository", "path", "branch", "ref"):
+                    value = action.input_payload.get(key)
+                    if value is not None:
+                        metadata[key] = value
+                number = output_payload.get("issue_number") or output_payload.get("number")
+                if number is not None:
+                    if "pull_request" in action.tool_name:
+                        metadata["pull_request_number"] = number
+                    elif "issue" in action.tool_name:
+                        metadata["issue_number"] = number
+                AuditService(session).record(
+                    actor_type=ActorType.WORKER,
+                    actor_id=None,
+                    event_type=github_event,
+                    resource_type="github_operation",
+                    resource_id=execution.id,
+                    metadata=metadata,
+                    correlation_id=action.correlation_id,
+                )
             session.commit()
             session.refresh(execution)
             session.expunge(execution)
@@ -249,6 +278,7 @@ class ExecutionWorker:
             decision = self.retry_policy.decide(
                 attempt_number=execution.attempt_number,
                 tool_max_retries=tool_max_retries,
+                retry_after_seconds=getattr(error, "retry_after_seconds", None),
                 retryable=retryable,
             )
             execution.status = TaskExecutionStatus.FAILED
@@ -364,3 +394,20 @@ class ExecutionWorker:
         if isinstance(error, ExecutionError):
             return str(error)[:500] or "Execution failed"
         return "Tool execution failed"
+
+    @staticmethod
+    def _github_audit_event(tool_name: str) -> str | None:
+        return {
+            "github.get_repository": "github_repository_read",
+            "github.list_branches": "github_repository_read",
+            "github.list_pull_requests": "github_repository_read",
+            "github.get_pull_request": "github_repository_read",
+            "github.list_issues": "github_repository_read",
+            "github.get_issue": "github_repository_read",
+            "github.read_file": "github_file_read",
+            "github.create_issue": "github_issue_created",
+            "github.comment_issue": "github_issue_commented",
+            "github.create_branch": "github_branch_created",
+            "github.create_or_update_file": "github_file_written",
+            "github.open_pull_request": "github_pull_request_opened",
+        }.get(tool_name)

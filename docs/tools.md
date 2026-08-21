@@ -18,6 +18,18 @@ Built-in Phase 3C tools:
 | `internal.simulate_external_action` | yellow | yes      | Returns a simulated success only                               |
 | `internal.simulate_critical_action` | red    | yes      | Returns a simulated success only                               |
 
-No tool contacts Gmail, social platforms, GitHub, calendars, payments, CRM, websites, or
-other external systems. Future tools must be registered with explicit schemas,
-permissions, credentials, risk, idempotency, and recovery behavior.
+Phase 5A GitHub tools are available only to the Development Agent:
+
+| Tools                                                               | Risk   | Approval |
+| ------------------------------------------------------------------- | ------ | -------- |
+| `github.get_repository`, `github.list_branches`, `github.read_file` | green  | no       |
+| `github.list_pull_requests`, `github.get_pull_request`              | green  | no       |
+| `github.list_issues`, `github.get_issue`                            | green  | no       |
+| `github.create_issue`, `github.comment_issue`                       | yellow | yes      |
+| `github.create_branch`, `github.create_or_update_file`              | yellow | yes      |
+| `github.open_pull_request`                                          | yellow | yes      |
+
+GitHub handlers receive credentials only through the worker's internal ExecutionContext.
+Their schemas never accept tokens or URLs. Repository, path, branch, protected-branch,
+size, UTF-8, timeout, output, and retry policies are enforced before or around the client
+call. See [GitHub integration](github-integration.md) for boundaries and exclusions.

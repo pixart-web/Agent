@@ -129,11 +129,7 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
             {actions.length > 0 && (
               <ol className="proposal-preview">
                 {actions.map((action) => (
-                  <li key={action.id}>
-                    <strong>{action.tool_name}</strong>
-                    <span>Risk: {action.risk_level}</span>
-                    <StatusBadge status={action.status} />
-                  </li>
+                  <ActionProposalPreview action={action} key={action.id} />
                 ))}
               </ol>
             )}
@@ -141,5 +137,43 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
         );
       })}
     </section>
+  );
+}
+
+const GITHUB_ACTION_LABELS: Record<string, string> = {
+  'github.create_issue': 'Create GitHub Issue',
+  'github.comment_issue': 'Comment on GitHub Issue',
+  'github.create_branch': 'Create GitHub Branch',
+  'github.create_or_update_file': 'Create or Update GitHub File',
+  'github.open_pull_request': 'Open GitHub Pull Request',
+};
+
+export function ActionProposalPreview({ action }: { action: TaskAction }) {
+  const github = action.tool_name.startsWith('github.');
+  const repository = action.input_payload.repository;
+  const title = action.input_payload.title;
+  const branch =
+    action.input_payload.branch ??
+    action.input_payload.head ??
+    action.input_payload.ref;
+
+  return (
+    <li>
+      <strong>
+        {GITHUB_ACTION_LABELS[action.tool_name] ?? action.tool_name}
+      </strong>
+      {github && typeof repository === 'string' && (
+        <span>Repository: {repository}</span>
+      )}
+      {github && typeof title === 'string' && <span>Title: {title}</span>}
+      {github && typeof branch === 'string' && <span>Branch: {branch}</span>}
+      <span>Risk: {action.risk_level}</span>
+      {github && (
+        <span>
+          Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
+        </span>
+      )}
+      <StatusBadge status={action.status} />
+    </li>
   );
 }

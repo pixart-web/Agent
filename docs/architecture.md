@@ -123,17 +123,18 @@ explicit maintenance command rather than a startup or scheduled operation.
 
 ## Continuous integration
 
-Backend and frontend jobs are independent. Backend uses Python 3.12, explicit harmless
-test settings, Ruff, Alembic offline SQL, and SQLite-backed Pytest. Frontend uses Node
-22, pnpm cache, ESLint, TypeScript, Vitest, and a production Next.js build. CI requires
-no service containers or secrets.
+Backend and frontend jobs are independent. Backend uses Python 3.12, harmless test
+settings, Ruff, Alembic offline SQL, SQLite-backed Pytest, and FakeGitHubClient. Frontend
+uses Node 22, pnpm cache, ESLint, TypeScript, Vitest, and a production Next.js build. A
+separate PostgreSQL 16 and Redis 7 job applies real migrations and exercises integration
+locking/outbox behavior. CI requires no GitHub token or repository secret.
 
 ## Future orchestration
 
-Phase 3B derives proposed plans and tasks but performs no tool call or task execution.
-Phase 3C will add a separately controlled execution engine, artifacts, and additional
-approval enforcement.
-Authentication is kept separate from agent execution so both can evolve independently.
+The Supervisor derives proposed plans and tasks; specialized agents turn ready tasks into
+validated TaskActions. The Execution Engine remains the only route to handlers. Phase 5A
+adds a narrowly scoped GitHub adapter for Development while authentication, credentials,
+agent reasoning, persistence, and external transport remain separate layers.
 
 | Agent           | Initial responsibility                                             |
 | --------------- | ------------------------------------------------------------------ |
@@ -169,3 +170,23 @@ structured-output interface. AgentRunnerService records AgentRun before releasin
 then validates the returned proposal against the Agent Registry and Tool Registry. The
 provider never sees secrets and never receives a callable tool. Proposed actions enter
 the existing Execution Engine unchanged.
+
+## GitHub integration boundary
+
+```text
+Development Agent -> schema-bound TaskAction -> repository/risk policy
+                  -> approval for writes -> worker
+                  -> CredentialProvider -> GitHubClient -> fixed GitHub API
+```
+
+The LLM sees tool names, schemas, and bounded task context but never a token, HTTP client,
+arbitrary URL, or raw API response. The worker resolves credentials after it has locked
+and validated the immutable action fingerprint. No database transaction remains open
+during the external call. The handler validates the repository allowlist, path, branch,
+protected-branch and size policies before delegating HTTP to `GitHubClient`.
+
+Results are converted into explicit Pydantic output models, tagged as untrusted when they
+contain external content, bounded before persistence, and sanitized again by the worker.
+GitHub-specific audit events store identifiers and safe metadata only. The status API and
+frontend expose configuration booleans and allowlisted repository names, never a
+credential. CI substitutes an in-memory client and makes no GitHub network request.

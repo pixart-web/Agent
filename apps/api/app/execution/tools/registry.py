@@ -1,4 +1,6 @@
+from app.core.config import Settings
 from app.execution.registry import ToolDefinition, ToolRegistry
+from app.execution.tools.github import github_tool_definitions
 from app.execution.tools.internal import (
     CreateNoteHandler,
     CreateNoteInput,
@@ -13,12 +15,17 @@ from app.execution.tools.internal import (
     SummarizeInput,
     SummarizeOutput,
 )
+from app.integrations.github.client import GitHubClientFactory, build_github_client
 from app.models.workflow_enums import RiskLevel
 
 ALL_AGENTS = frozenset({"supervisor", "marketing", "sales", "support", "development"})
 
 
-def build_tool_registry() -> ToolRegistry:
+def build_tool_registry(
+    *,
+    settings: Settings | None = None,
+    github_client_factory: GitHubClientFactory = build_github_client,
+) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
         ToolDefinition(
@@ -95,4 +102,8 @@ def build_tool_registry() -> ToolRegistry:
             handler=SimulatedActionHandler(),
         )
     )
+    for definition in github_tool_definitions(
+        settings=settings, client_factory=github_client_factory
+    ):
+        registry.register(definition)
     return registry

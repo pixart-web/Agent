@@ -21,6 +21,7 @@ jobs:
       AUTH_RATE_LIMIT_ENABLED: 'false'
       AI_PROVIDER: fake
       OPENAI_MODEL: fake-supervisor-v1
+      GITHUB_INTEGRATION_ENABLED: 'false'
 
     steps:
       - name: Check out repository
@@ -84,6 +85,7 @@ jobs:
       INTEGRATION_REDIS_URL: redis://localhost:6379/1
       AI_PROVIDER: fake
       OPENAI_MODEL: fake-supervisor-v1
+      GITHUB_INTEGRATION_ENABLED: 'false'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6

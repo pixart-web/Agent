@@ -326,3 +326,9 @@ export type AgentOverview = {
   failed_runs: number;
   success_rate: number;
 };
+
+export type GitHubIntegrationStatus = {
+  enabled: boolean;
+  allowed_repositories: string[];
+  credential_configured: boolean;
+};
