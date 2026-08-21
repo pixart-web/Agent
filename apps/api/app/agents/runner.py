@@ -38,6 +38,7 @@ from app.repositories.task_repository import TaskRepository
 from app.schemas.specialized_agent import AgentProposal
 from app.services.audit_service import AuditService
 from app.services.dependency_service import DependencyService
+from app.services.execution_service import ExecutionService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -287,6 +288,20 @@ class AgentRunnerService:
                 correlation_id=run.correlation_id,
             )
             self.session.commit()
+            for action in actions:
+                if not action.tool_name.startswith("github."):
+                    continue
+                try:
+                    ExecutionService(self.session, self.tools).dispatch(
+                        action.id,
+                        user_id,
+                        actor_type=ActorType.KIKO,
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "github_action_auto_dispatch_failed",
+                        extra={"action_id": str(action.id), "error": type(error).__name__},
+                    )
         except Exception:
             self.session.rollback()
             raise

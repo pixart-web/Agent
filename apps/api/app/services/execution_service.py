@@ -116,7 +116,13 @@ class ExecutionService:
             raise WorkflowNotFoundError("Action not found")
         return action
 
-    def dispatch(self, action_id: UUID, user_id: UUID) -> DispatchResult:
+    def dispatch(
+        self,
+        action_id: UUID,
+        user_id: UUID,
+        *,
+        actor_type: ActorType = ActorType.USER,
+    ) -> DispatchResult:
         try:
             action = self.executions.get_action_owned_for_update(action_id, user_id)
             if action is None:
@@ -155,8 +161,8 @@ class ExecutionService:
             execution = self.queue.queue(
                 action=action,
                 task=task,
-                actor_type=ActorType.USER,
-                actor_id=user_id,
+                actor_type=actor_type,
+                actor_id=user_id if actor_type == ActorType.USER else None,
             )
             self.session.commit()
         except WorkflowConflictError:
@@ -223,7 +229,7 @@ class ExecutionService:
             title=f"Kiko requests permission: {action.tool_name}",
             description=(
                 f"Allow {action.tool_name} for task '{task.title}'. "
-                "No external service is contacted by the built-in simulation tools."
+                "The approved action will execute with the recorded payload and risk."
             ),
             status=ApprovalStatus.PENDING,
             action_fingerprint=action.action_fingerprint,
