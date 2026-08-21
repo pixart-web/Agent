@@ -6,6 +6,7 @@ from app.api.routes import (
     commands,
     execution,
     health,
+    integrations,
     plans,
     specialized_agents,
     supervisor,
@@ -22,3 +23,4 @@ api_router.include_router(supervisor.router, prefix="/api/v1")
 api_router.include_router(tasks.router, prefix="/api/v1")
 api_router.include_router(execution.router, prefix="/api/v1")
 api_router.include_router(specialized_agents.router, prefix="/api/v1")
+api_router.include_router(integrations.router, prefix="/api/v1")
