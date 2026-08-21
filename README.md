@@ -5,8 +5,8 @@ dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure u
 authentication, migrations, continuous integration, and an AI-assisted Supervisor.
 Authenticated users can turn an operational command into a structured, versioned plan,
 review its assigned tasks, approve it, request revisions, and run safe registered internal
-tools through an audited Execution Engine. Real external-service integrations remain
-deliberately out of scope.
+tools through an audited Execution Engine. Phase 5A adds the first real external adapter:
+allowlisted GitHub read and approved write tools for the Development Agent.
 
 ## Architecture
 
@@ -33,7 +33,8 @@ HTTP route -> service -> repository -> SQLAlchemy session -> PostgreSQL
 Authentication details are in [docs/authentication.md](docs/authentication.md);
 workflow rules are in [docs/workflow.md](docs/workflow.md); Supervisor behavior is in
 [docs/supervisor.md](docs/supervisor.md); provider setup is in
-[docs/ai-providers.md](docs/ai-providers.md); system boundaries are in
+[docs/ai-providers.md](docs/ai-providers.md); GitHub setup is in
+[docs/github-integration.md](docs/github-integration.md); system boundaries are in
 [docs/architecture.md](docs/architecture.md).
 
 ## Requirements
@@ -179,9 +180,10 @@ Neither response exposes connection strings, credentials, or stack traces.
 
 GitHub Actions runs on pushes and pull requests to `main`. Backend CI installs Python
 3.12, runs Ruff, validates Alembic upgrade and the newest downgrade offline, and runs
-Pytest with an explicitly fake AI provider.
-Frontend CI installs Node.js 22 and pnpm, then runs ESLint, TypeScript, Vitest, and the
-Next.js production build. No job requires repository secrets, PostgreSQL, or Redis.
+Pytest with explicitly fake AI and GitHub providers. Frontend CI installs Node.js 22
+and pnpm, then runs ESLint, TypeScript, Vitest, and the Next.js production build. A
+separate PostgreSQL 16 and Redis 7 job applies real migrations and exercises integration
+behavior. No job requires a GitHub integration token or repository secret.
 
 ## Repository structure
 
@@ -239,9 +241,9 @@ approvals, dependencies, progress, and Command activity. The dashboard exposes
 [execution engine](docs/execution-engine.md), [tools](docs/tools.md), and
 [approvals](docs/approvals.md).
 
-Only safe internal and simulated tools exist. No real external integration or automatic
-agent tool selection is included.
-validation alone when Docker is unavailable.
+Phase 5A adds allowlisted GitHub tools through the same engine. Green reads auto-dispatch
+to workers; yellow writes stop at approval. CI uses an in-memory GitHub client and needs
+no token.
 
 ## Specialized Agents
 
@@ -252,4 +254,27 @@ revalidated server-side before version-pinned TaskActions are stored.
 
 The dashboard exposes agent metrics and capabilities, while Task detail shows run model,
 tokens, latency, summary and proposed actions. See [specialized agents](docs/agents.md).
-Real external integrations remain out of scope.
+GitHub capabilities are exclusive to Development Agent v2 and remain behind the
+Execution Engine.
+
+## GitHub integration
+
+Set the `GITHUB_*` environment values to enable GitHub. The Development Agent can
+propose repository metadata, branches, UTF-8 files, pull requests, and issues as green
+reads. Issue, comment, branch, file, and pull-request writes are yellow and require a
+separate approval for every TaskAction. Direct writes to `main` are rejected.
+
+Credentials are resolved only inside workers. They are absent from tool schemas, action
+payloads, logs, audits, API responses, and the browser. The dashboard status pages are
+`/dashboard/integrations` and `/dashboard/integrations/github`; the API status endpoint
+returns booleans and allowlisted repository names only.
+
+For an optional real read-only smoke test, run from `apps/api`:
+
+```bash
+python -m app.scripts.test_github_integration
+```
+
+See [external integrations](docs/integrations.md) and
+[GitHub integration](docs/github-integration.md) for security boundaries, tool catalog,
+GitHub App production guidance, retries, idempotency, and unsupported operations.

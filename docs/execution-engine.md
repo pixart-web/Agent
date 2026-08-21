@@ -1,7 +1,8 @@
 # Kiko execution engine
 
-Phase 3C introduces a generic, auditable execution path without connecting real external
-services.
+Phase 3C introduced the generic, auditable execution path. Phase 5A adds GitHub as the
+first real adapter without changing that boundary: agents still produce TaskActions and
+only workers receive credentials or call external APIs.
 
 ```text
 Task ready -> TaskAction -> policy -> approval -> TaskExecution
@@ -54,6 +55,8 @@ safe metadata, not full payloads or stack traces.
 
 ## Specialized-agent boundary
 
-AgentRun produces only proposed TaskActions. Green, yellow and red proposals follow the
-same dispatch, approval, outbox and worker path as manually created actions. The agent
-cannot enqueue Celery, invoke a handler, lower tool risk, or bypass an approval.
+AgentRun produces TaskActions, never direct effects. GitHub proposals are automatically
+dispatched into the same path: green reads queue for worker execution and yellow writes
+stop at approval. All other green, yellow and red proposals follow the same explicit
+dispatch, approval, outbox and worker path as before. The agent cannot enqueue Celery,
+invoke a handler, lower tool risk, resolve credentials, or bypass an approval.

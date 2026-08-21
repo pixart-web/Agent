@@ -33,8 +33,10 @@
 
 ## Fase 5 — Integrações externas
 
-- [ ] Connect selected communication, CRM, support, and development systems.
-- [ ] Add credential management and granular integration permissions.
+- [x] **5A:** Add the allowlisted GitHub client, scoped Development tools,
+      runtime credentials, policy enforcement, approvals, audit events, status UI,
+      fake integration tests, and operator documentation.
+- [ ] **5B:** Connect the next selected external systems with granular permissions.
 - [ ] Introduce event-driven triggers and scheduled work.
 
 ## Fase 6 — Observabilidade e produção
