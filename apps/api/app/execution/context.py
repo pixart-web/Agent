@@ -13,3 +13,4 @@ class ExecutionContext:
     execution_id: UUID
     correlation_id: UUID
     credentials: CredentialProvider
+    integration_run_id: UUID | None = None

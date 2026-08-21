@@ -13,6 +13,7 @@ from app.models.task_action import TaskAction
 from app.models.workflow_enums import (
     ActorType,
     ApprovalStatus,
+    CodexRunStatus,
     RiskLevel,
     TaskActionStatus,
     TaskStatus,
@@ -21,6 +22,7 @@ from app.repositories.execution_repository import ExecutionRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.execution import TaskActionCreate
 from app.services.audit_service import AuditService
+from app.services.codex_run_service import CodexRunService
 from app.services.dependency_service import DependencyService
 from app.services.execution_queue_service import ExecutionQueueService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
@@ -43,6 +45,7 @@ class ExecutionService:
         self.queue = ExecutionQueueService(session)
         self.audit = AuditService(session)
         self.risk_policy = ExecutionRiskPolicy()
+        self.codex_runs = CodexRunService(session)
 
     def create_action(self, task_id: UUID, user_id: UUID, data: TaskActionCreate) -> TaskAction:
         try:
@@ -156,6 +159,7 @@ class ExecutionService:
             requires_approval = definition.requires_approval or effective_risk != RiskLevel.GREEN
             if requires_approval and action.status != TaskActionStatus.APPROVED:
                 approval = self._request_approval(action, task, user_id)
+                self.codex_runs.ensure_for_action(action, user_id, CodexRunStatus.WAITING_APPROVAL)
                 self.session.commit()
                 return DispatchResult(action, None, approval)
             execution = self.queue.queue(
@@ -164,6 +168,7 @@ class ExecutionService:
                 actor_type=actor_type,
                 actor_id=user_id if actor_type == ActorType.USER else None,
             )
+            self.codex_runs.ensure_for_action(action, user_id, CodexRunStatus.QUEUED)
             self.session.commit()
         except WorkflowConflictError:
             if self.session.in_transaction():
@@ -190,6 +195,7 @@ class ExecutionService:
                 raise WorkflowConflictError("Running or terminal action cannot be cancelled")
             action.status = TaskActionStatus.CANCELLED
             self.executions.cancel_pending_approvals(action.id, utc_now())
+            self.codex_runs.cancel_for_action(action.id)
             self.audit.record(
                 actor_type=ActorType.USER,
                 actor_id=user_id,
@@ -221,16 +227,27 @@ class ExecutionService:
         existing = self.executions.pending_approval_for_action(action.id)
         if existing is not None:
             return existing
+        description = (
+            f"Allow {action.tool_name} for task '{task.title}'. "
+            "The approved action will execute with the recorded payload and risk."
+        )
+        if action.tool_name.startswith("codex."):
+            repository = str(action.input_payload.get("repository", "the repository"))
+            target = action.input_payload.get("working_branch") or (
+                f"pull request #{action.input_payload.get('pull_request_number')}"
+            )
+            description = (
+                f"Allow Codex to modify {repository} on {target}: edit approved paths, run the "
+                "fixed validation profile, create one commit, and push the approved branch. "
+                "Codex cannot merge, deploy, target main/master/production, or access secrets."
+            )
         approval = ApprovalRequest(
             user_id=user_id,
             task_id=task.id,
             task_action_id=action.id,
             risk_level=action.risk_level,
             title=f"Kiko requests permission: {action.tool_name}",
-            description=(
-                f"Allow {action.tool_name} for task '{task.title}'. "
-                "The approved action will execute with the recorded payload and risk."
-            ),
+            description=description,
             status=ApprovalStatus.PENDING,
             action_fingerprint=action.action_fingerprint,
             correlation_id=action.correlation_id,

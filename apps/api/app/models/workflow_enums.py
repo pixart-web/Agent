@@ -51,6 +51,16 @@ class AgentRunStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class CodexRunStatus(StrEnum):
+    CREATED = "created"
+    WAITING_APPROVAL = "waiting_approval"
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 class SupervisorRunStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"

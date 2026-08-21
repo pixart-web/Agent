@@ -33,6 +33,7 @@ from app.models.workflow_enums import (
 from app.repositories.execution_repository import ExecutionRepository
 from app.repositories.outbox_repository import OutboxRepository
 from app.services.audit_service import AuditService
+from app.services.codex_execution_lifecycle import CodexExecutionLifecycle
 from app.services.execution_state_service import ExecutionStateService
 
 logger = logging.getLogger(__name__)
@@ -133,6 +134,11 @@ class ExecutionWorker:
                 approval = repository.approved_approval_for_action(action.id, current_fingerprint)
                 if approval is None or approval.status != ApprovalStatus.APPROVED:
                     return self._cancel_invalid(session, execution, "approval_missing")
+            integration_run_id = None
+            if action.tool_name.startswith("codex."):
+                integration_run_id = CodexExecutionLifecycle(session).start(action)
+                if integration_run_id is None:
+                    return self._cancel_invalid(session, execution, "codex_run_missing")
             now = utc_now()
             execution.status = TaskExecutionStatus.RUNNING
             execution.started_at = now
@@ -163,6 +169,7 @@ class ExecutionWorker:
                 execution_id=execution.id,
                 correlation_id=action.correlation_id,
                 credentials=self.credential_provider,
+                integration_run_id=integration_run_id,
             )
             session.commit()
             logger.info(
@@ -205,6 +212,7 @@ class ExecutionWorker:
             execution.completed_at = utc_now()
             execution.duration_ms = duration_ms
             action.status = TaskActionStatus.COMPLETED
+            CodexExecutionLifecycle(session).succeed(action, output_payload, duration_ms)
             state = ExecutionStateService(session)
             state.complete_task_if_ready(task, plan, command, action.correlation_id)
             AuditService(session).record(
@@ -288,6 +296,12 @@ class ExecutionWorker:
             execution.error_message = self._safe_error(error)
             execution.completed_at = utc_now()
             execution.duration_ms = duration_ms
+            CodexExecutionLifecycle(session).fail(
+                action,
+                error_code=execution.error_code,
+                error_message=execution.error_message,
+                duration_ms=duration_ms,
+            )
             audit = AuditService(session)
             audit.record(
                 actor_type=ActorType.WORKER,
