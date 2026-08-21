@@ -18,3 +18,12 @@ Approval and action endpoints apply ownership through Task -> Plan -> Command an
 
 The dashboard exposes pending approvals at `/dashboard/approvals`. Red cards use a
 strong warning and a required confirmation checkbox without preselection or dark patterns.
+
+## Codex change approvals
+
+`codex.implement_task` and `codex.fix_pull_request` are always yellow. The approval preview
+names the repository and target branch or PR and states that the runner may edit approved
+paths, run its fixed validation profile, create one commit, and push. It also states the hard
+limits: no merge, deployment, secrets, force push, or primary/production branch. The action
+fingerprint binds that approval to the exact payload. `codex.review_pull_request` is green
+because it is read-only and cannot publish a review.

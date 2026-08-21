@@ -190,3 +190,18 @@ contain external content, bounded before persistence, and sanitized again by the
 GitHub-specific audit events store identifiers and safe metadata only. The status API and
 frontend expose configuration booleans and allowlisted repository names, never a
 credential. CI substitutes an in-memory client and makes no GitHub network request.
+
+## Codex execution boundary
+
+```text
+Development Agent -> schema-bound CodexTool -> approval for changes -> worker
+                  -> CodexRunner -> isolated workspace -> CodexCLIAdapter
+```
+
+`CodexRun` is the persistent execution record and follows the action from approval through
+queued, running, and terminal state. The CLI adapter uses `codex exec --ephemeral`, ignores
+user configuration, selects read-only or workspace-write sandboxing, requires JSON Schema
+output, uses `shell=False`, and deletes raw terminal logs. The runner—not the LLM—owns clone,
+branch creation, fixed validation commands, one commit, and a non-force push. Credentials are
+resolved only in the worker and are absent from schemas, prompts, persisted output, and the UI.
+See [Codex integration](codex-integration.md).
