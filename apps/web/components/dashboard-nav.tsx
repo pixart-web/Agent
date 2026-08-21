@@ -32,6 +32,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals
         </Link>
+        <Link className="nav-link" href="/dashboard/codex">
+          Codex
+        </Link>
         <Link className="nav-link" href="/dashboard/integrations">
           Integrations
         </Link>

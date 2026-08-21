@@ -1,4 +1,9 @@
 import type {
+  CodexIntegrationStatus,
+  CodexRun,
+  CodexRunStatus,
+} from '@agent/shared';
+import type {
   AgentOverview,
   AgentRun,
   AgentRunResponse,
@@ -329,4 +334,23 @@ export function reassignTaskAgent(
 
 export function getGitHubIntegrationStatus(): Promise<GitHubIntegrationStatus> {
   return request('/api/v1/integrations/github/status');
+}
+
+export function getCodexIntegrationStatus(): Promise<CodexIntegrationStatus> {
+  return request('/api/v1/integrations/codex/status');
+}
+
+export function listCodexRuns(
+  options: { status?: CodexRunStatus; limit?: number; offset?: number } = {},
+): Promise<CodexRun[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.limit !== undefined) query.set('limit', String(options.limit));
+  if (options.offset !== undefined) query.set('offset', String(options.offset));
+  const suffix = query.size ? `?${query.toString()}` : '';
+  return request(`/api/v1/codex/runs${suffix}`);
+}
+
+export function getCodexRun(runId: string): Promise<CodexRun> {
+  return request(`/api/v1/codex/runs/${runId}`);
 }
