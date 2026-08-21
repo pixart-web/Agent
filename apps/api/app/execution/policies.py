@@ -59,13 +59,15 @@ class RetryPolicy:
         attempt_number: int,
         tool_max_retries: int,
         retryable: bool,
+        retry_after_seconds: float | None = None,
     ) -> RetryDecision:
         max_retries = min(tool_max_retries, self.system_max_retries)
         if not retryable or attempt_number > max_retries:
             return RetryDecision(False, 0)
         delay = self.base_seconds * (3 ** (attempt_number - 1))
         jitter = delay * self.jitter_ratio * self.random_value()
-        return RetryDecision(True, delay + jitter)
+        calculated = delay + jitter
+        return RetryDecision(True, max(calculated, retry_after_seconds or 0))
 
 
 class ExecutionRiskPolicy:

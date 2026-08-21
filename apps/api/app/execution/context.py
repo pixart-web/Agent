@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from app.integrations.credentials import CredentialProvider
+
 
 @dataclass(frozen=True)
 class ExecutionContext:
@@ -10,3 +12,4 @@ class ExecutionContext:
     action_id: UUID
     execution_id: UUID
     correlation_id: UUID
+    credentials: CredentialProvider
