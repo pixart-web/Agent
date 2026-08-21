@@ -1,10 +1,10 @@
-from app.agents.prompts.development_v2 import PROMPT_VERSION, SYSTEM_PROMPT
+from app.agents.prompts.development_v3 import PROMPT_VERSION, SYSTEM_PROMPT
 from app.agents.specialists.common import PromptSpecializedAgent
 
 AGENT = PromptSpecializedAgent(
     agent_id="development",
     name="Development",
-    description="Analyzes repositories and proposes governed GitHub development actions.",
+    description="Inspects repositories and delegates governed development work to Codex.",
     prompt_version=PROMPT_VERSION,
     system_prompt=SYSTEM_PROMPT,
     allowed_tools=frozenset(
@@ -26,6 +26,9 @@ AGENT = PromptSpecializedAgent(
             "github.create_branch",
             "github.create_or_update_file",
             "github.open_pull_request",
+            "codex.implement_task",
+            "codex.review_pull_request",
+            "codex.fix_pull_request",
         }
     ),
 )
