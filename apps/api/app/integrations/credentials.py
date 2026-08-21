@@ -28,12 +28,17 @@ class EnvironmentCredentialProvider:
         self.settings = settings or get_settings()
 
     def resolve(self, service: str) -> ServiceCredential:
-        if service != "github":
+        if service == "github":
+            token = self.settings.github_token
+        elif service == "codex":
+            token = self.settings.codex_api_key
+        else:
             raise CredentialUnavailableError("Credential service is not supported")
-        token = self.settings.github_token
         if not token:
-            raise CredentialUnavailableError("GitHub credential is not configured")
+            raise CredentialUnavailableError(f"{service.title()} credential is not configured")
         return ServiceCredential(access_token=token.get_secret_value())
 
     def configured(self, service: str) -> bool:
-        return service == "github" and bool(self.settings.github_token)
+        return (service == "github" and bool(self.settings.github_token)) or (
+            service == "codex" and bool(self.settings.codex_api_key)
+        )

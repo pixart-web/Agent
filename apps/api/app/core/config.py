@@ -54,13 +54,33 @@ class Settings(BaseSettings):
     github_allowed_branch_prefixes: str = "feature/,fix/,chore/,docs/"
     github_max_file_bytes: int = Field(default=500_000, ge=1_000, le=5_000_000)
     github_max_output_chars: int = Field(default=100_000, ge=1_000, le=1_000_000)
+    codex_integration_enabled: bool = False
+    codex_runner: Literal["cli"] = "cli"
+    codex_credential_configured: bool = False
+    codex_binary: str = Field(default="codex", min_length=1, max_length=500)
+    codex_api_key: SecretStr | None = None
+    codex_model: str | None = Field(default=None, max_length=128)
+    codex_timeout_seconds: int = Field(default=1800, ge=60, le=7200)
+    codex_max_output_chars: int = Field(default=200_000, ge=1_000, le=1_000_000)
+    codex_workspace_root: str = Field(default="/tmp/kiko-codex", min_length=1, max_length=1000)
+    codex_allowed_repositories: str = "pixart-web/Agent"
+    codex_max_changed_files: int = Field(default=100, ge=1, le=1000)
+    codex_max_diff_bytes: int = Field(default=2_000_000, ge=10_000, le=20_000_000)
+    codex_retain_workspaces: bool = False
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    @field_validator("auth_cookie_domain", "openai_api_key", "github_token", mode="before")
+    @field_validator(
+        "auth_cookie_domain",
+        "openai_api_key",
+        "github_token",
+        "codex_api_key",
+        "codex_model",
+        mode="before",
+    )
     @classmethod
     def empty_optional_string_is_none(cls, value: object) -> object:
         return None if value == "" else value
@@ -93,6 +113,10 @@ class Settings(BaseSettings):
             item.strip() for item in self.github_allowed_branch_prefixes.split(",") if item.strip()
         ]
 
+    @property
+    def codex_allowed_repository_list(self) -> list[str]:
+        return [item.strip() for item in self.codex_allowed_repositories.split(",") if item.strip()]
+
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
         if not self.web_origin_list:
@@ -103,6 +127,8 @@ class Settings(BaseSettings):
             raise ValueError("SameSite=None requires AUTH_COOKIE_SECURE=true")
         if self.github_integration_enabled and not self.github_allowed_repository_list:
             raise ValueError("GitHub integration requires at least one allowed repository")
+        if self.codex_integration_enabled and not self.codex_allowed_repository_list:
+            raise ValueError("Codex integration requires at least one allowed repository")
         if self.app_env.lower() == "production":
             insecure_markers = ("development", "example", "change-me", "replace")
             if any(marker in self.auth_secret_key.lower() for marker in insecure_markers):
