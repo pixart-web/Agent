@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authFetch } from '../lib/auth-client';
 import {
   getAgentOverview,
+  getGitHubIntegrationStatus,
   listAgentRuns,
   rerunAgent,
   runAgent,
@@ -49,6 +50,14 @@ describe('specialized agent client', () => {
     expect(mockedAuthFetch).toHaveBeenNthCalledWith(
       2,
       '/api/v1/agents/marketing/overview',
+      {},
+    );
+  });
+
+  it('loads safe GitHub integration status', async () => {
+    await getGitHubIntegrationStatus();
+    expect(mockedAuthFetch).toHaveBeenCalledWith(
+      '/api/v1/integrations/github/status',
       {},
     );
   });
