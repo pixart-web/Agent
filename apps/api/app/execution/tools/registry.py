@@ -1,5 +1,6 @@
 from app.core.config import Settings
 from app.execution.registry import ToolDefinition, ToolRegistry
+from app.execution.tools.codex import codex_tool_definitions
 from app.execution.tools.github import github_tool_definitions
 from app.execution.tools.internal import (
     CreateNoteHandler,
@@ -15,6 +16,7 @@ from app.execution.tools.internal import (
     SummarizeInput,
     SummarizeOutput,
 )
+from app.integrations.codex.base import CodexRunner
 from app.integrations.github.client import GitHubClientFactory, build_github_client
 from app.models.workflow_enums import RiskLevel
 
@@ -25,6 +27,7 @@ def build_tool_registry(
     *,
     settings: Settings | None = None,
     github_client_factory: GitHubClientFactory = build_github_client,
+    codex_runner: CodexRunner | None = None,
 ) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
@@ -102,6 +105,8 @@ def build_tool_registry(
             handler=SimulatedActionHandler(),
         )
     )
+    for definition in codex_tool_definitions(settings=settings, runner=codex_runner):
+        registry.register(definition)
     for definition in github_tool_definitions(
         settings=settings, client_factory=github_client_factory
     ):

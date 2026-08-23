@@ -4,6 +4,7 @@ from app.models.agent import Agent
 from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
+from app.models.codex_run import CodexRun
 from app.models.command import Command
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
@@ -22,6 +23,7 @@ __all__ = [
     "Command",
     "ApprovalRequest",
     "AuditLog",
+    "CodexRun",
     "Plan",
     "RefreshToken",
     "OutboxEvent",

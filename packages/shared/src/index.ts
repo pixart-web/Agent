@@ -332,3 +332,51 @@ export type GitHubIntegrationStatus = {
   allowed_repositories: string[];
   credential_configured: boolean;
 };
+
+export type CodexRunStatus =
+  | 'created'
+  | 'waiting_approval'
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
+
+export type CodexRun = {
+  id: string;
+  task_id: string;
+  task_action_id: string;
+  repository: string;
+  base_branch: string;
+  working_branch: string | null;
+  status: CodexRunStatus;
+  instruction: string;
+  acceptance_criteria: string[];
+  runner_type: string;
+  model: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  duration_ms: number | null;
+  exit_code: number | null;
+  summary: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  files_changed: string[];
+  tests_run: string[];
+  tests_passed: boolean | null;
+  commit_sha: string | null;
+  pull_request_number: number | null;
+  pull_request_url: string | null;
+  correlation_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CodexIntegrationStatus = {
+  enabled: boolean;
+  runner: string;
+  allowed_repositories: string[];
+  credential_configured: boolean;
+  github_credential_configured: boolean;
+  timeout_seconds: number;
+};

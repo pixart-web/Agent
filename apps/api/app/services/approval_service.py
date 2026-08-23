@@ -7,6 +7,7 @@ from app.execution.policies import action_fingerprint
 from app.models.workflow_enums import (
     ActorType,
     ApprovalStatus,
+    CodexRunStatus,
     RiskLevel,
     TaskActionStatus,
     TaskStatus,
@@ -15,6 +16,7 @@ from app.repositories.execution_repository import ExecutionRepository
 from app.repositories.task_repository import TaskRepository
 from app.schemas.execution import ApprovalDecision
 from app.services.audit_service import AuditService
+from app.services.codex_run_service import CodexRunService
 from app.services.execution_queue_service import ExecutionQueueService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
 
@@ -26,6 +28,7 @@ class ApprovalService:
         self.tasks = TaskRepository(session)
         self.queue = ExecutionQueueService(session)
         self.audit = AuditService(session)
+        self.codex_runs = CodexRunService(session)
 
     def list_owned(self, user_id, **filters):
         return self.repository.list_approvals_owned(user_id, **filters)
@@ -58,6 +61,7 @@ class ApprovalService:
             if current != approval.action_fingerprint:
                 approval.status = ApprovalStatus.CANCELLED
                 approval.decided_at = utc_now()
+                self.codex_runs.cancel_for_action(action.id)
                 self.session.commit()
                 raise WorkflowConflictError(
                     "Action changed after approval was requested; request a new approval"
@@ -84,6 +88,7 @@ class ApprovalService:
                 actor_type=ActorType.USER,
                 actor_id=user_id,
             )
+            self.codex_runs.ensure_for_action(action, user_id, CodexRunStatus.QUEUED)
             self.session.commit()
         except WorkflowConflictError:
             if self.session.in_transaction():
@@ -112,6 +117,7 @@ class ApprovalService:
             approval.decided_by_user_id = user_id
             approval.decision_reason = data.reason
             action.status = TaskActionStatus.CANCELLED
+            self.codex_runs.cancel_for_action(action.id)
             task.status = TaskStatus.READY
             self.audit.record(
                 actor_type=ActorType.USER,

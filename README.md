@@ -278,3 +278,12 @@ python -m app.scripts.test_github_integration
 See [external integrations](docs/integrations.md) and
 [GitHub integration](docs/github-integration.md) for security boundaries, tool catalog,
 GitHub App production guidance, retries, idempotency, and unsupported operations.
+
+### Codex development execution
+
+Phase 5A.2 adds governed Codex CLI execution for the Development Agent. It supports approved
+implementation/fix actions and internal read-only PR reviews through isolated workspaces,
+fixed repository validation profiles, protected-branch/path/diff limits, persistent safe run
+metadata, audit events, and `/dashboard/codex`. Codex is disabled by default and CI uses a fake
+runner. Configure a dedicated worker using `.env.example`; never commit `CODEX_API_KEY` or
+`GITHUB_TOKEN`. Operational details are in [Codex integration](docs/codex-integration.md).

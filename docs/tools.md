@@ -33,3 +33,15 @@ GitHub handlers receive credentials only through the worker's internal Execution
 Their schemas never accept tokens or URLs. Repository, path, branch, protected-branch,
 size, UTF-8, timeout, output, and retry policies are enforced before or around the client
 call. See [GitHub integration](github-integration.md) for boundaries and exclusions.
+
+Phase 5A.2 Codex tools are available only to Development:
+
+| Tool                        | Risk   | Approval | Effect                                                                |
+| --------------------------- | ------ | -------- | --------------------------------------------------------------------- |
+| `codex.implement_task`      | yellow | yes      | Isolated implementation, fixed validation, one commit and branch push |
+| `codex.review_pull_request` | green  | no       | Internal read-only analysis; no GitHub comment                        |
+| `codex.fix_pull_request`    | yellow | yes      | Approved fixes on the existing PR branch; no merge                    |
+
+Codex schemas accept specifications, not commands or credentials. Automatic retries are zero;
+a new attempt is a new auditable action and `CodexRun`. PR creation remains a separate
+`github.open_pull_request` action. See [Codex integration](codex-integration.md).

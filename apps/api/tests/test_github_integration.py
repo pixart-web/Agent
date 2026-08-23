@@ -426,12 +426,12 @@ def _agent_outcome(tool_name: str, input_payload: dict[str, object]):
     )
 
 
-def test_development_v2_is_only_agent_with_github_capabilities() -> None:
+def test_development_v3_is_only_agent_with_external_development_capabilities() -> None:
     from app.agents.registry import build_agent_registry
 
     agents = {agent.agent_id: agent for agent in build_agent_registry().list()}
     development = agents["development"]
-    assert development.prompt_version == "development-v2"
+    assert development.prompt_version == "development-v3"
     assert development.allowed_tools >= READ_TOOLS | WRITE_TOOLS
     for agent_id in {"marketing", "sales", "support"}:
         assert not (agents[agent_id].allowed_tools & (READ_TOOLS | WRITE_TOOLS))

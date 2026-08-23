@@ -26,3 +26,11 @@ Every integration must define:
 
 GitHub is the first real integration. No direct integration endpoint performs GitHub
 operations; the only administrative API returns safe configuration status.
+
+## Codex
+
+Codex is an execution integration rather than a general-purpose agent tool. Development
+proposes a bounded specification; the Execution Engine applies risk and approval; a dedicated
+worker resolves credentials and invokes the CLI in an isolated workspace. Configuration and
+safe run status are visible at `/dashboard/codex`, while terminal output and secrets never are.
+See [Codex integration](codex-integration.md).

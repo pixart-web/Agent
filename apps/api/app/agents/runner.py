@@ -289,7 +289,7 @@ class AgentRunnerService:
             )
             self.session.commit()
             for action in actions:
-                if not action.tool_name.startswith("github."):
+                if not action.tool_name.startswith(("github.", "codex.")):
                     continue
                 try:
                     ExecutionService(self.session, self.tools).dispatch(
@@ -299,7 +299,7 @@ class AgentRunnerService:
                     )
                 except Exception as error:
                     logger.warning(
-                        "github_action_auto_dispatch_failed",
+                        "integration_action_auto_dispatch_failed",
                         extra={"action_id": str(action.id), "error": type(error).__name__},
                     )
         except Exception:
