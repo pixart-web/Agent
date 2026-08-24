@@ -140,18 +140,34 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
   );
 }
 
-const GITHUB_ACTION_LABELS: Record<string, string> = {
+const ACTION_LABELS: Record<string, string> = {
   'github.create_issue': 'Create GitHub Issue',
   'github.comment_issue': 'Comment on GitHub Issue',
   'github.create_branch': 'Create GitHub Branch',
   'github.create_or_update_file': 'Create or Update GitHub File',
   'github.open_pull_request': 'Open GitHub Pull Request',
+  'email.send': 'Send Email',
+  'email.reply': 'Reply to Email',
+  'email.mark_read': 'Mark Email Read',
 };
 
 export function ActionProposalPreview({ action }: { action: TaskAction }) {
   const github = action.tool_name.startsWith('github.');
+  const email = action.tool_name.startsWith('email.');
   const repository = action.input_payload.repository;
   const title = action.input_payload.title;
+  const account = action.input_payload.account_id;
+  const subject = action.input_payload.subject;
+  const recipients = Array.isArray(action.input_payload.to)
+    ? action.input_payload.to
+        .map((value) =>
+          typeof value === 'object' && value && 'address' in value
+            ? String(value.address)
+            : '',
+        )
+        .filter(Boolean)
+        .join(', ')
+    : '';
   const branch =
     action.input_payload.branch ??
     action.input_payload.head ??
@@ -159,16 +175,17 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
 
   return (
     <li>
-      <strong>
-        {GITHUB_ACTION_LABELS[action.tool_name] ?? action.tool_name}
-      </strong>
+      <strong>{ACTION_LABELS[action.tool_name] ?? action.tool_name}</strong>
       {github && typeof repository === 'string' && (
         <span>Repository: {repository}</span>
       )}
       {github && typeof title === 'string' && <span>Title: {title}</span>}
       {github && typeof branch === 'string' && <span>Branch: {branch}</span>}
+      {email && typeof account === 'string' && <span>Account: {account}</span>}
+      {email && typeof subject === 'string' && <span>Subject: {subject}</span>}
+      {email && recipients && <span>Recipients: {recipients}</span>}
       <span>Risk: {action.risk_level}</span>
-      {github && (
+      {(github || email) && (
         <span>
           Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
         </span>

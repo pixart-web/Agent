@@ -94,7 +94,7 @@ export default function ApprovalsPage() {
                 Ação de alto risco — confirma explicitamente antes de continuar.
               </p>
             )}
-            <p>{approval.description}</p>
+            <p className="approval-description">{approval.description}</p>
             <dl className="execution-meta">
               <div>
                 <dt>Task</dt>

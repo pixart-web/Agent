@@ -1,20 +1,28 @@
 'use client';
 
-import type { GitHubIntegrationStatus } from '@agent/shared';
+import type {
+  EmailIntegrationStatus,
+  GitHubIntegrationStatus,
+} from '@agent/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
-import { getGitHubIntegrationStatus } from '../../../lib/workflow-client';
+import {
+  getEmailIntegrationStatus,
+  getGitHubIntegrationStatus,
+} from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 
 export default function IntegrationsPage() {
   const { user, loading } = useAuthenticatedUser();
   const [github, setGitHub] = useState<GitHubIntegrationStatus | null>(null);
+  const [email, setEmail] = useState<EmailIntegrationStatus | null>(null);
 
   useEffect(() => {
     if (user) {
       void getGitHubIntegrationStatus().then(setGitHub);
+      void getEmailIntegrationStatus().then(setEmail);
     }
   }, [user]);
 
@@ -46,6 +54,17 @@ export default function IntegrationsPage() {
             Allowed repositories:{' '}
             {github?.allowed_repositories.join(', ') || 'None'}
           </p>
+        </Link>
+        <Link
+          className="agent-card agent-card--link"
+          href="/dashboard/integrations/email"
+        >
+          <p className="eyebrow">Communication</p>
+          <h2>Email</h2>
+          <p>
+            Status: {email?.connected_accounts ? 'Connected' : 'Not connected'}
+          </p>
+          <p>Provider: {email?.provider || 'gmail'}</p>
         </Link>
       </div>
     </main>
