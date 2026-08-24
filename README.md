@@ -5,8 +5,8 @@ dashboard, a FastAPI API, PostgreSQL persistence, Redis infrastructure, secure u
 authentication, migrations, continuous integration, and an AI-assisted Supervisor.
 Authenticated users can turn an operational command into a structured, versioned plan,
 review its assigned tasks, approve it, request revisions, and run safe registered internal
-tools through an audited Execution Engine. Phase 5A adds the first real external adapter:
-allowlisted GitHub read and approved write tools for the Development Agent.
+tools through an audited Execution Engine. External adapters include governed GitHub,
+Codex, and per-user Gmail access with encrypted OAuth credentials and approved writes.
 
 ## Architecture
 
@@ -34,7 +34,8 @@ Authentication details are in [docs/authentication.md](docs/authentication.md);
 workflow rules are in [docs/workflow.md](docs/workflow.md); Supervisor behavior is in
 [docs/supervisor.md](docs/supervisor.md); provider setup is in
 [docs/ai-providers.md](docs/ai-providers.md); GitHub setup is in
-[docs/github-integration.md](docs/github-integration.md); system boundaries are in
+[docs/github-integration.md](docs/github-integration.md); email setup is in
+[docs/email-integration.md](docs/email-integration.md); system boundaries are in
 [docs/architecture.md](docs/architecture.md).
 
 ## Requirements
@@ -287,3 +288,12 @@ fixed repository validation profiles, protected-branch/path/diff limits, persist
 metadata, audit events, and `/dashboard/codex`. Codex is disabled by default and CI uses a fake
 runner. Configure a dedicated worker using `.env.example`; never commit `CODEX_API_KEY` or
 `GITHUB_TOKEN`. Operational details are in [Codex integration](docs/codex-integration.md).
+
+## Email integration
+
+Phase 5B adds provider-neutral email with Gmail OAuth. Support and Sales can read mail on
+demand; sending, replying, and mark-read are yellow actions that require a fingerprinted
+approval. Credentials are encrypted server-side, HTML is converted to inert text,
+attachments are metadata-only, and ambiguous writes are never retried automatically.
+Configure the disabled-by-default values in .env.example and see
+[Email integration](docs/email-integration.md).

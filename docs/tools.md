@@ -45,3 +45,15 @@ Phase 5A.2 Codex tools are available only to Development:
 Codex schemas accept specifications, not commands or credentials. Automatic retries are zero;
 a new attempt is a new auditable action and `CodexRun`. PR creation remains a separate
 `github.open_pull_request` action. See [Codex integration](codex-integration.md).
+
+Phase 5B email tools use version 2:
+
+| Tools                                                                  | Agents         | Risk   | Approval |
+| ---------------------------------------------------------------------- | -------------- | ------ | -------- |
+| email.list_messages, email.get_message, email.get_thread, email.search | Support, Sales | green  | no       |
+| email.send                                                             | Sales          | yellow | yes      |
+| email.reply                                                            | Support, Sales | yellow | yes      |
+| email.mark_read                                                        | Support        | yellow | yes      |
+
+Tokens are resolved from encrypted per-user accounts only in backend execution. Email bodies
+are untrusted and excluded from audit metadata. See [Email integration](email-integration.md).

@@ -205,3 +205,14 @@ output, uses `shell=False`, and deletes raw terminal logs. The runner—not the 
 branch creation, fixed validation commands, one commit, and a non-force push. Credentials are
 resolved only in the worker and are absent from schemas, prompts, persisted output, and the UI.
 See [Codex integration](codex-integration.md).
+
+## Email integration boundary
+
+    Support/Sales -> EmailTool v2 -> approval for writes -> worker
+                  -> EmailService -> SecretStore -> EmailProvider -> Gmail API
+
+Per-user IntegrationAccount rows enforce ownership and store only encrypted refresh
+credentials. EmailReference stores provider identifiers rather than mailbox copies;
+EmailSendRecord provides action idempotency and delivery_unknown recovery. Plain text
+normalization, attachment metadata, account/recipient policy and untrusted-content prompts
+sit before agent consumption. CI substitutes FakeEmailProvider and needs no Google secret.
