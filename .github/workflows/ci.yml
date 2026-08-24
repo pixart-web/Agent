@@ -23,6 +23,7 @@ jobs:
       OPENAI_MODEL: fake-supervisor-v1
       GITHUB_INTEGRATION_ENABLED: 'false'
       CODEX_INTEGRATION_ENABLED: 'false'
+      EMAIL_INTEGRATION_ENABLED: 'false'
 
     steps:
       - name: Check out repository
@@ -46,6 +47,7 @@ jobs:
       - name: Validate Alembic offline
         working-directory: apps/api
         run: |
+          python -m alembic downgrade 20260823_0008:20260821_0007 --sql > /dev/null
           python -m alembic downgrade 20260821_0007:20260818_0006 --sql > /dev/null
           python -m alembic upgrade head --sql > /dev/null
           python -m alembic downgrade 20260818_0006:20260818_0005 --sql > /dev/null
@@ -89,6 +91,7 @@ jobs:
       OPENAI_MODEL: fake-supervisor-v1
       GITHUB_INTEGRATION_ENABLED: 'false'
       CODEX_INTEGRATION_ENABLED: 'false'
+      EMAIL_INTEGRATION_ENABLED: 'false'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
