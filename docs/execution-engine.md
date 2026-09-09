@@ -60,3 +60,12 @@ dispatched into the same path: green reads queue for worker execution and yellow
 stop at approval. All other green, yellow and red proposals follow the same explicit
 dispatch, approval, outbox and worker path as before. The agent cannot enqueue Celery,
 invoke a handler, lower tool risk, resolve credentials, or bypass an approval.
+
+## Phase 5B email execution
+
+Email reads use the normal green-action worker path and return explicitly untrusted,
+schema-bound content. Email send, reply, and mark-read definitions have zero write retries
+and require an approved action fingerprint. EmailService resolves the owned encrypted
+account in a short backend session, refreshes an access token, calls the provider, and writes
+body-free audit metadata. EmailSendRecord reserves the action before any provider side
+effect; ambiguous writes become delivery_unknown and require operator review.

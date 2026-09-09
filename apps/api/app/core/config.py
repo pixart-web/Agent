@@ -67,6 +67,23 @@ class Settings(BaseSettings):
     codex_max_changed_files: int = Field(default=100, ge=1, le=1000)
     codex_max_diff_bytes: int = Field(default=2_000_000, ge=10_000, le=20_000_000)
     codex_retain_workspaces: bool = False
+    email_integration_enabled: bool = False
+    email_provider: Literal["gmail"] = "gmail"
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    google_redirect_uri: str | None = None
+    email_allowed_accounts: str = ""
+    email_internal_domains: str = ""
+    email_max_body_chars: int = Field(default=50_000, ge=1_000, le=1_000_000)
+    email_max_attachment_bytes: int = Field(default=10_000_000, ge=0)
+    email_send_enabled: bool = False
+    email_mark_read_enabled: bool = False
+    integration_encryption_key: SecretStr | None = None
+    email_max_recipients: int = Field(default=10, ge=1, le=100)
+    email_max_search_results: int = Field(default=100, ge=1, le=500)
+    email_api_timeout_seconds: float = Field(default=30, gt=0, le=120)
+    email_oauth_state_expire_minutes: int = Field(default=10, ge=1, le=60)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -79,6 +96,10 @@ class Settings(BaseSettings):
         "github_token",
         "codex_api_key",
         "codex_model",
+        "google_client_id",
+        "google_client_secret",
+        "google_redirect_uri",
+        "integration_encryption_key",
         mode="before",
     )
     @classmethod
@@ -117,6 +138,18 @@ class Settings(BaseSettings):
     def codex_allowed_repository_list(self) -> list[str]:
         return [item.strip() for item in self.codex_allowed_repositories.split(",") if item.strip()]
 
+    @property
+    def email_allowed_account_list(self) -> list[str]:
+        return [
+            item.strip().lower() for item in self.email_allowed_accounts.split(",") if item.strip()
+        ]
+
+    @property
+    def email_internal_domain_list(self) -> list[str]:
+        return [
+            item.strip().lower() for item in self.email_internal_domains.split(",") if item.strip()
+        ]
+
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
         if not self.web_origin_list:
@@ -129,6 +162,17 @@ class Settings(BaseSettings):
             raise ValueError("GitHub integration requires at least one allowed repository")
         if self.codex_integration_enabled and not self.codex_allowed_repository_list:
             raise ValueError("Codex integration requires at least one allowed repository")
+        if self.email_integration_enabled:
+            required = (
+                self.google_client_id,
+                self.google_client_secret,
+                self.google_redirect_uri,
+                self.integration_encryption_key,
+            )
+            if not all(required):
+                raise ValueError("Email integration requires Google OAuth and encryption settings")
+            if not self.email_allowed_account_list:
+                raise ValueError("Email integration requires at least one allowed account")
         if self.app_env.lower() == "production":
             insecure_markers = ("development", "example", "change-me", "replace")
             if any(marker in self.auth_secret_key.lower() for marker in insecure_markers):

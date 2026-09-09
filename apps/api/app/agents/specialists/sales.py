@@ -1,4 +1,4 @@
-from app.agents.prompts.sales_v1 import PROMPT_VERSION, SYSTEM_PROMPT
+from app.agents.prompts.sales_v2 import PROMPT_VERSION, SYSTEM_PROMPT
 from app.agents.specialists.common import PromptSpecializedAgent
 
 AGENT = PromptSpecializedAgent(
@@ -13,6 +13,11 @@ AGENT = PromptSpecializedAgent(
             "internal.summarize",
             "internal.create_note",
             "internal.simulate_external_action",
+            "email.search",
+            "email.get_message",
+            "email.get_thread",
+            "email.send",
+            "email.reply",
         }
     ),
 )

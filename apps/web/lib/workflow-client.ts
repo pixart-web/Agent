@@ -7,6 +7,10 @@ import type {
   AgentOverview,
   AgentRun,
   AgentRunResponse,
+  EmailAccount,
+  EmailIntegrationStatus,
+  EmailMessage,
+  EmailMessageSummary,
   GitHubIntegrationStatus,
 } from '@agent/shared';
 import type {
@@ -353,4 +357,46 @@ export function listCodexRuns(
 
 export function getCodexRun(runId: string): Promise<CodexRun> {
   return request(`/api/v1/codex/runs/${runId}`);
+}
+
+export function getEmailIntegrationStatus(): Promise<EmailIntegrationStatus> {
+  return request('/api/v1/integrations/email/status');
+}
+
+export function listEmailAccounts(): Promise<EmailAccount[]> {
+  return request<{ accounts: EmailAccount[] }>(
+    '/api/v1/integrations/email/accounts',
+  ).then((value) => value.accounts);
+}
+
+export function connectEmail(): Promise<{ authorization_url: string }> {
+  return request('/api/v1/integrations/email/connect', { method: 'POST' });
+}
+
+export function disconnectEmail(accountId: string): Promise<EmailAccount> {
+  return request(
+    '/api/v1/integrations/email/disconnect',
+    jsonRequest('POST', { account_id: accountId }),
+  );
+}
+
+export function listEmailMessages(accountId: string): Promise<{
+  messages: EmailMessageSummary[];
+  next_page_token: string | null;
+}> {
+  const query = new URLSearchParams({ account_id: accountId });
+  return request('/api/v1/email/messages?' + query.toString());
+}
+
+export function getEmailMessage(
+  accountId: string,
+  messageId: string,
+): Promise<{ message: EmailMessage }> {
+  const query = new URLSearchParams({ account_id: accountId });
+  return request(
+    '/api/v1/email/messages/' +
+      encodeURIComponent(messageId) +
+      '?' +
+      query.toString(),
+  );
 }

@@ -122,3 +122,23 @@ TERMINAL_COMMAND_STATUSES = frozenset(
         CommandStatus.CANCELLED,
     }
 )
+
+
+class IntegrationAccountStatus(StrEnum):
+    CONNECTED = "connected"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    ERROR = "error"
+
+
+class IntegrationAccountType(StrEnum):
+    PERSONAL = "personal"
+    SHARED = "shared"
+    SYSTEM = "system"
+
+
+class EmailSendStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    DELIVERY_UNKNOWN = "delivery_unknown"
+    FAILED = "failed"

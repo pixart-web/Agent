@@ -1013,3 +1013,15 @@ h1 {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.email-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.65;
+}
+
+.approval-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
