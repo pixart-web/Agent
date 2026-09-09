@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Annotated
 from uuid import UUID, uuid4
 
@@ -7,12 +8,18 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
 from app.core.config import Settings, get_settings
+from app.core.time import utc_now
 from app.db.session import get_db
 from app.execution.context import ExecutionContext
 from app.integrations.credentials import EnvironmentCredentialProvider
 from app.integrations.email.credentials import FernetSecretStore
 from app.integrations.email.errors import EmailAuthenticationError, EmailNotFoundError
-from app.integrations.email.oauth import GmailOAuthClient
+from app.integrations.email.oauth import (
+    INVALID_STATE_MESSAGE,
+    OAUTH_PROVIDER,
+    OAUTH_PURPOSE,
+    GmailOAuthClient,
+)
 from app.integrations.email.policy import EmailPolicy
 from app.integrations.email.providers.gmail import GmailProvider
 from app.integrations.email.schemas import (
@@ -26,9 +33,13 @@ from app.integrations.email.schemas import (
 )
 from app.integrations.email.service import EmailService
 from app.models.integration_account import IntegrationAccount
+from app.models.integration_oauth_state import IntegrationOAuthState
 from app.models.user import User
 from app.models.workflow_enums import ActorType, IntegrationAccountStatus, IntegrationAccountType
 from app.repositories.integration_account_repository import IntegrationAccountRepository
+from app.repositories.integration_oauth_state_repository import (
+    IntegrationOAuthStateRepository,
+)
 from app.schemas.email import (
     EmailAccountsOutput,
     EmailConnectOutput,
@@ -90,12 +101,25 @@ def email_accounts(
 @router.post("/integrations/email/connect", response_model=EmailConnectOutput)
 def email_connect(
     user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> EmailConnectOutput:
     _require_enabled(settings)
-    return EmailConnectOutput(
-        authorization_url=GmailOAuthClient(settings).authorization_url(user.id)
+    oauth = GmailOAuthClient(settings)
+    now = utc_now()
+    oauth_state = IntegrationOAuthState(
+        user_id=user.id,
+        provider=OAUTH_PROVIDER,
+        purpose=OAUTH_PURPOSE,
+        expires_at=now + timedelta(minutes=settings.email_oauth_state_expire_minutes),
     )
+    IntegrationOAuthStateRepository(db).add(oauth_state)
+    db.flush()
+    state_token = oauth.issue_state(
+        user.id, state_id=oauth_state.id, expires_at=oauth_state.expires_at
+    )
+    db.commit()
+    return EmailConnectOutput(authorization_url=oauth.authorization_url(state_token))
 
 
 @router.get("/integrations/email/callback", response_class=RedirectResponse)
@@ -107,7 +131,19 @@ def email_callback(
 ) -> RedirectResponse:
     _require_enabled(settings)
     oauth = GmailOAuthClient(settings)
-    user_id = oauth.state_user(state_token)
+    claims = oauth.decode_state(state_token)
+    consumed = IntegrationOAuthStateRepository(db).consume(
+        claims.state_id,
+        claims.user_id,
+        OAUTH_PROVIDER,
+        OAUTH_PURPOSE,
+        utc_now(),
+    )
+    if not consumed:
+        db.rollback()
+        raise EmailAuthenticationError(INVALID_STATE_MESSAGE)
+    db.commit()
+    user_id = claims.user_id
     tokens = oauth.exchange_code(code)
     refresh_token = tokens.get("refresh_token")
     access_token = tokens.get("access_token")

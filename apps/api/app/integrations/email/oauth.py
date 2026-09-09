@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 from uuid import UUID, uuid4
@@ -11,6 +12,16 @@ from app.integrations.email.errors import EmailAuthenticationError, EmailTransie
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
+OAUTH_PROVIDER = "gmail"
+OAUTH_PURPOSE = "email_oauth"
+INVALID_STATE_MESSAGE = "OAuth authorization could not be validated"
+
+
+@dataclass(frozen=True)
+class OAuthStateClaims:
+    user_id: UUID
+    state_id: UUID
+    expires_at: datetime
 
 
 class GmailOAuthClient:
@@ -26,48 +37,54 @@ class GmailOAuthClient:
             values.append("https://www.googleapis.com/auth/gmail.modify")
         return values
 
-    def issue_state(self, user_id: UUID) -> str:
+    def issue_state(
+        self,
+        user_id: UUID,
+        *,
+        state_id: UUID | None = None,
+        expires_at: datetime | None = None,
+    ) -> str:
         now = datetime.now(UTC)
         return jwt.encode(
             {
                 "sub": str(user_id),
-                "purpose": "email_oauth",
-                "jti": str(uuid4()),
+                "purpose": OAUTH_PURPOSE,
+                "jti": str(state_id or uuid4()),
                 "iat": now,
-                "exp": now + timedelta(minutes=self.settings.email_oauth_state_expire_minutes),
+                "exp": expires_at
+                or now + timedelta(minutes=self.settings.email_oauth_state_expire_minutes),
             },
             self.settings.auth_secret_key,
             algorithm=self.settings.auth_algorithm,
         )
 
-    def state_user(self, state: str) -> UUID:
+    def decode_state(self, state: str) -> OAuthStateClaims:
         try:
             claims = jwt.decode(
                 state,
                 self.settings.auth_secret_key,
                 algorithms=[self.settings.auth_algorithm],
-                options={"require": ["sub", "purpose", "jti", "exp"]},
+                options={"require": ["sub", "purpose", "jti", "iat", "exp"]},
             )
-            if claims.get("purpose") != "email_oauth":
+            if claims.get("purpose") != OAUTH_PURPOSE:
                 raise ValueError
-            return UUID(str(claims["sub"]))
-        except (jwt.PyJWTError, KeyError, TypeError, ValueError) as error:
-            raise EmailAuthenticationError("Invalid or expired OAuth state") from error
+            expires_at = datetime.fromtimestamp(float(claims["exp"]), UTC)
+            return OAuthStateClaims(
+                user_id=UUID(str(claims["sub"])),
+                state_id=UUID(str(claims["jti"])),
+                expires_at=expires_at,
+            )
+        except (jwt.PyJWTError, KeyError, TypeError, ValueError, OverflowError) as error:
+            raise EmailAuthenticationError(INVALID_STATE_MESSAGE) from error
+
+    def state_user(self, state: str) -> UUID:
+        return self.decode_state(state).user_id
 
     def validate_state(self, state: str, user_id: UUID) -> None:
-        try:
-            claims = jwt.decode(
-                state,
-                self.settings.auth_secret_key,
-                algorithms=[self.settings.auth_algorithm],
-                options={"require": ["sub", "purpose", "jti", "exp"]},
-            )
-        except jwt.PyJWTError as error:
-            raise EmailAuthenticationError("Invalid or expired OAuth state") from error
-        if claims.get("sub") != str(user_id) or claims.get("purpose") != "email_oauth":
-            raise EmailAuthenticationError("OAuth state does not belong to this user")
+        if self.decode_state(state).user_id != user_id:
+            raise EmailAuthenticationError(INVALID_STATE_MESSAGE)
 
-    def authorization_url(self, user_id: UUID) -> str:
+    def authorization_url(self, state: str) -> str:
         params = {
             "client_id": self.settings.google_client_id,
             "redirect_uri": self.settings.google_redirect_uri,
@@ -76,7 +93,7 @@ class GmailOAuthClient:
             "access_type": "offline",
             "include_granted_scopes": "true",
             "prompt": "consent",
-            "state": self.issue_state(user_id),
+            "state": state,
         }
         return f"{AUTH_URL}?{urlencode(params)}"
 

@@ -47,6 +47,7 @@ jobs:
       - name: Validate Alembic offline
         working-directory: apps/api
         run: |
+          python -m alembic downgrade 20260823_0009:20260823_0008 --sql > /dev/null
           python -m alembic downgrade 20260823_0008:20260821_0007 --sql > /dev/null
           python -m alembic downgrade 20260821_0007:20260818_0006 --sql > /dev/null
           python -m alembic upgrade head --sql > /dev/null
@@ -100,9 +101,12 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/pyproject.toml
       - run: python -m pip install -e "apps/api[dev]"
-      - name: Apply real migrations
+      - name: Validate real migrations
         working-directory: apps/api
-        run: python -m alembic upgrade head
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade 20260823_0008
+          python -m alembic upgrade 20260823_0009
       - name: Test locking, outbox, and Redis
         run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
 
