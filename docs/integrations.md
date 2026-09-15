@@ -34,3 +34,10 @@ proposes a bounded specification; the Execution Engine applies risk and approval
 worker resolves credentials and invokes the CLI in an isolated workspace. Configuration and
 safe run status are visible at `/dashboard/codex`, while terminal output and secrets never are.
 See [Codex integration](codex-integration.md).
+
+## Email
+
+Email uses per-user OAuth accounts stored as encrypted refresh tokens behind a
+provider-neutral service. Reads are on demand; writes and mark-read require fingerprinted
+human approval. Message content is always untrusted, HTML becomes inert text, and attachments
+are metadata-only. See [Email integration](email-integration.md).

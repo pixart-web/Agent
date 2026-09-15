@@ -19,6 +19,12 @@ from app.execution.exceptions import (
     ToolTimeoutError,
     ToolVersionError,
 )
+from app.integrations.email.errors import (
+    EmailAuthenticationError,
+    EmailNotFoundError,
+    EmailRateLimitError,
+    EmailTransientError,
+)
 
 settings = get_settings()
 
@@ -56,13 +62,15 @@ async def ai_error_handler(_request: Request, error: AIError) -> JSONResponse:
 
 @app.exception_handler(ExecutionError)
 async def execution_error_handler(_request: Request, error: ExecutionError) -> JSONResponse:
-    if isinstance(error, ToolNotFoundError):
+    if isinstance(error, (ToolNotFoundError, EmailNotFoundError)):
         status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(error, EmailAuthenticationError):
+        status_code = status.HTTP_401_UNAUTHORIZED
     elif isinstance(error, ToolPermissionError):
         status_code = status.HTTP_403_FORBIDDEN
     elif isinstance(error, (ToolInputValidationError, ToolVersionError)):
         status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    elif isinstance(error, ToolTimeoutError):
+    elif isinstance(error, (ToolTimeoutError, EmailRateLimitError, EmailTransientError)):
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     else:
         status_code = status.HTTP_409_CONFLICT

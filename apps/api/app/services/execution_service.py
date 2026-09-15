@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.time import utc_now
 from app.execution.context_safety import sanitize_execution_payload
 from app.execution.policies import ExecutionRiskPolicy, action_fingerprint, maximum_risk
@@ -231,6 +232,41 @@ class ExecutionService:
             f"Allow {action.tool_name} for task '{task.title}'. "
             "The approved action will execute with the recorded payload and risk."
         )
+        if action.tool_name.startswith("email."):
+            payload = action.input_payload
+            account = str(payload.get("account_id", "unknown account"))
+            recipients = payload.get("to", [])
+            recipient_text = (
+                ", ".join(
+                    str(item.get("address", "")) if isinstance(item, dict) else str(item)
+                    for item in recipients
+                )
+                or "(reply recipient derived safely from the original message)"
+            )
+            subject = str(payload.get("subject", "(reply subject derived from original)"))
+            body = str(payload.get("body", ""))
+            internal_domains = set(get_settings().email_internal_domain_list)
+            recipient_addresses = [
+                str(item.get("address", "")).lower()
+                for item in recipients
+                if isinstance(item, dict)
+            ]
+            external = [
+                address
+                for address in recipient_addresses
+                if address.rpartition("@")[2] not in internal_domains
+            ]
+            external_risk = ", ".join(external) if external else "None identified"
+            description = (
+                f"Email account: {account}\n"
+                f"Recipients: {recipient_text}\n"
+                f"External recipients: {external_risk}\n"
+                f"Subject: {subject}\n"
+                f"Complete message body:\n{body}\n\n"
+                "Risk: this creates an external mailbox side effect. Mail content is "
+                "untrusted, the approved payload is fingerprinted, and delivery timeouts "
+                "must be reviewed rather than retried."
+            )
         if action.tool_name.startswith("codex."):
             repository = str(action.input_payload.get("repository", "the repository"))
             target = action.input_payload.get("working_branch") or (

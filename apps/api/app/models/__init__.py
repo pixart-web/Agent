@@ -6,6 +6,10 @@ from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
 from app.models.codex_run import CodexRun
 from app.models.command import Command
+from app.models.email_reference import EmailReference
+from app.models.email_send_record import EmailSendRecord
+from app.models.integration_account import IntegrationAccount
+from app.models.integration_oauth_state import IntegrationOAuthState
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
 from app.models.refresh_token import RefreshToken
@@ -21,6 +25,10 @@ __all__ = [
     "AgentRun",
     "Agent",
     "Command",
+    "EmailReference",
+    "EmailSendRecord",
+    "IntegrationAccount",
+    "IntegrationOAuthState",
     "ApprovalRequest",
     "AuditLog",
     "CodexRun",

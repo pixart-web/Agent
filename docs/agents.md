@@ -17,3 +17,7 @@ risk. PostgreSQL's partial unique index prevents two active runs for the same Ta
 Endpoints provide run/rerun, run history, capabilities, agent overview metrics, and
 explicit safe reassignment. Re-runs preserve history and require a failed run, reset
 actions, or user feedback.
+
+Phase 5B promotes Support and Sales to prompt v2. Support may inspect conversations and propose
+approved replies/mark-read actions. Sales may inspect conversations and propose approved
+send/reply actions under anti-spam rules. Marketing and Development receive no email capability.

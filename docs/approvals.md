@@ -27,3 +27,10 @@ paths, run its fixed validation profile, create one commit, and push. It also st
 limits: no merge, deployment, secrets, force push, or primary/production branch. The action
 fingerprint binds that approval to the exact payload. `codex.review_pull_request` is green
 because it is read-only and cannot publish a review.
+
+## Email approvals
+
+Email send, reply, and mark-read tools are yellow. The approval displays the selected
+account, complete recipients, subject, full body, and a side-effect warning. Approval and
+execution verify the same action fingerprint. A timed-out write becomes delivery_unknown
+and is never retried blindly.

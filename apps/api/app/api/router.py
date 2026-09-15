@@ -5,6 +5,7 @@ from app.api.routes import (
     auth,
     codex,
     commands,
+    email,
     execution,
     health,
     integrations,
@@ -20,6 +21,7 @@ api_router.include_router(auth.router, prefix="/api/v1")
 api_router.include_router(agents.router, prefix="/api/v1")
 api_router.include_router(commands.router, prefix="/api/v1")
 api_router.include_router(codex.router, prefix="/api/v1")
+api_router.include_router(email.router, prefix="/api/v1")
 api_router.include_router(plans.router, prefix="/api/v1")
 api_router.include_router(supervisor.router, prefix="/api/v1")
 api_router.include_router(tasks.router, prefix="/api/v1")

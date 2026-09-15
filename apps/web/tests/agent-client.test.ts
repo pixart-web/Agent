@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authFetch } from '../lib/auth-client';
 import {
   getAgentOverview,
+  connectEmail,
+  disconnectEmail,
+  getEmailIntegrationStatus,
+  getEmailMessage,
   getGitHubIntegrationStatus,
+  listEmailAccounts,
+  listEmailMessages,
   listAgentRuns,
   rerunAgent,
   runAgent,
@@ -60,5 +66,33 @@ describe('specialized agent client', () => {
       '/api/v1/integrations/github/status',
       {},
     );
+  });
+
+  it('uses only safe email integration and mailbox endpoints', async () => {
+    mockedAuthFetch.mockImplementation(
+      async (path) =>
+        new Response(
+          JSON.stringify(
+            path.toString().endsWith('/accounts') ? { accounts: [] } : {},
+          ),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+    );
+    await getEmailIntegrationStatus();
+    await listEmailAccounts();
+    await connectEmail();
+    await disconnectEmail('account-1');
+    await listEmailMessages('account-1');
+    await getEmailMessage('account-1', 'message/1');
+
+    expect(mockedAuthFetch).toHaveBeenCalledWith(
+      '/api/v1/integrations/email/status',
+      {},
+    );
+    expect(mockedAuthFetch).toHaveBeenCalledWith(
+      '/api/v1/email/messages/message%2F1?account_id=account-1',
+      {},
+    );
+    expect(JSON.stringify(mockedAuthFetch.mock.calls)).not.toContain('token');
   });
 });

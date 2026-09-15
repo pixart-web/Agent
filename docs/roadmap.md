@@ -33,15 +33,15 @@
 
 ## Fase 5 — Integrações externas
 
-- [x] **5A.2:** Add governed Codex CLI execution, isolated workspaces, persistent runs,
-      fixed repository validation profiles, approvals, security policies, dashboards,
-      fake-runner tests, smoke test, and operator documentation.
-
 - [x] **5A:** Add the allowlisted GitHub client, scoped Development tools,
       runtime credentials, policy enforcement, approvals, audit events, status UI,
       fake integration tests, and operator documentation.
-- [ ] **5B:** Connect the next selected external systems with granular permissions.
-- [ ] Introduce event-driven triggers and scheduled work.
+- [x] **5A.2:** Add governed Codex CLI execution, isolated workspaces, persistent runs,
+      fixed repository validation profiles, approvals, security policies, dashboards,
+      fake-runner tests, smoke test, and operator documentation.
+- [x] **5B:** Add provider-neutral email, Gmail OAuth, encrypted refresh tokens,
+      governed Support/Sales tools, idempotent writes, safe dashboards, tests, and docs.
+- [ ] **5C:** Introduce event-driven triggers and scheduled work.
 
 ## Fase 6 — Observabilidade e produção
 

@@ -380,3 +380,49 @@ export type CodexIntegrationStatus = {
   github_credential_configured: boolean;
   timeout_seconds: number;
 };
+
+export type EmailAddress = { address: string; name: string | null };
+export type EmailAttachmentMetadata = {
+  attachment_id: string | null;
+  filename: string;
+  mime_type: string;
+  size: number;
+  blocked: boolean;
+};
+export type EmailMessageSummary = {
+  id: string;
+  thread_id: string;
+  subject: string;
+  sender: EmailAddress;
+  recipients: EmailAddress[];
+  sent_at: string | null;
+  snippet: string;
+  unread: boolean;
+  has_attachments: boolean;
+  external_content: true;
+  trust: 'untrusted';
+};
+export type EmailMessage = EmailMessageSummary & {
+  cc: EmailAddress[];
+  reply_to: EmailAddress[];
+  text_body: string;
+  body_truncated: boolean;
+  attachments: EmailAttachmentMetadata[];
+  provider_headers: Record<string, string>;
+};
+export type EmailAccount = {
+  id: string;
+  provider: string;
+  account_type: string;
+  email_address: string;
+  status: string;
+  scopes: string[];
+  last_sync_at: string | null;
+};
+export type EmailIntegrationStatus = {
+  enabled: boolean;
+  provider: string;
+  send_enabled: boolean;
+  mark_read_enabled: boolean;
+  connected_accounts: number;
+};
