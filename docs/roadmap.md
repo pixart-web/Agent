@@ -41,7 +41,7 @@
       fake-runner tests, smoke test, and operator documentation.
 - [x] **5B:** Add provider-neutral email, Gmail OAuth, encrypted refresh tokens,
       governed Support/Sales tools, idempotent writes, safe dashboards, tests, and docs.
-- [ ] **5C:** Introduce event-driven triggers and scheduled work.
+- [x] **5C:** Add governed Google Calendar integration with approval-gated writes.
 
 ## Fase 6 — Observabilidade e produção
 

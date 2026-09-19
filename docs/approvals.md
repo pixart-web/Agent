@@ -34,3 +34,11 @@ Email send, reply, and mark-read tools are yellow. The approval displays the sel
 account, complete recipients, subject, full body, and a side-effect warning. Approval and
 execution verify the same action fingerprint. A timed-out write becomes delivery_unknown
 and is never retried blindly.
+
+## Calendar
+
+Calendar uses a provider-neutral tool/service/provider boundary with encrypted per-user OAuth
+credentials. Reads are green and external content is untrusted. Create, update and cancel are
+yellow, show a complete approval preview, verify the action fingerprint and reserve a durable
+idempotency record before any provider call. Ambiguous write outcomes are not retried. See
+[Calendar integration](calendar-integration.md).

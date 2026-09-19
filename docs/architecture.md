@@ -216,3 +216,11 @@ credentials. EmailReference stores provider identifiers rather than mailbox copi
 EmailSendRecord provides action idempotency and delivery_unknown recovery. Plain text
 normalization, attachment metadata, account/recipient policy and untrusted-content prompts
 sit before agent consumption. CI substitutes FakeEmailProvider and needs no Google secret.
+
+## Calendar
+
+Calendar uses a provider-neutral tool/service/provider boundary with encrypted per-user OAuth
+credentials. Reads are green and external content is untrusted. Create, update and cancel are
+yellow, show a complete approval preview, verify the action fingerprint and reserve a durable
+idempotency record before any provider call. Ambiguous write outcomes are not retried. See
+[Calendar integration](calendar-integration.md).

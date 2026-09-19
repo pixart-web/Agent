@@ -149,15 +149,27 @@ const ACTION_LABELS: Record<string, string> = {
   'email.send': 'Send Email',
   'email.reply': 'Reply to Email',
   'email.mark_read': 'Mark Email Read',
+  'calendar.create_event': 'Create Calendar Event',
+  'calendar.update_event': 'Update Calendar Event',
+  'calendar.cancel_event': 'Cancel Calendar Event',
 };
 
 export function ActionProposalPreview({ action }: { action: TaskAction }) {
   const github = action.tool_name.startsWith('github.');
   const email = action.tool_name.startsWith('email.');
+  const calendar = action.tool_name.startsWith('calendar.');
   const repository = action.input_payload.repository;
   const title = action.input_payload.title;
   const account = action.input_payload.account_id;
   const subject = action.input_payload.subject;
+  const calendarId = action.input_payload.calendar_id;
+  const eventId = action.input_payload.event_id;
+  const start = action.input_payload.start;
+  const end = action.input_payload.end;
+  const location = action.input_payload.location;
+  const attendees = Array.isArray(action.input_payload.attendees)
+    ? action.input_payload.attendees.map(String).join(', ')
+    : '';
   const recipients = Array.isArray(action.input_payload.to)
     ? action.input_payload.to
         .map((value) =>
@@ -184,8 +196,24 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
       {email && typeof account === 'string' && <span>Account: {account}</span>}
       {email && typeof subject === 'string' && <span>Subject: {subject}</span>}
       {email && recipients && <span>Recipients: {recipients}</span>}
+      {calendar && typeof account === 'string' && (
+        <span>Account: {account}</span>
+      )}
+      {calendar && typeof calendarId === 'string' && (
+        <span>Calendar: {calendarId}</span>
+      )}
+      {calendar && typeof eventId === 'string' && <span>Event: {eventId}</span>}
+      {calendar && typeof title === 'string' && <span>Title: {title}</span>}
+      {calendar && start !== undefined && (
+        <span>Start: {JSON.stringify(start)}</span>
+      )}
+      {calendar && end !== undefined && <span>End: {JSON.stringify(end)}</span>}
+      {calendar && typeof location === 'string' && (
+        <span>Location: {location}</span>
+      )}
+      {calendar && attendees && <span>Attendees: {attendees}</span>}
       <span>Risk: {action.risk_level}</span>
-      {(github || email) && (
+      {(github || email || calendar) && (
         <span>
           Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
         </span>

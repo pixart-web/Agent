@@ -83,6 +83,16 @@ class Settings(BaseSettings):
     email_max_search_results: int = Field(default=100, ge=1, le=500)
     email_api_timeout_seconds: float = Field(default=30, gt=0, le=120)
     email_oauth_state_expire_minutes: int = Field(default=10, ge=1, le=60)
+    calendar_integration_enabled: bool = False
+    calendar_provider: Literal["google_calendar"] = "google_calendar"
+    google_calendar_redirect_uri: str | None = None
+    calendar_allowed_accounts: str = ""
+    calendar_internal_domains: str = ""
+    calendar_write_enabled: bool = False
+    calendar_max_attendees: int = Field(default=50, ge=1, le=500)
+    calendar_max_results: int = Field(default=100, ge=1, le=500)
+    calendar_api_timeout_seconds: float = Field(default=30, gt=0, le=120)
+    calendar_oauth_state_expire_minutes: int = Field(default=10, ge=1, le=60)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -99,6 +109,7 @@ class Settings(BaseSettings):
         "google_client_id",
         "google_client_secret",
         "google_redirect_uri",
+        "google_calendar_redirect_uri",
         "integration_encryption_key",
         mode="before",
     )
@@ -150,6 +161,22 @@ class Settings(BaseSettings):
             item.strip().lower() for item in self.email_internal_domains.split(",") if item.strip()
         ]
 
+    @property
+    def calendar_allowed_account_list(self) -> list[str]:
+        return [
+            item.strip().lower()
+            for item in self.calendar_allowed_accounts.split(",")
+            if item.strip()
+        ]
+
+    @property
+    def calendar_internal_domain_list(self) -> list[str]:
+        return [
+            item.strip().lower()
+            for item in self.calendar_internal_domains.split(",")
+            if item.strip()
+        ]
+
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
         if not self.web_origin_list:
@@ -173,6 +200,19 @@ class Settings(BaseSettings):
                 raise ValueError("Email integration requires Google OAuth and encryption settings")
             if not self.email_allowed_account_list:
                 raise ValueError("Email integration requires at least one allowed account")
+        if self.calendar_integration_enabled:
+            required = (
+                self.google_client_id,
+                self.google_client_secret,
+                self.google_calendar_redirect_uri,
+                self.integration_encryption_key,
+            )
+            if not all(required):
+                raise ValueError(
+                    "Calendar integration requires Google OAuth and encryption settings"
+                )
+            if not self.calendar_allowed_account_list:
+                raise ValueError("Calendar integration requires at least one allowed account")
         if self.app_env.lower() == "production":
             insecure_markers = ("development", "example", "change-me", "replace")
             if any(marker in self.auth_secret_key.lower() for marker in insecure_markers):

@@ -426,3 +426,51 @@ export type EmailIntegrationStatus = {
   mark_read_enabled: boolean;
   connected_accounts: number;
 };
+
+export type CalendarAccount = EmailAccount;
+export type CalendarIntegrationStatus = {
+  enabled: boolean;
+  provider: string;
+  write_enabled: boolean;
+  connected_accounts: number;
+};
+export type CalendarEventTime = {
+  date_time: string | null;
+  date: string | null;
+  time_zone: string | null;
+};
+export type CalendarInfo = {
+  id: string;
+  summary: string;
+  description: string;
+  time_zone: string;
+  primary: boolean;
+  access_role: string;
+  external_content: true;
+  trust: 'untrusted';
+};
+export type CalendarAttendee = {
+  email: string;
+  display_name: string | null;
+  response_status: string | null;
+  optional: boolean;
+  external: boolean;
+};
+export type CalendarEvent = {
+  id: string;
+  calendar_id: string;
+  title: string;
+  description: string;
+  location: string;
+  start: CalendarEventTime;
+  end: CalendarEventTime;
+  status: string;
+  attendees: CalendarAttendee[];
+  recurrence: string[];
+  conference_url: string | null;
+  html_link: string | null;
+  organizer_email: string | null;
+  updated_at: string | null;
+  external_content: true;
+  trust: 'untrusted';
+};

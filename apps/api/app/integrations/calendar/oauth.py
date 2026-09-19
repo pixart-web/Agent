@@ -5,7 +5,10 @@ from uuid import UUID, uuid4
 import httpx
 
 from app.core.config import Settings
-from app.integrations.email.errors import EmailAuthenticationError, EmailTransientError
+from app.integrations.calendar.errors import (
+    CalendarAuthenticationError,
+    CalendarTransientError,
+)
 from app.integrations.oauth_state import (
     IntegrationOAuthStateCodec,
     InvalidOAuthStateError,
@@ -15,22 +18,20 @@ from app.integrations.oauth_state import (
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
-OAUTH_PROVIDER = "gmail"
-OAUTH_PURPOSE = "email_oauth"
+OAUTH_PROVIDER = "google_calendar"
+OAUTH_PURPOSE = "calendar_oauth"
 INVALID_STATE_MESSAGE = "OAuth authorization could not be validated"
 
 
-class GmailOAuthClient:
+class GoogleCalendarOAuthClient:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
     @property
     def scopes(self) -> list[str]:
-        values = ["https://www.googleapis.com/auth/gmail.readonly"]
-        if self.settings.email_send_enabled:
-            values.append("https://www.googleapis.com/auth/gmail.send")
-        if self.settings.email_mark_read_enabled:
-            values.append("https://www.googleapis.com/auth/gmail.modify")
+        values = ["https://www.googleapis.com/auth/calendar.readonly"]
+        if self.settings.calendar_write_enabled:
+            values.append("https://www.googleapis.com/auth/calendar.events")
         return values
 
     def issue_state(
@@ -45,26 +46,20 @@ class GmailOAuthClient:
             user_id,
             state_id or uuid4(),
             now,
-            expires_at or now + timedelta(minutes=self.settings.email_oauth_state_expire_minutes),
+            expires_at
+            or now + timedelta(minutes=self.settings.calendar_oauth_state_expire_minutes),
         )
 
     def decode_state(self, state: str) -> OAuthStateClaims:
         try:
             return IntegrationOAuthStateCodec(self.settings, OAUTH_PURPOSE).decode(state)
         except InvalidOAuthStateError as error:
-            raise EmailAuthenticationError(INVALID_STATE_MESSAGE) from error
-
-    def state_user(self, state: str) -> UUID:
-        return self.decode_state(state).user_id
-
-    def validate_state(self, state: str, user_id: UUID) -> None:
-        if self.decode_state(state).user_id != user_id:
-            raise EmailAuthenticationError(INVALID_STATE_MESSAGE)
+            raise CalendarAuthenticationError(INVALID_STATE_MESSAGE) from error
 
     def authorization_url(self, state: str) -> str:
         params = {
             "client_id": self.settings.google_client_id,
-            "redirect_uri": self.settings.google_redirect_uri,
+            "redirect_uri": self.settings.google_calendar_redirect_uri,
             "response_type": "code",
             "scope": " ".join(self.scopes),
             "access_type": "offline",
@@ -80,7 +75,7 @@ class GmailOAuthClient:
                 "code": code,
                 "client_id": self.settings.google_client_id,
                 "client_secret": self.settings.google_client_secret.get_secret_value(),
-                "redirect_uri": self.settings.google_redirect_uri,
+                "redirect_uri": self.settings.google_calendar_redirect_uri,
                 "grant_type": "authorization_code",
             }
         )
@@ -96,7 +91,7 @@ class GmailOAuthClient:
         )
         token = payload.get("access_token")
         if not isinstance(token, str):
-            raise EmailAuthenticationError("Google token response has no access token")
+            raise CalendarAuthenticationError("Google token response has no access token")
         return token
 
     def revoke(self, refresh_token: str) -> None:
@@ -104,23 +99,23 @@ class GmailOAuthClient:
             response = httpx.post(
                 REVOKE_URL,
                 params={"token": refresh_token},
-                timeout=self.settings.email_api_timeout_seconds,
+                timeout=self.settings.calendar_api_timeout_seconds,
             )
         except httpx.HTTPError:
             return
         if response.status_code not in {200, 400}:
-            raise EmailTransientError("Google credential revocation failed")
+            raise CalendarTransientError("Google credential revocation failed")
 
     def _token(self, data: dict[str, object]) -> dict[str, object]:
         try:
             response = httpx.post(
-                TOKEN_URL, data=data, timeout=self.settings.email_api_timeout_seconds
+                TOKEN_URL, data=data, timeout=self.settings.calendar_api_timeout_seconds
             )
         except httpx.HTTPError as error:
-            raise EmailTransientError("Google OAuth service is unavailable") from error
+            raise CalendarTransientError("Google OAuth service is unavailable") from error
         if response.status_code >= 400:
-            raise EmailAuthenticationError("Google OAuth authorization failed")
+            raise CalendarAuthenticationError("Google OAuth authorization failed")
         payload = response.json()
         if not isinstance(payload, dict):
-            raise EmailAuthenticationError("Google OAuth response is invalid")
+            raise CalendarAuthenticationError("Google OAuth response is invalid")
         return payload

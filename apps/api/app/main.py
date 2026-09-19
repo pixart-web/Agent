@@ -19,6 +19,13 @@ from app.execution.exceptions import (
     ToolTimeoutError,
     ToolVersionError,
 )
+from app.integrations.calendar.errors import (
+    CalendarAuthenticationError,
+    CalendarNotFoundError,
+    CalendarRateLimitError,
+    CalendarTimeoutError,
+    CalendarTransientError,
+)
 from app.integrations.email.errors import (
     EmailAuthenticationError,
     EmailNotFoundError,
@@ -62,15 +69,25 @@ async def ai_error_handler(_request: Request, error: AIError) -> JSONResponse:
 
 @app.exception_handler(ExecutionError)
 async def execution_error_handler(_request: Request, error: ExecutionError) -> JSONResponse:
-    if isinstance(error, (ToolNotFoundError, EmailNotFoundError)):
+    if isinstance(error, (ToolNotFoundError, EmailNotFoundError, CalendarNotFoundError)):
         status_code = status.HTTP_404_NOT_FOUND
-    elif isinstance(error, EmailAuthenticationError):
+    elif isinstance(error, (EmailAuthenticationError, CalendarAuthenticationError)):
         status_code = status.HTTP_401_UNAUTHORIZED
     elif isinstance(error, ToolPermissionError):
         status_code = status.HTTP_403_FORBIDDEN
     elif isinstance(error, (ToolInputValidationError, ToolVersionError)):
         status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    elif isinstance(error, (ToolTimeoutError, EmailRateLimitError, EmailTransientError)):
+    elif isinstance(
+        error,
+        (
+            ToolTimeoutError,
+            EmailRateLimitError,
+            EmailTransientError,
+            CalendarRateLimitError,
+            CalendarTimeoutError,
+            CalendarTransientError,
+        ),
+    ):
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     else:
         status_code = status.HTTP_409_CONFLICT

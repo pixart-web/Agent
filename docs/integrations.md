@@ -41,3 +41,11 @@ Email uses per-user OAuth accounts stored as encrypted refresh tokens behind a
 provider-neutral service. Reads are on demand; writes and mark-read require fingerprinted
 human approval. Message content is always untrusted, HTML becomes inert text, and attachments
 are metadata-only. See [Email integration](email-integration.md).
+
+## Calendar
+
+Calendar uses a provider-neutral tool/service/provider boundary with encrypted per-user OAuth
+credentials. Reads are green and external content is untrusted. Create, update and cancel are
+yellow, show a complete approval preview, verify the action fingerprint and reserve a durable
+idempotency record before any provider call. Ambiguous write outcomes are not retried. See
+[Calendar integration](calendar-integration.md).
