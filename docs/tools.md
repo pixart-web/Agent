@@ -65,3 +65,10 @@ credentials. Reads are green and external content is untrusted. Create, update a
 yellow, show a complete approval preview, verify the action fingerprint and reserve a durable
 idempotency record before any provider call. Ambiguous write outcomes are not retried. See
 [Calendar integration](calendar-integration.md).
+
+## CRM foundation
+
+CRM records are user-scoped and prepared for future workspace ownership. Reads are green;
+mutations are yellow, exact-payload approved and idempotent. Email and Calendar links verify
+ownership and store only provider references. Similar names never trigger automatic identity
+merges. See [CRM foundation](crm-foundation.md).

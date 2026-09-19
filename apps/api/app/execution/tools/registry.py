@@ -1,7 +1,9 @@
 from app.core.config import Settings
+from app.crm.service import CrmService
 from app.execution.registry import ToolDefinition, ToolRegistry
 from app.execution.tools.calendar import calendar_tool_definitions
 from app.execution.tools.codex import codex_tool_definitions
+from app.execution.tools.crm import crm_tool_definitions
 from app.execution.tools.email import email_tool_definitions
 from app.execution.tools.github import github_tool_definitions
 from app.execution.tools.internal import (
@@ -34,6 +36,7 @@ def build_tool_registry(
     codex_runner: CodexRunner | None = None,
     email_service: EmailService | None = None,
     calendar_service: CalendarService | None = None,
+    crm_service: CrmService | None = None,
 ) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
@@ -114,6 +117,8 @@ def build_tool_registry(
     for definition in calendar_tool_definitions(settings=settings, service=calendar_service):
         registry.register(definition)
     for definition in codex_tool_definitions(settings=settings, runner=codex_runner):
+        registry.register(definition)
+    for definition in crm_tool_definitions(service=crm_service):
         registry.register(definition)
     for definition in email_tool_definitions(settings=settings, service=email_service):
         registry.register(definition)

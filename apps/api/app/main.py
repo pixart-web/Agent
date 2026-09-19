@@ -11,6 +11,7 @@ from app.ai.exceptions import (
 )
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.crm.errors import CrmNotFoundError
 from app.execution.exceptions import (
     ExecutionError,
     ToolInputValidationError,
@@ -69,7 +70,10 @@ async def ai_error_handler(_request: Request, error: AIError) -> JSONResponse:
 
 @app.exception_handler(ExecutionError)
 async def execution_error_handler(_request: Request, error: ExecutionError) -> JSONResponse:
-    if isinstance(error, (ToolNotFoundError, EmailNotFoundError, CalendarNotFoundError)):
+    if isinstance(
+        error,
+        (ToolNotFoundError, EmailNotFoundError, CalendarNotFoundError, CrmNotFoundError),
+    ):
         status_code = status.HTTP_404_NOT_FOUND
     elif isinstance(error, (EmailAuthenticationError, CalendarAuthenticationError)):
         status_code = status.HTTP_401_UNAUTHORIZED

@@ -48,6 +48,7 @@ jobs:
       - name: Validate Alembic offline
         working-directory: apps/api
         run: |
+          python -m alembic downgrade 20260919_0011:20260919_0010 --sql > /dev/null
           python -m alembic downgrade 20260919_0010:20260823_0009 --sql > /dev/null
           python -m alembic downgrade 20260823_0009:20260823_0008 --sql > /dev/null
           python -m alembic downgrade 20260823_0008:20260821_0007 --sql > /dev/null
@@ -108,8 +109,8 @@ jobs:
         working-directory: apps/api
         run: |
           python -m alembic upgrade head
-          python -m alembic downgrade 20260823_0009
-          python -m alembic upgrade 20260919_0010
+          python -m alembic downgrade 20260919_0010
+          python -m alembic upgrade 20260919_0011
       - name: Test locking, outbox, and Redis
         run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
 

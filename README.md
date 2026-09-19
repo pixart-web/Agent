@@ -304,3 +304,10 @@ Kiko provides provider-neutral, read-first Google Calendar access with one-shot 
 encrypted per-user credentials and approval-gated, fingerprinted event writes. Calendar
 content is untrusted and ambiguous delivery is never blindly retried. See
 [Calendar integration](docs/calendar-integration.md).
+
+## CRM foundation
+
+Kiko maintains governed organizations, contacts, contact methods, notes and activity links.
+Identity is explicitly owned, ambiguous matches are never auto-merged, and Email/Calendar
+associations retain references rather than copying external content. See
+[CRM foundation](docs/crm-foundation.md).

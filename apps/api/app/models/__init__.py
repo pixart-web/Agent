@@ -8,6 +8,18 @@ from app.models.calendar_reference import CalendarReference
 from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.codex_run import CodexRun
 from app.models.command import Command
+from app.models.crm import (
+    CrmActivity,
+    CrmAddress,
+    CrmContact,
+    CrmContactMethod,
+    CrmContactTag,
+    CrmNote,
+    CrmOrganization,
+    CrmOrganizationMember,
+    CrmOrganizationTag,
+    CrmTag,
+)
 from app.models.email_reference import EmailReference
 from app.models.email_send_record import EmailSendRecord
 from app.models.integration_account import IntegrationAccount
@@ -29,6 +41,16 @@ __all__ = [
     "CalendarReference",
     "CalendarWriteRecord",
     "Command",
+    "CrmActivity",
+    "CrmAddress",
+    "CrmContact",
+    "CrmContactMethod",
+    "CrmContactTag",
+    "CrmNote",
+    "CrmOrganization",
+    "CrmOrganizationMember",
+    "CrmOrganizationTag",
+    "CrmTag",
     "EmailReference",
     "EmailSendRecord",
     "IntegrationAccount",

@@ -152,12 +152,19 @@ const ACTION_LABELS: Record<string, string> = {
   'calendar.create_event': 'Create Calendar Event',
   'calendar.update_event': 'Update Calendar Event',
   'calendar.cancel_event': 'Cancel Calendar Event',
+  'crm.create_organization': 'Create CRM Organization',
+  'crm.create_contact': 'Create CRM Contact',
+  'crm.update_contact': 'Update CRM Contact',
+  'crm.add_note': 'Add CRM Note',
+  'crm.link_email': 'Link Email to CRM',
+  'crm.link_event': 'Link Event to CRM',
 };
 
 export function ActionProposalPreview({ action }: { action: TaskAction }) {
   const github = action.tool_name.startsWith('github.');
   const email = action.tool_name.startsWith('email.');
   const calendar = action.tool_name.startsWith('calendar.');
+  const crm = action.tool_name.startsWith('crm.');
   const repository = action.input_payload.repository;
   const title = action.input_payload.title;
   const account = action.input_payload.account_id;
@@ -212,8 +219,11 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
         <span>Location: {location}</span>
       )}
       {calendar && attendees && <span>Attendees: {attendees}</span>}
+      {crm && (
+        <span>Exact payload: {JSON.stringify(action.input_payload)}</span>
+      )}
       <span>Risk: {action.risk_level}</span>
-      {(github || email || calendar) && (
+      {(github || email || calendar || crm) && (
         <span>
           Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
         </span>

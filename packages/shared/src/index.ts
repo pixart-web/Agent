@@ -474,3 +474,59 @@ export type CalendarEvent = {
   external_content: true;
   trust: 'untrusted';
 };
+
+export type CrmContactMethod = {
+  id: string;
+  method_type: 'email' | 'phone';
+  value: string;
+  label: string | null;
+  is_primary: boolean;
+};
+export type CrmAddress = {
+  id: string;
+  kind: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  region: string | null;
+  postal_code: string | null;
+  country_code: string;
+};
+export type CrmContact = {
+  id: string;
+  organization_id: string | null;
+  full_name: string;
+  job_title: string | null;
+  website: string | null;
+  status: string;
+  source: string;
+  methods: CrmContactMethod[];
+  addresses: CrmAddress[];
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+};
+export type CrmOrganization = {
+  id: string;
+  name: string;
+  website: string | null;
+  status: string;
+  source: string;
+  addresses: CrmAddress[];
+  tags: string[];
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+};
+export type CrmActivity = {
+  id: string;
+  contact_id: string | null;
+  organization_id: string | null;
+  activity_type: string;
+  subject: string;
+  details: Record<string, unknown>;
+  source: string;
+  occurred_at: string;
+  email_reference_id: string | null;
+  calendar_reference_id: string | null;
+};
