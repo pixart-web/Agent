@@ -72,3 +72,14 @@ CRM records are user-scoped and prepared for future workspace ownership. Reads a
 mutations are yellow, exact-payload approved and idempotent. Email and Calendar links verify
 ownership and store only provider references. Similar names never trigger automatic identity
 merges. See [CRM foundation](crm-foundation.md).
+
+## Client-management tools
+
+Green reads: crm.list_clients, crm.get_client_360, crm.list_projects,
+crm.list_pipelines, and crm.list_opportunities.
+
+Yellow mutations: crm.create_client, crm.update_client, crm.create_project,
+crm.update_project, crm.create_pipeline, crm.create_opportunity,
+crm.update_opportunity, and crm.link_task. Commercial mutations are restricted to Sales;
+Support may update projects and link tasks. Client insights always declare fact/model
+provenance.

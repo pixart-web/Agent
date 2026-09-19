@@ -49,3 +49,11 @@ CRM records are user-scoped and prepared for future workspace ownership. Reads a
 mutations are yellow, exact-payload approved and idempotent. Email and Calendar links verify
 ownership and store only provider references. Similar names never trigger automatic identity
 merges. See [CRM foundation](crm-foundation.md).
+
+## Client-management approvals
+
+Creating or changing a client, project, pipeline, opportunity, or task association is a yellow
+action. The approval preview contains the exact canonical payload and its fingerprint.
+Mutations do not retry automatically, lock the target when updating, and append both an audit
+event and CRM record-history event. Client 360, project, pipeline and opportunity reads are
+green and remain user-scoped.

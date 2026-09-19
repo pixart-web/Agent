@@ -311,3 +311,11 @@ Kiko maintains governed organizations, contacts, contact methods, notes and acti
 Identity is explicitly owned, ambiguous matches are never auto-merged, and Email/Calendar
 associations retain references rather than copying external content. See
 [CRM foundation](docs/crm-foundation.md).
+
+## Client management and Client 360
+
+Phase 6 adds operational client profiles, projects, pipelines, opportunities, linked Kiko
+tasks and append-only record history on top of the CRM identity foundation. The authenticated
+Client 360 dashboard separates verified CRM facts from model-generated summaries and aggregates
+only owned contacts, provider references, notes and activity. See
+[Client management](docs/client-management.md).

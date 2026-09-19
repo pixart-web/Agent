@@ -1,11 +1,12 @@
 'use client';
 
-import type { CrmContact, CrmOrganization } from '@agent/shared';
+import type { CrmClient, CrmContact, CrmOrganization } from '@agent/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
 import {
+  listCrmClients,
   listCrmOrganizations,
   searchCrmContacts,
 } from '../../../lib/workflow-client';
@@ -14,6 +15,7 @@ import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 export default function CrmPage() {
   const { user, loading } = useAuthenticatedUser();
   const [query, setQuery] = useState('');
+  const [clients, setClients] = useState<CrmClient[]>([]);
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [organizations, setOrganizations] = useState<CrmOrganization[]>([]);
   const [error, setError] = useState('');
@@ -21,10 +23,12 @@ export default function CrmPage() {
   function refresh(search = '') {
     setError('');
     return Promise.all([
+      listCrmClients(search),
       searchCrmContacts(search),
       listCrmOrganizations(search),
     ])
-      .then(([contactResult, organizationResult]) => {
+      .then(([clientResult, contactResult, organizationResult]) => {
+        setClients(clientResult.clients);
         setContacts(contactResult.contacts);
         setOrganizations(organizationResult.organizations);
       })
@@ -70,6 +74,25 @@ export default function CrmPage() {
         </form>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
+      <section className="workflow-panel">
+        <h2>Clients</h2>
+        <div className="agent-grid">
+          {clients.map((client) => (
+            <Link
+              className="agent-card agent-card--link"
+              href={'/dashboard/crm/clients/' + client.id}
+              key={client.id}
+            >
+              <p className="eyebrow">{client.lifecycle_status}</p>
+              <h3>{client.organization.name}</h3>
+              <p>{client.industry || 'No industry'}</p>
+            </Link>
+          ))}
+        </div>
+        {clients.length === 0 && (
+          <p className="empty-state">No client profiles found.</p>
+        )}
+      </section>
       <section className="workflow-panel">
         <h2>Organizations</h2>
         <div className="agent-grid">
