@@ -76,7 +76,7 @@ def email_status(
     db: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> EmailIntegrationStatus:
-    accounts = IntegrationAccountRepository(db).list_owned(user.id)
+    accounts = IntegrationAccountRepository(db).list_owned(user.id, "gmail")
     return EmailIntegrationStatus(
         enabled=settings.email_integration_enabled,
         provider=settings.email_provider,
@@ -94,7 +94,10 @@ def email_accounts(
     db: Annotated[Session, Depends(get_db)],
 ) -> EmailAccountsOutput:
     return EmailAccountsOutput(
-        accounts=[_account(value) for value in IntegrationAccountRepository(db).list_owned(user.id)]
+        accounts=[
+            _account(value)
+            for value in IntegrationAccountRepository(db).list_owned(user.id, "gmail")
+        ]
     )
 
 
@@ -214,7 +217,7 @@ def email_disconnect(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> EmailAccountOutput:
     _require_enabled(settings)
-    account = IntegrationAccountRepository(db).get_owned(value.account_id, user.id)
+    account = IntegrationAccountRepository(db).get_owned(value.account_id, user.id, "gmail")
     if account is None:
         raise EmailNotFoundError("Email account was not found")
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())

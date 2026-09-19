@@ -7,6 +7,10 @@ import type {
   AgentOverview,
   AgentRun,
   AgentRunResponse,
+  CalendarAccount,
+  CalendarEvent,
+  CalendarInfo,
+  CalendarIntegrationStatus,
   EmailAccount,
   EmailIntegrationStatus,
   EmailMessage,
@@ -396,6 +400,68 @@ export function getEmailMessage(
   return request(
     '/api/v1/email/messages/' +
       encodeURIComponent(messageId) +
+      '?' +
+      query.toString(),
+  );
+}
+
+export function getCalendarIntegrationStatus(): Promise<CalendarIntegrationStatus> {
+  return request('/api/v1/integrations/calendar/status');
+}
+
+export function listCalendarAccounts(): Promise<CalendarAccount[]> {
+  return request<{ accounts: CalendarAccount[] }>(
+    '/api/v1/integrations/calendar/accounts',
+  ).then((value) => value.accounts);
+}
+
+export function connectCalendar(): Promise<{ authorization_url: string }> {
+  return request('/api/v1/integrations/calendar/connect', { method: 'POST' });
+}
+
+export function disconnectCalendar(
+  accountId: string,
+): Promise<CalendarAccount> {
+  return request(
+    '/api/v1/integrations/calendar/disconnect',
+    jsonRequest('POST', { account_id: accountId }),
+  );
+}
+
+export function listCalendars(
+  accountId: string,
+): Promise<{ calendars: CalendarInfo[] }> {
+  const query = new URLSearchParams({ account_id: accountId });
+  return request('/api/v1/calendar/calendars?' + query.toString());
+}
+
+export function listCalendarEvents(
+  accountId: string,
+  calendarId: string,
+  timeMin: string,
+  timeMax: string,
+): Promise<{ events: CalendarEvent[] }> {
+  const query = new URLSearchParams({
+    account_id: accountId,
+    calendar_id: calendarId,
+    time_min: timeMin,
+    time_max: timeMax,
+  });
+  return request('/api/v1/calendar/events?' + query.toString());
+}
+
+export function getCalendarEvent(
+  accountId: string,
+  calendarId: string,
+  eventId: string,
+): Promise<{ event: CalendarEvent }> {
+  const query = new URLSearchParams({
+    account_id: accountId,
+    calendar_id: calendarId,
+  });
+  return request(
+    '/api/v1/calendar/events/' +
+      encodeURIComponent(eventId) +
       '?' +
       query.toString(),
   );

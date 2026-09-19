@@ -284,7 +284,7 @@ class EmailService:
         return self.provider_factory(token, self.settings, self.policy)
 
     def _owned(self, session: Session, account_id: UUID, user_id: UUID) -> IntegrationAccount:
-        account = IntegrationAccountRepository(session).get_owned(account_id, user_id)
+        account = IntegrationAccountRepository(session).get_owned(account_id, user_id, "gmail")
         if not account:
             raise EmailNotFoundError("Email account was not found")
         if account.status != IntegrationAccountStatus.CONNECTED:

@@ -297,3 +297,10 @@ approval. Credentials are encrypted server-side, HTML is converted to inert text
 attachments are metadata-only, and ambiguous writes are never retried automatically.
 Configure the disabled-by-default values in .env.example and see
 [Email integration](docs/email-integration.md).
+
+## Calendar integration
+
+Kiko provides provider-neutral, read-first Google Calendar access with one-shot OAuth,
+encrypted per-user credentials and approval-gated, fingerprinted event writes. Calendar
+content is untrusted and ambiguous delivery is never blindly retried. See
+[Calendar integration](docs/calendar-integration.md).

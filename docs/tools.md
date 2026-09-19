@@ -57,3 +57,11 @@ Phase 5B email tools use version 2:
 
 Tokens are resolved from encrypted per-user accounts only in backend execution. Email bodies
 are untrusted and excluded from audit metadata. See [Email integration](email-integration.md).
+
+## Calendar
+
+Calendar uses a provider-neutral tool/service/provider boundary with encrypted per-user OAuth
+credentials. Reads are green and external content is untrusted. Create, update and cancel are
+yellow, show a complete approval preview, verify the action fingerprint and reserve a durable
+idempotency record before any provider call. Ambiguous write outcomes are not retried. See
+[Calendar integration](calendar-integration.md).

@@ -14,13 +14,16 @@ class IntegrationAccountRepository:
         self.session.add(value)
         return value
 
-    def get_owned(self, account_id: UUID, user_id: UUID) -> IntegrationAccount | None:
-        return self.session.scalar(
-            select(IntegrationAccount).where(
-                IntegrationAccount.id == account_id,
-                IntegrationAccount.user_id == user_id,
-            )
-        )
+    def get_owned(
+        self, account_id: UUID, user_id: UUID, provider: str | None = None
+    ) -> IntegrationAccount | None:
+        conditions = [
+            IntegrationAccount.id == account_id,
+            IntegrationAccount.user_id == user_id,
+        ]
+        if provider is not None:
+            conditions.append(IntegrationAccount.provider == provider)
+        return self.session.scalar(select(IntegrationAccount).where(*conditions))
 
     def get_by_external(
         self, user_id: UUID, provider: str, external_id: str
@@ -33,11 +36,14 @@ class IntegrationAccountRepository:
             )
         )
 
-    def list_owned(self, user_id: UUID) -> list[IntegrationAccount]:
+    def list_owned(self, user_id: UUID, provider: str | None = None) -> list[IntegrationAccount]:
+        conditions = [IntegrationAccount.user_id == user_id]
+        if provider is not None:
+            conditions.append(IntegrationAccount.provider == provider)
         return list(
             self.session.scalars(
                 select(IntegrationAccount)
-                .where(IntegrationAccount.user_id == user_id)
+                .where(*conditions)
                 .order_by(IntegrationAccount.email_address)
             )
         )

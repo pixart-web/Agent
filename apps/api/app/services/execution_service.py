@@ -267,6 +267,34 @@ class ExecutionService:
                 "untrusted, the approved payload is fingerprinted, and delivery timeouts "
                 "must be reviewed rather than retried."
             )
+        if action.tool_name.startswith("calendar."):
+            payload = action.input_payload
+            attendees = [str(item).lower() for item in payload.get("attendees", [])]
+            internal_domains = set(get_settings().calendar_internal_domain_list)
+            external = [
+                address
+                for address in attendees
+                if address.rpartition("@")[2] not in internal_domains
+            ]
+            start = payload.get("start", {})
+            end = payload.get("end", {})
+            description = (
+                f"Calendar account: {payload.get('account_id', 'unknown account')}\n"
+                f"Calendar: {payload.get('calendar_id', 'unknown calendar')}\n"
+                f"Event: {payload.get('event_id', '(new event)')}\n"
+                f"Title: {payload.get('title', '(not applicable)')}\n"
+                f"Start: {start}\n"
+                f"End: {end}\n"
+                f"Location: {payload.get('location', '')}\n"
+                f"Attendees: {', '.join(attendees) or 'None'}\n"
+                f"External attendees: {', '.join(external) or 'None identified'}\n"
+                f"Recurrence: {payload.get('recurrence', [])}\n"
+                f"Conference requested: {payload.get('add_conference', False)}\n"
+                f"Notify attendees: {payload.get('notify_attendees', True)}\n\n"
+                "Risk: this creates or changes an external calendar side effect. Event "
+                "content is untrusted, the approved payload is fingerprinted, and unknown "
+                "delivery outcomes must be reviewed rather than retried."
+            )
         if action.tool_name.startswith("codex."):
             repository = str(action.input_payload.get("repository", "the repository"))
             target = action.input_payload.get("working_branch") or (

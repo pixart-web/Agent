@@ -1,5 +1,6 @@
 from app.core.config import Settings
 from app.execution.registry import ToolDefinition, ToolRegistry
+from app.execution.tools.calendar import calendar_tool_definitions
 from app.execution.tools.codex import codex_tool_definitions
 from app.execution.tools.email import email_tool_definitions
 from app.execution.tools.github import github_tool_definitions
@@ -17,6 +18,7 @@ from app.execution.tools.internal import (
     SummarizeInput,
     SummarizeOutput,
 )
+from app.integrations.calendar.service import CalendarService
 from app.integrations.codex.base import CodexRunner
 from app.integrations.email.service import EmailService
 from app.integrations.github.client import GitHubClientFactory, build_github_client
@@ -31,6 +33,7 @@ def build_tool_registry(
     github_client_factory: GitHubClientFactory = build_github_client,
     codex_runner: CodexRunner | None = None,
     email_service: EmailService | None = None,
+    calendar_service: CalendarService | None = None,
 ) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
@@ -108,6 +111,8 @@ def build_tool_registry(
             handler=SimulatedActionHandler(),
         )
     )
+    for definition in calendar_tool_definitions(settings=settings, service=calendar_service):
+        registry.register(definition)
     for definition in codex_tool_definitions(settings=settings, runner=codex_runner):
         registry.register(definition)
     for definition in email_tool_definitions(settings=settings, service=email_service):

@@ -4,6 +4,8 @@ from app.models.agent import Agent
 from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
+from app.models.calendar_reference import CalendarReference
+from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.codex_run import CodexRun
 from app.models.command import Command
 from app.models.email_reference import EmailReference
@@ -24,6 +26,8 @@ from app.models.user import User
 __all__ = [
     "AgentRun",
     "Agent",
+    "CalendarReference",
+    "CalendarWriteRecord",
     "Command",
     "EmailReference",
     "EmailSendRecord",

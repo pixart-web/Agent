@@ -1,6 +1,7 @@
 'use client';
 
 import type {
+  CalendarIntegrationStatus,
   EmailIntegrationStatus,
   GitHubIntegrationStatus,
 } from '@agent/shared';
@@ -9,6 +10,7 @@ import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
 import {
+  getCalendarIntegrationStatus,
   getEmailIntegrationStatus,
   getGitHubIntegrationStatus,
 } from '../../../lib/workflow-client';
@@ -18,11 +20,15 @@ export default function IntegrationsPage() {
   const { user, loading } = useAuthenticatedUser();
   const [github, setGitHub] = useState<GitHubIntegrationStatus | null>(null);
   const [email, setEmail] = useState<EmailIntegrationStatus | null>(null);
+  const [calendar, setCalendar] = useState<CalendarIntegrationStatus | null>(
+    null,
+  );
 
   useEffect(() => {
     if (user) {
       void getGitHubIntegrationStatus().then(setGitHub);
       void getEmailIntegrationStatus().then(setEmail);
+      void getCalendarIntegrationStatus().then(setCalendar);
     }
   }, [user]);
 
@@ -66,6 +72,18 @@ export default function IntegrationsPage() {
           </p>
           <p>Provider: {email?.provider || 'gmail'}</p>
         </Link>
+        <Link
+          className="agent-card agent-card--link"
+          href="/dashboard/integrations/calendar"
+        >
+          <p className="eyebrow">Scheduling</p>
+          <h2>Calendar</h2>
+          <p>
+            Status:{' '}
+            {calendar?.connected_accounts ? 'Connected' : 'Not connected'}
+          </p>
+          <p>Provider: {calendar?.provider || 'google_calendar'}</p>
+        </Link>{' '}
       </div>
     </main>
   );

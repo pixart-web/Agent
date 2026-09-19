@@ -142,3 +142,10 @@ class EmailSendStatus(StrEnum):
     SENT = "sent"
     DELIVERY_UNKNOWN = "delivery_unknown"
     FAILED = "failed"
+
+
+class CalendarWriteStatus(StrEnum):
+    PENDING = "pending"
+    SUCCEEDED = "succeeded"
+    DELIVERY_UNKNOWN = "delivery_unknown"
+    FAILED = "failed"
