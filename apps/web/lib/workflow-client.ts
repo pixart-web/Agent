@@ -12,6 +12,8 @@ import type {
   CalendarInfo,
   CalendarIntegrationStatus,
   CrmActivity,
+  CrmClient,
+  CrmClient360,
   CrmContact,
   CrmOrganization,
   EmailAccount,
@@ -509,4 +511,17 @@ export function listCrmActivities(options: {
   if (options.organizationId)
     params.set('organization_id', options.organizationId);
   return request('/api/v1/crm/activities?' + params.toString());
+}
+
+export function listCrmClients(query = ''): Promise<{ clients: CrmClient[] }> {
+  const params = new URLSearchParams();
+  if (query) params.set('query', query);
+  const suffix = params.size ? '?' + params.toString() : '';
+  return request('/api/v1/crm/clients' + suffix);
+}
+
+export function getCrmClient360(clientId: string): Promise<CrmClient360> {
+  return request(
+    '/api/v1/crm/clients/' + encodeURIComponent(clientId) + '/360',
+  );
 }

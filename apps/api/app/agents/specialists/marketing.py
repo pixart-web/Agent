@@ -1,4 +1,4 @@
-from app.agents.prompts.marketing_v3 import PROMPT_VERSION, SYSTEM_PROMPT
+from app.agents.prompts.marketing_v4 import PROMPT_VERSION, SYSTEM_PROMPT
 from app.agents.specialists.common import PromptSpecializedAgent
 
 AGENT = PromptSpecializedAgent(
@@ -13,6 +13,11 @@ AGENT = PromptSpecializedAgent(
             "internal.summarize",
             "internal.create_note",
             "internal.simulate_external_action",
+            "crm.list_clients",
+            "crm.get_client_360",
+            "crm.list_projects",
+            "crm.list_pipelines",
+            "crm.list_opportunities",
             "crm.search_contacts",
             "crm.get_contact",
             "crm.get_organization",

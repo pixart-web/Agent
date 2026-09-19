@@ -44,9 +44,26 @@
 - [x] **5C:** Add governed Google Calendar integration with approval-gated writes.
 - [x] **5D:** Add user-scoped Contacts / CRM foundation with governed identity links.
 
-## Fase 6 — Observabilidade e produção
+## Fase 6 — Complete CRM / client management
 
-- [ ] Add structured logs, metrics, tracing, alerts, and cost monitoring.
-- [ ] Harden security, backups, recovery, and deployment practices.
-- [ ] Add load, reliability, and agent-quality evaluations.
+- [x] Add governed client profiles, projects, pipelines, opportunities, ownership and history.
+- [x] Add a user-scoped Client 360 view with contacts, references, tasks, notes and activity.
+- [x] Distinguish database facts from model-generated summaries in contracts and UI.
+
+## Fase 7 — Marketing & content operations
+
+- [ ] Add governed campaigns, content, approvals and publication lifecycle.
+
+## Fase 8 — Automations
+
+- [ ] Add governed triggers, schedules, runs, pause/resume and failure recovery.
+
+## Fase 9 — Memory, business knowledge & workspaces
+
+- [ ] Add workspace-scoped memory, knowledge provenance, retrieval and permissions.
+
+## Fase 10 — Production readiness
+
+- [ ] Add observability, security hardening, backups, recovery and deployment practices.
+- [ ] Add load, reliability, cost and agent-quality evaluations.
 - [ ] Define production service-level objectives and operating procedures.

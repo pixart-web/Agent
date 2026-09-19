@@ -530,3 +530,86 @@ export type CrmActivity = {
   email_reference_id: string | null;
   calendar_reference_id: string | null;
 };
+
+export type CrmClient = {
+  id: string;
+  organization: CrmOrganization;
+  owner_user_id: string;
+  lifecycle_status: string;
+  industry: string | null;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type CrmProject = {
+  id: string;
+  client_id: string;
+  owner_user_id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  starts_on: string | null;
+  due_on: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type CrmOpportunity = {
+  id: string;
+  client_id: string;
+  contact_id: string | null;
+  pipeline_id: string;
+  stage_id: string;
+  owner_user_id: string;
+  title: string;
+  description: string | null;
+  amount_minor: number;
+  currency: string;
+  probability: number;
+  status: string;
+  expected_close_on: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type CrmTaskSummary = {
+  id: string;
+  project_id: string | null;
+  title: string;
+  status: string;
+  agent_id: string;
+  created_at: string;
+};
+export type CrmNote = {
+  id: string;
+  contact_id: string | null;
+  organization_id: string | null;
+  body: string;
+  source: string;
+  created_at: string;
+};
+export type CrmHistory = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  event_type: string;
+  changes: Record<string, unknown>;
+  created_at: string;
+};
+export type CrmInsight = {
+  kind: 'fact' | 'model_summary';
+  provenance: 'system_fact' | 'llm';
+  text: string;
+  generated_at: string | null;
+};
+export type CrmClient360 = {
+  client: CrmClient;
+  contacts: CrmContact[];
+  emails: CrmActivity[];
+  meetings: CrmActivity[];
+  projects: CrmProject[];
+  tasks: CrmTaskSummary[];
+  activities: CrmActivity[];
+  opportunities: CrmOpportunity[];
+  notes: CrmNote[];
+  history: CrmHistory[];
+  insights: CrmInsight[];
+};

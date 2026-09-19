@@ -6,6 +6,15 @@ from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
 from app.models.calendar_reference import CalendarReference
 from app.models.calendar_write_record import CalendarWriteRecord
+from app.models.client_management import (
+    CrmClient,
+    CrmOpportunity,
+    CrmPipeline,
+    CrmPipelineStage,
+    CrmProject,
+    CrmRecordHistory,
+    CrmTaskLink,
+)
 from app.models.codex_run import CodexRun
 from app.models.command import Command
 from app.models.crm import (
@@ -43,14 +52,21 @@ __all__ = [
     "Command",
     "CrmActivity",
     "CrmAddress",
+    "CrmClient",
     "CrmContact",
     "CrmContactMethod",
     "CrmContactTag",
     "CrmNote",
+    "CrmOpportunity",
     "CrmOrganization",
     "CrmOrganizationMember",
     "CrmOrganizationTag",
+    "CrmPipeline",
+    "CrmPipelineStage",
+    "CrmProject",
+    "CrmRecordHistory",
     "CrmTag",
+    "CrmTaskLink",
     "EmailReference",
     "EmailSendRecord",
     "IntegrationAccount",

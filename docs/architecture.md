@@ -231,3 +231,11 @@ CRM records are user-scoped and prepared for future workspace ownership. Reads a
 mutations are yellow, exact-payload approved and idempotent. Email and Calendar links verify
 ownership and store only provider references. Similar names never trigger automatic identity
 merges. See [CRM foundation](crm-foundation.md).
+
+## Operational client context
+
+A client profile is a user-owned projection over one CRM organization. Projects,
+opportunities, pipelines, task links and record history remain separate bounded records with
+explicit user ownership. Client 360 is a read model assembled inside the service boundary; it
+does not duplicate mailbox or calendar bodies. Workspace ownership can later replace user
+ownership through an additive migration without changing the aggregate boundaries.
