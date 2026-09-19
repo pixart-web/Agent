@@ -1,4 +1,4 @@
-from app.agents.prompts.support_v3 import PROMPT_VERSION, SYSTEM_PROMPT
+from app.agents.prompts.support_v4 import PROMPT_VERSION, SYSTEM_PROMPT
 from app.agents.specialists.common import PromptSpecializedAgent
 
 AGENT = PromptSpecializedAgent(
@@ -13,6 +13,17 @@ AGENT = PromptSpecializedAgent(
             "internal.summarize",
             "internal.create_note",
             "internal.simulate_external_action",
+            "crm.search_contacts",
+            "crm.get_contact",
+            "crm.get_organization",
+            "crm.list_organizations",
+            "crm.list_activities",
+            "crm.create_organization",
+            "crm.create_contact",
+            "crm.update_contact",
+            "crm.add_note",
+            "crm.link_email",
+            "crm.link_event",
             "calendar.list_calendars",
             "calendar.list_events",
             "calendar.search_events",

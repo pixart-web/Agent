@@ -11,6 +11,9 @@ import type {
   CalendarEvent,
   CalendarInfo,
   CalendarIntegrationStatus,
+  CrmActivity,
+  CrmContact,
+  CrmOrganization,
   EmailAccount,
   EmailIntegrationStatus,
   EmailMessage,
@@ -465,4 +468,45 @@ export function getCalendarEvent(
       '?' +
       query.toString(),
   );
+}
+
+export function searchCrmContacts(
+  query = '',
+): Promise<{ contacts: CrmContact[] }> {
+  const params = new URLSearchParams();
+  if (query) params.set('query', query);
+  const suffix = params.size ? '?' + params.toString() : '';
+  return request('/api/v1/crm/contacts' + suffix);
+}
+
+export function getCrmContact(contactId: string): Promise<CrmContact> {
+  return request('/api/v1/crm/contacts/' + encodeURIComponent(contactId));
+}
+
+export function listCrmOrganizations(
+  query = '',
+): Promise<{ organizations: CrmOrganization[] }> {
+  const params = new URLSearchParams();
+  if (query) params.set('query', query);
+  const suffix = params.size ? '?' + params.toString() : '';
+  return request('/api/v1/crm/organizations' + suffix);
+}
+
+export function getCrmOrganization(
+  organizationId: string,
+): Promise<CrmOrganization> {
+  return request(
+    '/api/v1/crm/organizations/' + encodeURIComponent(organizationId),
+  );
+}
+
+export function listCrmActivities(options: {
+  contactId?: string;
+  organizationId?: string;
+}): Promise<{ activities: CrmActivity[] }> {
+  const params = new URLSearchParams();
+  if (options.contactId) params.set('contact_id', options.contactId);
+  if (options.organizationId)
+    params.set('organization_id', options.organizationId);
+  return request('/api/v1/crm/activities?' + params.toString());
 }

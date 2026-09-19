@@ -42,6 +42,7 @@
 - [x] **5B:** Add provider-neutral email, Gmail OAuth, encrypted refresh tokens,
       governed Support/Sales tools, idempotent writes, safe dashboards, tests, and docs.
 - [x] **5C:** Add governed Google Calendar integration with approval-gated writes.
+- [x] **5D:** Add user-scoped Contacts / CRM foundation with governed identity links.
 
 ## Fase 6 — Observabilidade e produção
 

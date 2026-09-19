@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -294,6 +295,20 @@ class ExecutionService:
                 "Risk: this creates or changes an external calendar side effect. Event "
                 "content is untrusted, the approved payload is fingerprinted, and unknown "
                 "delivery outcomes must be reviewed rather than retried."
+            )
+        if action.tool_name.startswith("crm."):
+            approved_payload = json.dumps(
+                action.input_payload,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            description = (
+                f"CRM action: {action.tool_name}\n"
+                f"Exact approved payload:\n{approved_payload}\n\n"
+                "Risk: this changes governed business records or links an external reference. "
+                "External notes and linked provider data remain untrusted, ownership is enforced, "
+                "and the exact payload is fingerprinted."
             )
         if action.tool_name.startswith("codex."):
             repository = str(action.input_payload.get("repository", "the repository"))
