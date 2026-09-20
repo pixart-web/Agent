@@ -613,3 +613,72 @@ export type CrmClient360 = {
   history: CrmHistory[];
   insights: CrmInsight[];
 };
+
+export type MarketingCampaign = {
+  id: string;
+  client_id: string | null;
+  owner_user_id: string;
+  name: string;
+  objective: string;
+  status: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type MarketingContent = {
+  id: string;
+  campaign_id: string;
+  task_id: string | null;
+  content_type: string;
+  channel: string;
+  title: string;
+  body: string;
+  lifecycle_status: string;
+  scheduled_for: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type MarketingContentHistory = {
+  id: string;
+  from_status: string | null;
+  to_status: string;
+  reason: string | null;
+  created_at: string;
+};
+export type MarketingAsset = {
+  id: string;
+  campaign_id: string | null;
+  content_id: string | null;
+  name: string;
+  media_type: string;
+  locator: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+export type MarketingPublication = {
+  id: string;
+  content_id: string;
+  channel: string;
+  external_reference: string;
+  published_at: string;
+  created_at: string;
+};
+export type MarketingMetric = {
+  id: string;
+  campaign_id: string | null;
+  content_id: string | null;
+  metric_name: string;
+  value: number;
+  source: string;
+  measured_at: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+export type MarketingContentDetail = {
+  content: MarketingContent;
+  history: MarketingContentHistory[];
+  assets: MarketingAsset[];
+  publications: MarketingPublication[];
+  metrics: MarketingMetric[];
+};

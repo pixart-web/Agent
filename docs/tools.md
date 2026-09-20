@@ -83,3 +83,13 @@ crm.update_project, crm.create_pipeline, crm.create_opportunity,
 crm.update_opportunity, and crm.link_task. Commercial mutations are restricted to Sales;
 Support may update projects and link tasks. Client insights always declare fact/model
 provenance.
+
+## Marketing tools
+
+Green reads: marketing.list_campaigns, marketing.get_campaign, marketing.list_content,
+marketing.get_content, marketing.list_content_calendar and marketing.list_metrics.
+
+Yellow mutations: marketing.create_campaign, marketing.update_campaign,
+marketing.create_content, marketing.update_content, marketing.transition_content,
+marketing.schedule_content, marketing.record_publication, marketing.add_asset_metadata and
+marketing.record_metric. No marketing.publish tool exists.

@@ -33,6 +33,7 @@ from app.integrations.email.errors import (
     EmailRateLimitError,
     EmailTransientError,
 )
+from app.marketing.errors import MarketingNotFoundError
 
 settings = get_settings()
 
@@ -72,7 +73,13 @@ async def ai_error_handler(_request: Request, error: AIError) -> JSONResponse:
 async def execution_error_handler(_request: Request, error: ExecutionError) -> JSONResponse:
     if isinstance(
         error,
-        (ToolNotFoundError, EmailNotFoundError, CalendarNotFoundError, CrmNotFoundError),
+        (
+            ToolNotFoundError,
+            EmailNotFoundError,
+            CalendarNotFoundError,
+            CrmNotFoundError,
+            MarketingNotFoundError,
+        ),
     ):
         status_code = status.HTTP_404_NOT_FOUND
     elif isinstance(error, (EmailAuthenticationError, CalendarAuthenticationError)):

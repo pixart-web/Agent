@@ -21,6 +21,9 @@ import type {
   EmailMessage,
   EmailMessageSummary,
   GitHubIntegrationStatus,
+  MarketingCampaign,
+  MarketingContent,
+  MarketingContentDetail,
 } from '@agent/shared';
 import type {
   AgentId,
@@ -524,4 +527,48 @@ export function getCrmClient360(clientId: string): Promise<CrmClient360> {
   return request(
     '/api/v1/crm/clients/' + encodeURIComponent(clientId) + '/360',
   );
+}
+
+export function listMarketingCampaigns(
+  query = '',
+): Promise<{ campaigns: MarketingCampaign[] }> {
+  const params = new URLSearchParams();
+  if (query) params.set('query', query);
+  const suffix = params.size ? '?' + params.toString() : '';
+  return request('/api/v1/marketing/campaigns' + suffix);
+}
+
+export function getMarketingCampaign(
+  campaignId: string,
+): Promise<MarketingCampaign> {
+  return request(
+    '/api/v1/marketing/campaigns/' + encodeURIComponent(campaignId),
+  );
+}
+
+export function listMarketingContent(
+  campaignId: string,
+): Promise<{ content: MarketingContent[] }> {
+  return request(
+    '/api/v1/marketing/campaigns/' +
+      encodeURIComponent(campaignId) +
+      '/content',
+  );
+}
+
+export function getMarketingContent(
+  contentId: string,
+): Promise<MarketingContentDetail> {
+  return request('/api/v1/marketing/content/' + encodeURIComponent(contentId));
+}
+
+export function listMarketingContentCalendar(
+  startsAt: string,
+  endsAt: string,
+): Promise<{ content: MarketingContent[] }> {
+  const params = new URLSearchParams({
+    starts_at: startsAt,
+    ends_at: endsAt,
+  });
+  return request('/api/v1/marketing/calendar?' + params.toString());
 }
