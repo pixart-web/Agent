@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.ai.exceptions import (
     AIConfigurationError,
@@ -34,14 +35,23 @@ from app.integrations.email.errors import (
     EmailTransientError,
 )
 from app.marketing.errors import MarketingNotFoundError
+from app.observability.metrics import metrics
+from app.observability.middleware import ObservabilityMiddleware
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if settings.app_env.lower() == "production" else "/docs",
+    redoc_url=None if settings.app_env.lower() == "production" else "/redoc",
+)
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_host_list)
+app.add_middleware(
+    ObservabilityMiddleware,
+    registry=metrics,
+    production=settings.app_env.lower() == "production",
 )
 
 app.add_middleware(

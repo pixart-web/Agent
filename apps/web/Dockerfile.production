@@ -1,0 +1,25 @@
+FROM node:22-alpine AS dependencies
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
+WORKDIR /workspace
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM dependencies AS builder
+COPY apps/web apps/web
+COPY packages/shared packages/shared
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_OUTPUT_MODE=standalone
+RUN pnpm --filter @agent/web build
+
+FROM node:22-alpine AS runner
+ENV NODE_ENV=production
+WORKDIR /app
+RUN addgroup -S -g 10001 kiko && adduser -S -u 10001 -G kiko kiko
+COPY --from=builder --chown=kiko:kiko /workspace/apps/web/.next/standalone ./
+COPY --from=builder --chown=kiko:kiko /workspace/apps/web/.next/static ./apps/web/.next/static
+USER kiko
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

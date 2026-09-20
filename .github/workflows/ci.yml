@@ -48,6 +48,7 @@ jobs:
       - name: Validate Alembic offline
         working-directory: apps/api
         run: |
+          python -m alembic downgrade 20260920_0015:20260920_0014 --sql > /dev/null
           python -m alembic downgrade 20260920_0014:20260919_0013 --sql > /dev/null
           python -m alembic downgrade 20260919_0013:20260919_0012 --sql > /dev/null
           python -m alembic downgrade 20260919_0012:20260919_0011 --sql > /dev/null
@@ -58,6 +59,9 @@ jobs:
           python -m alembic downgrade 20260821_0007:20260818_0006 --sql > /dev/null
           python -m alembic upgrade head --sql > /dev/null
           python -m alembic downgrade 20260818_0006:20260818_0005 --sql > /dev/null
+
+      - name: Run policy quality evaluations
+        run: python -m app.scripts.run_policy_evaluations
 
       - name: Run Pytest
         run: python -m pytest apps/api
@@ -112,8 +116,8 @@ jobs:
         working-directory: apps/api
         run: |
           python -m alembic upgrade head
-          python -m alembic downgrade 20260919_0013
-          python -m alembic upgrade 20260920_0014
+          python -m alembic downgrade 20260920_0014
+          python -m alembic upgrade head
       - name: Test locking, outbox, and Redis
         run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
 
@@ -167,3 +171,17 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: pnpm build
+
+  containers:
+    name: Production container build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Build API image
+        run: docker build --file apps/api/Dockerfile --tag kiko-api:ci .
+      - name: Build Web image
+        run: >-
+          docker build --file apps/web/Dockerfile.production
+          --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000
+          --tag kiko-web:ci .

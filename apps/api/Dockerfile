@@ -25,7 +25,12 @@ RUN pip install --no-cache-dir .
 
 COPY apps/api/tests ./tests
 COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && addgroup --system --gid 10001 kiko \
+    && adduser --system --uid 10001 --ingroup kiko kiko \
+    && chown -R kiko:kiko /app
+
+USER kiko
 
 EXPOSE 8000
 

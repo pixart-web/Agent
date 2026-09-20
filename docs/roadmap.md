@@ -64,6 +64,6 @@
 
 ## Fase 10 — Production readiness
 
-- [ ] Add observability, security hardening, backups, recovery and deployment practices.
-- [ ] Add load, reliability, cost and agent-quality evaluations.
-- [ ] Define production service-level objectives and operating procedures.
+- [x] Add observability, security hardening, backups, recovery and deployment practices.
+- [x] Add load, reliability, cost and agent-quality evaluations.
+- [x] Define production service-level objectives and operating procedures.
