@@ -1,0 +1,75 @@
+services:
+  migrate:
+    image: ${API_IMAGE:?Pin an approved API image digest}
+    entrypoint: []
+    command: ['alembic', 'upgrade', 'head']
+    restart: 'no'
+    env_file: ${PRODUCTION_ENV_FILE:?Provide a protected production env file}
+
+  api:
+    image: ${API_IMAGE:?Pin an approved API image digest}
+    entrypoint: []
+    command:
+      [
+        'uvicorn',
+        'app.main:app',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8000',
+        '--proxy-headers',
+        '--forwarded-allow-ips',
+        '${TRUSTED_PROXY_IPS:?Set trusted proxy IPs}',
+      ]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp:size=256m,mode=1770']
+    security_opt: ['no-new-privileges:true']
+    env_file: ${PRODUCTION_ENV_FILE:?Provide a protected production env file}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    image: ${API_IMAGE:?Pin an approved API image digest}
+    entrypoint: []
+    command:
+      [
+        'celery',
+        '-A',
+        'app.execution.celery_app:celery_app',
+        'worker',
+        '--loglevel=INFO',
+      ]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp:size=1g,mode=1770']
+    security_opt: ['no-new-privileges:true']
+    env_file: ${PRODUCTION_ENV_FILE:?Provide a protected production env file}
+    stop_grace_period: 60s
+
+  outbox-dispatcher:
+    image: ${API_IMAGE:?Pin an approved API image digest}
+    entrypoint: []
+    command: ['python', '-m', 'app.scripts.run_outbox_dispatcher']
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1770']
+    security_opt: ['no-new-privileges:true']
+    env_file: ${PRODUCTION_ENV_FILE:?Provide a protected production env file}
+
+  web:
+    image: ${WEB_IMAGE:?Pin an approved Web image digest}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1770']
+    security_opt: ['no-new-privileges:true']

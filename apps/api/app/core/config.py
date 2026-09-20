@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -11,6 +12,9 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     web_origins: str = "http://localhost:3000"
+    trusted_hosts: str = "localhost,127.0.0.1,testserver,api"
+    observability_metrics_enabled: bool = True
+    observability_metrics_token: SecretStr | None = None
     database_url: str = "postgresql+psycopg://agent:agent@localhost:5432/agent"
     redis_url: str = "redis://localhost:6379/0"
     service_connect_timeout_seconds: int = 2
@@ -111,6 +115,7 @@ class Settings(BaseSettings):
         "google_redirect_uri",
         "google_calendar_redirect_uri",
         "integration_encryption_key",
+        "observability_metrics_token",
         mode="before",
     )
     @classmethod
@@ -128,6 +133,10 @@ class Settings(BaseSettings):
     @property
     def web_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.web_origins.split(",") if origin.strip()]
+
+    @property
+    def trusted_host_list(self) -> list[str]:
+        return [host.strip() for host in self.trusted_hosts.split(",") if host.strip()]
 
     @property
     def github_allowed_repository_list(self) -> list[str]:
@@ -219,6 +228,28 @@ class Settings(BaseSettings):
                 raise ValueError("Production requires a non-example authentication secret")
             if not self.auth_cookie_secure:
                 raise ValueError("Production requires AUTH_COOKIE_SECURE=true")
+            if self.auth_rate_limit_fail_open:
+                raise ValueError("Production requires AUTH_RATE_LIMIT_FAIL_OPEN=false")
+            default_hosts = {"localhost", "127.0.0.1", "testserver", "api"}
+            if (
+                not self.trusted_host_list
+                or "*" in self.trusted_host_list
+                or set(self.trusted_host_list) == default_hosts
+            ):
+                raise ValueError("Production requires an explicit TRUSTED_HOSTS allowlist")
+            if any(not origin.startswith("https://") for origin in self.web_origin_list):
+                raise ValueError("Production WEB_ORIGINS must use HTTPS")
+            database = make_url(self.database_url)
+            if database.username == "agent" and database.password == "agent":
+                raise ValueError("Production cannot use the default database credentials")
+            if not self.observability_metrics_enabled:
+                raise ValueError("Production requires observability metrics")
+            if self.observability_metrics_token is None:
+                raise ValueError("Production metrics require OBSERVABILITY_METRICS_TOKEN")
+            if self.ai_provider == "fake":
+                raise ValueError("Production cannot use the fake AI provider")
+            if self.ai_provider == "openai" and self.openai_api_key is None:
+                raise ValueError("Production OpenAI provider requires OPENAI_API_KEY")
         return self
 
 

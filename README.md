@@ -342,3 +342,11 @@ revision provenance and tenant-safe PostgreSQL full-text retrieval. Specialized 
 read-only `knowledge.search` tool; retrieved records remain untrusted reference data. The
 synthetic Sporting CP Demo dataset is clearly disclaimed and available only through an explicit
 seed command. See [workspaces and business knowledge](docs/business-knowledge.md).
+
+## Production readiness
+
+Phase 10 adds request-correlated observability, authenticated metrics, production configuration
+guards, checksummed PostgreSQL backup/restore helpers, bounded load and policy evaluations,
+hardened container artifacts, SLOs and deployment/incident runbooks. These are staging and
+operations artifacts only; no production infrastructure is created or changed. See
+[production readiness](docs/production-readiness.md).

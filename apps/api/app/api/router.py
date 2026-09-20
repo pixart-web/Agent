@@ -15,6 +15,7 @@ from app.api.routes import (
     integrations,
     knowledge,
     marketing,
+    metrics,
     plans,
     specialized_agents,
     supervisor,
@@ -40,3 +41,4 @@ api_router.include_router(specialized_agents.router, prefix="/api/v1")
 api_router.include_router(integrations.router, prefix="/api/v1")
 api_router.include_router(knowledge.router, prefix="/api/v1")
 api_router.include_router(marketing.router, prefix="/api/v1")
+api_router.include_router(metrics.router)
