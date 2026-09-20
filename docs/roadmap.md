@@ -60,7 +60,7 @@
 
 ## Fase 9 — Memory, business knowledge & workspaces
 
-- [ ] Add workspace-scoped memory, knowledge provenance, retrieval and permissions.
+- [x] Add workspace-scoped memory, knowledge provenance, retrieval and permissions.
 
 ## Fase 10 — Production readiness
 

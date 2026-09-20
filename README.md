@@ -334,3 +334,11 @@ persistent deduplication, loop/cost guardrails, pause/resume, bounded recovery a
 dashboard. A successful trigger atomically creates a Command and outbox request for the Supervisor;
 it never bypasses plan or action approval. Run schedules with
 `python -m app.scripts.run_due_automations`. See `docs/automations.md`.
+
+## Workspaces and business knowledge
+
+Phase 9 adds explicit workspace membership, least-privilege roles, approved business knowledge,
+revision provenance and tenant-safe PostgreSQL full-text retrieval. Specialized agents receive a
+read-only `knowledge.search` tool; retrieved records remain untrusted reference data. The
+synthetic Sporting CP Demo dataset is clearly disclaimed and available only through an explicit
+seed command. See [workspaces and business knowledge](docs/business-knowledge.md).
