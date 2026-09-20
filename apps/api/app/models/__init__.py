@@ -33,6 +33,14 @@ from app.models.email_reference import EmailReference
 from app.models.email_send_record import EmailSendRecord
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
+from app.models.marketing import (
+    MarketingAsset,
+    MarketingCampaign,
+    MarketingContent,
+    MarketingContentHistory,
+    MarketingPerformanceMetric,
+    MarketingPublication,
+)
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
 from app.models.refresh_token import RefreshToken
@@ -76,6 +84,12 @@ __all__ = [
     "CodexRun",
     "Plan",
     "RefreshToken",
+    "MarketingAsset",
+    "MarketingCampaign",
+    "MarketingContent",
+    "MarketingContentHistory",
+    "MarketingPerformanceMetric",
+    "MarketingPublication",
     "OutboxEvent",
     "SupervisorRun",
     "Task",

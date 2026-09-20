@@ -52,7 +52,7 @@
 
 ## Fase 7 — Marketing & content operations
 
-- [ ] Add governed campaigns, content, approvals and publication lifecycle.
+- [x] Add governed campaigns, content, approvals and publication lifecycle.
 
 ## Fase 8 — Automations
 

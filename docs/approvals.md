@@ -57,3 +57,10 @@ action. The approval preview contains the exact canonical payload and its finger
 Mutations do not retry automatically, lock the target when updating, and append both an audit
 event and CRM record-history event. Client 360, project, pipeline and opportunity reads are
 green and remain user-scoped.
+
+## Marketing approvals
+
+All Marketing mutations are yellow and show the complete canonical payload. This includes
+campaign/content changes, review/approval transitions, proposed schedule slots, asset metadata,
+performance metrics and publication confirmation. Publication confirmation records an external
+result only; approval does not authorize Kiko to contact or publish to an external platform.

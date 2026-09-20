@@ -239,3 +239,10 @@ opportunities, pipelines, task links and record history remain separate bounded 
 explicit user ownership. Client 360 is a read model assembled inside the service boundary; it
 does not duplicate mailbox or calendar bodies. Workspace ownership can later replace user
 ownership through an additive migration without changing the aggregate boundaries.
+
+## Marketing content boundary
+
+Campaign and content records are owned internal context. The content lifecycle is implemented
+as explicit transitions, while scheduling and post-hoc publication confirmation are separate
+commands. No provider publishing adapter exists. Asset and performance records contain metadata
+only and all related CRM clients and Kiko tasks are ownership-checked.

@@ -22,10 +22,12 @@ from app.execution.tools.internal import (
     SummarizeInput,
     SummarizeOutput,
 )
+from app.execution.tools.marketing import marketing_tool_definitions
 from app.integrations.calendar.service import CalendarService
 from app.integrations.codex.base import CodexRunner
 from app.integrations.email.service import EmailService
 from app.integrations.github.client import GitHubClientFactory, build_github_client
+from app.marketing.service import MarketingService
 from app.models.workflow_enums import RiskLevel
 
 ALL_AGENTS = frozenset({"supervisor", "marketing", "sales", "support", "development"})
@@ -40,6 +42,7 @@ def build_tool_registry(
     calendar_service: CalendarService | None = None,
     crm_service: CrmService | None = None,
     client_management_service: ClientManagementService | None = None,
+    marketing_service: MarketingService | None = None,
 ) -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(
@@ -126,6 +129,8 @@ def build_tool_registry(
     for definition in crm_tool_definitions(service=crm_service):
         registry.register(definition)
     for definition in email_tool_definitions(settings=settings, service=email_service):
+        registry.register(definition)
+    for definition in marketing_tool_definitions(service=marketing_service):
         registry.register(definition)
     for definition in github_tool_definitions(
         settings=settings, client_factory=github_client_factory

@@ -152,6 +152,15 @@ const ACTION_LABELS: Record<string, string> = {
   'calendar.create_event': 'Create Calendar Event',
   'calendar.update_event': 'Update Calendar Event',
   'calendar.cancel_event': 'Cancel Calendar Event',
+  'marketing.create_campaign': 'Create Marketing Campaign',
+  'marketing.update_campaign': 'Update Marketing Campaign',
+  'marketing.create_content': 'Create Content Draft',
+  'marketing.update_content': 'Update Content Draft',
+  'marketing.transition_content': 'Transition Content Lifecycle',
+  'marketing.schedule_content': 'Schedule Proposed Content',
+  'marketing.record_publication': 'Record Confirmed Publication',
+  'marketing.add_asset_metadata': 'Add Asset Metadata',
+  'marketing.record_metric': 'Record Performance Metric',
   'crm.create_client': 'Create Client Profile',
   'crm.update_client': 'Update Client Profile',
   'crm.create_project': 'Create Client Project',
@@ -173,6 +182,7 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
   const email = action.tool_name.startsWith('email.');
   const calendar = action.tool_name.startsWith('calendar.');
   const crm = action.tool_name.startsWith('crm.');
+  const marketing = action.tool_name.startsWith('marketing.');
   const repository = action.input_payload.repository;
   const title = action.input_payload.title;
   const account = action.input_payload.account_id;
@@ -227,11 +237,11 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
         <span>Location: {location}</span>
       )}
       {calendar && attendees && <span>Attendees: {attendees}</span>}
-      {crm && (
+      {(crm || marketing) && (
         <span>Exact payload: {JSON.stringify(action.input_payload)}</span>
       )}
       <span>Risk: {action.risk_level}</span>
-      {(github || email || calendar || crm) && (
+      {(github || email || calendar || crm || marketing) && (
         <span>
           Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
         </span>

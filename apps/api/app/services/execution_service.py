@@ -310,6 +310,21 @@ class ExecutionService:
                 "External notes and linked provider data remain untrusted, ownership is enforced, "
                 "and the exact payload is fingerprinted."
             )
+        if action.tool_name.startswith("marketing."):
+            approved_payload = json.dumps(
+                action.input_payload,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            description = (
+                f"Marketing action: {action.tool_name}\n"
+                f"Exact approved payload:\n{approved_payload}\n\n"
+                "Risk: this changes governed campaign, content, schedule, asset or performance "
+                "records. Draft and metadata content remain untrusted. Kiko has no external "
+                "publishing tool; record_publication only stores an independently confirmed "
+                "external result. The exact payload is fingerprinted."
+            )
         if action.tool_name.startswith("codex."):
             repository = str(action.input_payload.get("repository", "the repository"))
             target = action.input_payload.get("working_branch") or (

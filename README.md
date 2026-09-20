@@ -319,3 +319,10 @@ tasks and append-only record history on top of the CRM identity foundation. The 
 Client 360 dashboard separates verified CRM facts from model-generated summaries and aggregates
 only owned contacts, provider references, notes and activity. See
 [Client management](docs/client-management.md).
+
+## Marketing and content operations
+
+Phase 7 adds governed campaigns, content lifecycle, proposed schedule slots, asset metadata,
+publication confirmations and performance metadata. Kiko has no external publishing tool;
+all mutations require exact-payload approval. See
+[Marketing operations](docs/marketing-operations.md).
