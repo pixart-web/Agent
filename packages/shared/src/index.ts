@@ -732,3 +732,40 @@ export type AutomationRun = {
   completed_at: string | null;
   deduplicated: boolean;
 };
+
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type Workspace = {
+  id: string;
+  name: string;
+  slug: string;
+  role: WorkspaceRole;
+  created_at: string;
+};
+export type KnowledgeCategory =
+  | 'company_profile'
+  | 'service'
+  | 'product'
+  | 'policy'
+  | 'client'
+  | 'project'
+  | 'brand_guideline'
+  | 'procedure'
+  | 'approved_knowledge';
+export type KnowledgeItem = {
+  id: string;
+  workspace_id: string;
+  category: KnowledgeCategory;
+  title: string;
+  content: string;
+  status: 'draft' | 'approved' | 'archived';
+  sensitivity: 'internal' | 'confidential' | 'restricted';
+  client_id: string | null;
+  project_id: string | null;
+  source_type: string;
+  source_reference: string | null;
+  provenance: Record<string, unknown>;
+  approved_by_user_id: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};

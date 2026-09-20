@@ -13,6 +13,7 @@ AGENT = PromptSpecializedAgent(
             "internal.summarize",
             "internal.create_note",
             "internal.simulate_external_action",
+            "knowledge.search",
             "marketing.list_campaigns",
             "marketing.get_campaign",
             "marketing.list_content",

@@ -13,6 +13,7 @@ from app.api.routes import (
     execution,
     health,
     integrations,
+    knowledge,
     marketing,
     plans,
     specialized_agents,
@@ -37,4 +38,5 @@ api_router.include_router(tasks.router, prefix="/api/v1")
 api_router.include_router(execution.router, prefix="/api/v1")
 api_router.include_router(specialized_agents.router, prefix="/api/v1")
 api_router.include_router(integrations.router, prefix="/api/v1")
+api_router.include_router(knowledge.router, prefix="/api/v1")
 api_router.include_router(marketing.router, prefix="/api/v1")

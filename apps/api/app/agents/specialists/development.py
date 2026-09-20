@@ -13,6 +13,7 @@ AGENT = PromptSpecializedAgent(
             "internal.summarize",
             "internal.create_note",
             "internal.simulate_external_action",
+            "knowledge.search",
             "internal.simulate_critical_action",
             "github.get_repository",
             "github.list_branches",
