@@ -246,3 +246,12 @@ Campaign and content records are owned internal context. The content lifecycle i
 as explicit transitions, while scheduling and post-hoc publication confirmation are separate
 commands. No provider publishing adapter exists. Asset and performance records contain metadata
 only and all related CRM clients and Kiko tasks are ownership-checked.
+
+## Governed automations
+
+Automations are user-owned persistent trigger definitions. Typed events are evaluated using only
+declarative conditions, PostgreSQL deduplication, causation depth, cooldowns and execution budgets.
+A successful run creates a static Command and an `automation.plan_requested` outbox event in one
+transaction. Celery hands that command to the existing Supervisor; automation never approves the
+resulting plan or any tool action. Event payloads remain bounded, sanitized, untrusted run data and
+are not interpolated into LLM instructions. See [automations](automations.md).

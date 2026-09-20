@@ -29,6 +29,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/agents">
           Agents
         </Link>
+        <Link className="nav-link" href="/dashboard/automations">
+          Automations
+        </Link>
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals
         </Link>

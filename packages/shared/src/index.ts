@@ -682,3 +682,53 @@ export type MarketingContentDetail = {
   publications: MarketingPublication[];
   metrics: MarketingMetric[];
 };
+
+export type AutomationTriggerType =
+  | 'schedule'
+  | 'email_received'
+  | 'calendar_event'
+  | 'crm_change'
+  | 'task_state'
+  | 'manual'
+  | 'webhook';
+export type AutomationCondition = {
+  field: string;
+  operator: 'eq' | 'not_eq' | 'in' | 'exists';
+  value: unknown;
+};
+export type Automation = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  enabled: boolean;
+  trigger_type: AutomationTriggerType;
+  trigger_config: Record<string, unknown>;
+  conditions: AutomationCondition[];
+  command_template: string;
+  max_depth: number;
+  max_runs_per_window: number;
+  window_seconds: number;
+  cooldown_seconds: number;
+  next_run_at: string | null;
+  last_triggered_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type AutomationRun = {
+  id: string;
+  automation_id: string;
+  trigger_type: AutomationTriggerType;
+  trigger_key: string;
+  status: 'running' | 'completed' | 'skipped' | 'failed';
+  correlation_id: string;
+  causation_run_id: string | null;
+  depth: number;
+  command_id: string | null;
+  skipped_reason: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  created_at: string;
+  completed_at: string | null;
+  deduplicated: boolean;
+};

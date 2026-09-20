@@ -4,6 +4,7 @@ from app.models.agent import Agent
 from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
+from app.models.automation import Automation, AutomationRun
 from app.models.calendar_reference import CalendarReference
 from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.client_management import (
@@ -81,6 +82,8 @@ __all__ = [
     "IntegrationOAuthState",
     "ApprovalRequest",
     "AuditLog",
+    "Automation",
+    "AutomationRun",
     "CodexRun",
     "Plan",
     "RefreshToken",

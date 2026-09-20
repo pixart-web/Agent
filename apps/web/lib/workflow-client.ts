@@ -5,6 +5,8 @@ import type {
 } from '@agent/shared';
 import type {
   AgentOverview,
+  Automation,
+  AutomationRun,
   AgentRun,
   AgentRunResponse,
   CalendarAccount,
@@ -571,4 +573,59 @@ export function listMarketingContentCalendar(
     ends_at: endsAt,
   });
   return request('/api/v1/marketing/calendar?' + params.toString());
+}
+
+export function listAutomations(): Promise<{ automations: Automation[] }> {
+  return request('/api/v1/automations');
+}
+
+export function createManualAutomation(data: {
+  name: string;
+  description?: string;
+  command_template: string;
+  max_depth?: number;
+  max_runs_per_window?: number;
+  window_seconds?: number;
+  cooldown_seconds?: number;
+}): Promise<Automation> {
+  return request(
+    '/api/v1/automations',
+    jsonRequest('POST', {
+      ...data,
+      trigger_type: 'manual',
+      trigger_config: {},
+      conditions: [],
+    }),
+  );
+}
+
+export function setAutomationEnabled(
+  automationId: string,
+  enabled: boolean,
+): Promise<Automation> {
+  return request(
+    `/api/v1/automations/${encodeURIComponent(automationId)}/${enabled ? 'resume' : 'pause'}`,
+    { method: 'POST' },
+  );
+}
+
+export function triggerManualAutomation(
+  automationId: string,
+  eventKey: string,
+): Promise<AutomationRun> {
+  return request(
+    `/api/v1/automations/${encodeURIComponent(automationId)}/trigger`,
+    jsonRequest('POST', { event_key: eventKey, payload: {} }),
+  );
+}
+
+export function listAutomationRuns(): Promise<{ runs: AutomationRun[] }> {
+  return request('/api/v1/automations/runs');
+}
+
+export function recoverAutomationRun(runId: string): Promise<AutomationRun> {
+  return request(
+    `/api/v1/automations/runs/${encodeURIComponent(runId)}/recover`,
+    { method: 'POST' },
+  );
 }

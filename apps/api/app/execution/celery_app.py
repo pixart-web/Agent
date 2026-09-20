@@ -9,6 +9,7 @@ celery_app = Celery(
     backend=settings.celery_result_backend or None,
 )
 celery_app.conf.update(
+    imports=("app.execution.tasks", "app.automations.tasks"),
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     worker_prefetch_multiplier=1,

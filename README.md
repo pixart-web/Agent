@@ -326,3 +326,11 @@ Phase 7 adds governed campaigns, content lifecycle, proposed schedule slots, ass
 publication confirmations and performance metadata. Kiko has no external publishing tool;
 all mutations require exact-payload approval. See
 [Marketing operations](docs/marketing-operations.md).
+
+## Governed automations
+
+Phase 8 adds typed schedules, integration events, manual/webhook triggers, declarative conditions,
+persistent deduplication, loop/cost guardrails, pause/resume, bounded recovery and an authenticated
+dashboard. A successful trigger atomically creates a Command and outbox request for the Supervisor;
+it never bypasses plan or action approval. Run schedules with
+`python -m app.scripts.run_due_automations`. See `docs/automations.md`.

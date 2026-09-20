@@ -56,7 +56,7 @@
 
 ## Fase 8 — Automations
 
-- [ ] Add governed triggers, schedules, runs, pause/resume and failure recovery.
+- [x] Add governed triggers, schedules, runs, pause/resume and failure recovery.
 
 ## Fase 9 — Memory, business knowledge & workspaces
 
