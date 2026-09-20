@@ -64,3 +64,7 @@ All Marketing mutations are yellow and show the complete canonical payload. This
 campaign/content changes, review/approval transitions, proposed schedule slots, asset metadata,
 performance metrics and publication confirmation. Publication confirmation records an external
 result only; approval does not authorize Kiko to contact or publish to an external platform.
+
+Automation triggers do not count as approval. They may create a Command and request Supervisor
+planning through the outbox, but the draft Plan and every yellow/red action still use the existing
+human approval and exact-payload fingerprint gates.

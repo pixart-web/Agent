@@ -6,12 +6,15 @@ from uuid import UUID, uuid4
 
 import pytest
 from redis import Redis
-from sqlalchemy import create_engine, delete, select
+from sqlalchemy import create_engine, delete, func, select
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
+from app.automations.schemas import AutomationCreate, AutomationTrigger
+from app.automations.service import AutomationService
 from app.core.time import utc_now
 from app.models.agent import Agent
+from app.models.automation import Automation, AutomationRun
 from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.command import Command
 from app.models.integration_account import IntegrationAccount
@@ -239,4 +242,57 @@ def test_postgres_calendar_write_reservation_allows_one_winner(integration_url: 
             select(CalendarWriteRecord).where(CalendarWriteRecord.task_action_id == action_id)
         ).all()
         assert len(records) == 1
+    engine.dispose()
+
+
+def test_postgres_automation_deduplication_allows_one_command(integration_url: str) -> None:
+    engine = create_engine(integration_url)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    user_id = uuid4()
+    with Session(engine) as session:
+        session.add(
+            User(
+                id=user_id,
+                email=f"automation-lock-{user_id}@example.com",
+                password_hash="not-used",
+                full_name="Automation Lock",
+            )
+        )
+        session.commit()
+    service = AutomationService(factory)
+    automation = service.create(
+        user_id,
+        AutomationCreate(
+            name=f"Concurrent automation {user_id}",
+            trigger_type="manual",
+            command_template="Create exactly one governed command.",
+        ),
+    )
+    barrier = Barrier(2)
+
+    def trigger() -> tuple[UUID, bool]:
+        barrier.wait()
+        result = service.trigger_owned(
+            user_id,
+            automation.id,
+            AutomationTrigger(event_key="same-provider-event", payload={}),
+        )
+        return result.id, result.deduplicated
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(lambda _value: trigger(), range(2)))
+
+    assert results[0][0] == results[1][0]
+    assert sorted(result[1] for result in results) == [False, True]
+    with Session(engine) as session:
+        assert (
+            session.scalar(
+                select(func.count(Command.id))
+                .join(AutomationRun, AutomationRun.command_id == Command.id)
+                .where(AutomationRun.automation_id == automation.id)
+            )
+            == 1
+        )
+        stored = session.get(Automation, automation.id)
+        assert stored.last_triggered_at is not None
     engine.dispose()
