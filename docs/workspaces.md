@@ -16,6 +16,10 @@ actions, executions, approvals, audit history, Supervisor runs, specialist-agent
 runs, and Codex runs—inherits that boundary through joins to Command. Creator
 `user_id` values remain immutable attribution, not tenant authorization.
 
+Automations now also store a non-null `workspace_id`. Names are unique per workspace,
+member queries resolve the active tenant, and commands emitted by automation inherit
+that same workspace while retaining the triggering user as audit attribution.
+
 ## Invitation lifecycle
 
 Owners and admins can create and list invitations at

@@ -46,14 +46,22 @@ class Automation(Base):
         ),
         CheckConstraint("window_seconds BETWEEN 60 AND 86400", name="ck_automations_window"),
         CheckConstraint("cooldown_seconds BETWEEN 0 AND 86400", name="ck_automations_cooldown"),
-        UniqueConstraint("user_id", "name", name="uq_automations_owner_name"),
-        Index("ix_automations_owner_trigger_enabled", "user_id", "trigger_type", "enabled"),
+        UniqueConstraint("workspace_id", "name", name="uq_automations_workspace_name"),
+        Index(
+            "ix_automations_workspace_trigger_enabled",
+            "workspace_id",
+            "trigger_type",
+            "enabled",
+        ),
         Index("ix_automations_schedule_due", "trigger_type", "enabled", "next_run_at"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
