@@ -7,12 +7,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.auth_cookies import REFRESH_COOKIE_NAME
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.time import utc_now
 from app.main import app
+from app.models.account_token import AccountToken
 from app.models.refresh_token import RefreshToken
+from app.models.transactional_email import TransactionalEmailOutbox
 from app.models.user import User
 from app.security.access_tokens import create_access_token
+from app.security.account_tokens import decrypt_email_payload, hash_account_token
 from app.security.email import normalize_email
 from app.security.refresh_tokens import hash_refresh_token
 from app.services.rate_limiter import (
@@ -26,16 +29,23 @@ REGISTER_PAYLOAD = {
     "email": "User@Example.com",
     "password": "securePassword123",
     "full_name": "User Name",
+    "terms_accepted": True,
+    "privacy_accepted": True,
 }
 
 
 def register(client: TestClient, **overrides: str) -> tuple[dict[str, object], str]:
     payload = {**REGISTER_PAYLOAD, **overrides}
     response = client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 201
-    token = response.cookies.get(REFRESH_COOKIE_NAME)
+    assert response.status_code == 202
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": payload["email"], "password": payload["password"]},
+    )
+    assert login_response.status_code == 200
+    token = login_response.cookies.get(REFRESH_COOKIE_NAME)
     assert token is not None
-    return response.json(), token
+    return login_response.json(), token
 
 
 def bearer(access_token: str) -> dict[str, str]:
@@ -63,13 +73,138 @@ def test_register_normalizes_email_and_hides_secrets(
     assert refresh.token_hash != raw_refresh
 
 
-def test_duplicate_email_is_conflict(client: TestClient) -> None:
-    register(client)
-    response = client.post(
+def test_duplicate_email_does_not_enumerate_account(client: TestClient) -> None:
+    first = client.post("/api/v1/auth/register", json=REGISTER_PAYLOAD)
+    duplicate = client.post(
         "/api/v1/auth/register",
         json={**REGISTER_PAYLOAD, "email": "USER@example.com"},
     )
-    assert response.status_code == 409
+    assert first.status_code == duplicate.status_code == 202
+    assert first.json() == duplicate.json()
+
+
+def test_resend_verification_does_not_enumerate_or_reveal_cooldown(
+    client: TestClient,
+) -> None:
+    settings = get_settings()
+    previous = settings.auth_require_email_verification
+    settings.auth_require_email_verification = True
+    try:
+        assert client.post("/api/v1/auth/register", json=REGISTER_PAYLOAD).status_code == 202
+        existing = client.post(
+            "/api/v1/auth/resend-verification",
+            json={"email": " USER@example.com "},
+        )
+        missing = client.post(
+            "/api/v1/auth/resend-verification",
+            json={"email": "missing@example.com"},
+        )
+        assert existing.status_code == missing.status_code == 200
+        assert existing.json() == missing.json()
+    finally:
+        settings.auth_require_email_verification = previous
+
+
+def test_registration_requires_legal_acceptance(client: TestClient) -> None:
+    for field in ("terms_accepted", "privacy_accepted"):
+        response = client.post(
+            "/api/v1/auth/register",
+            json={**REGISTER_PAYLOAD, field: False},
+        )
+        assert response.status_code == 422
+
+
+def test_verified_identity_and_password_reset_lifecycle(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    settings = get_settings()
+    previous = settings.auth_require_email_verification
+    settings.auth_require_email_verification = True
+    try:
+        registered = client.post("/api/v1/auth/register", json=REGISTER_PAYLOAD)
+        assert registered.status_code == 202
+        user = db_session.scalar(select(User))
+        assert user is not None and user.email_verified_at is None
+
+        blocked = client.post(
+            "/api/v1/auth/login",
+            json={"email": REGISTER_PAYLOAD["email"], "password": REGISTER_PAYLOAD["password"]},
+        )
+        assert blocked.status_code == 403
+
+        verification_email = db_session.scalar(
+            select(TransactionalEmailOutbox).where(
+                TransactionalEmailOutbox.template == "email_verification"
+            )
+        )
+        verification_token = db_session.scalar(
+            select(AccountToken).where(AccountToken.purpose == "email_verification")
+        )
+        assert verification_email is not None and verification_token is not None
+        payload = decrypt_email_payload(
+            verification_email.encrypted_payload,
+            settings.auth_secret_key,
+        )
+        raw_verification = payload["token"]
+        assert verification_token.token_hash == hash_account_token(raw_verification)
+        assert raw_verification not in verification_email.encrypted_payload
+
+        verified = client.post(
+            "/api/v1/auth/verify-email",
+            json={"token": raw_verification},
+        )
+        assert verified.status_code == 200
+        assert (
+            client.post("/api/v1/auth/verify-email", json={"token": raw_verification}).status_code
+            == 400
+        )
+
+        login_response = client.post(
+            "/api/v1/auth/login",
+            json={"email": REGISTER_PAYLOAD["email"], "password": REGISTER_PAYLOAD["password"]},
+        )
+        assert login_response.status_code == 200
+
+        requested = client.post(
+            "/api/v1/auth/password-reset/request",
+            json={"email": REGISTER_PAYLOAD["email"]},
+        )
+        assert requested.status_code == 200
+        reset_email = db_session.scalar(
+            select(TransactionalEmailOutbox)
+            .where(TransactionalEmailOutbox.template == "password_reset")
+            .order_by(TransactionalEmailOutbox.created_at.desc())
+        )
+        assert reset_email is not None
+        reset_token = decrypt_email_payload(
+            reset_email.encrypted_payload,
+            settings.auth_secret_key,
+        )["token"]
+        reset = client.post(
+            "/api/v1/auth/password-reset/confirm",
+            json={"token": reset_token, "password": "newSecurePassword456"},
+        )
+        assert reset.status_code == 200
+        assert (
+            client.post(
+                "/api/v1/auth/login",
+                json={
+                    "email": REGISTER_PAYLOAD["email"],
+                    "password": REGISTER_PAYLOAD["password"],
+                },
+            ).status_code
+            == 401
+        )
+        assert (
+            client.post(
+                "/api/v1/auth/login",
+                json={"email": REGISTER_PAYLOAD["email"], "password": "newSecurePassword456"},
+            ).status_code
+            == 200
+        )
+    finally:
+        settings.auth_require_email_verification = previous
 
 
 def test_normalize_email_strips_and_lowercases() -> None:
@@ -263,6 +398,37 @@ def test_logout_is_idempotent_and_revokes_token(
 
     assert first.status_code == second.status_code == 204
     assert token_rows(db_session)[0].revoked_at is not None
+
+
+def test_session_inventory_and_revocation_are_owner_scoped(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    first, _ = register(client)
+    second_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "user@example.com", "password": "securePassword123"},
+        headers={"User-Agent": "second-device"},
+    )
+    headers = bearer(second_login.json()["access_token"])
+    sessions = client.get("/api/v1/auth/sessions", headers=headers)
+    assert sessions.status_code == 200
+    assert len(sessions.json()) == 2
+    assert sum(item["current"] for item in sessions.json()) == 1
+
+    non_current = next(item for item in sessions.json() if not item["current"])
+    revoked = client.delete(f"/api/v1/auth/sessions/{non_current['id']}", headers=headers)
+    assert revoked.status_code == 204
+    assert len(client.get("/api/v1/auth/sessions", headers=headers).json()) == 1
+
+    unknown = client.delete(
+        "/api/v1/auth/sessions/00000000-0000-0000-0000-000000000001",
+        headers=headers,
+    )
+    assert unknown.status_code == 404
+    assert client.delete("/api/v1/auth/sessions", headers=headers).status_code == 204
+    assert all(item.revoked_at is not None for item in token_rows(db_session))
+    assert first["user"]["email"] == "user@example.com"
 
 
 class RejectAllRateLimiter(RateLimiter):

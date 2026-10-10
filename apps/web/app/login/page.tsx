@@ -95,6 +95,9 @@ export default function LoginPage() {
         <p className="auth-switch">
           New to Agent? <Link href="/register">Create an account</Link>
         </p>
+        <p className="auth-switch">
+          <Link href="/forgot-password">Forgot your password?</Link>
+        </p>
       </section>
     </main>
   );

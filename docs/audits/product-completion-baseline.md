@@ -21,9 +21,9 @@ Passing unit tests demonstrate useful internal correctness, not commercial readi
 
 ## Evidence collected
 
-- Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 203 tests, skipped 5 integration tests.
-- Frontend: ESLint and TypeScript passed; Vitest passed 39 tests across 16 files.
-- Database: one Alembic head, `20260920_0015`; offline history is linear.
+- Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 209 tests, skipped 5 integration tests.
+- Frontend: ESLint, TypeScript, and production build passed; Vitest passed 42 tests across 17 files.
+- Database: one Alembic head, `20261010_0016`; offline upgrade and the new revision downgrade are valid.
 - Production public checks: `/health` and `/ready` returned HTTP 200; database and Redis reported healthy.
 - Production CORS preflight for `POST /api/v1/auth/register` returned HTTP 200 and allowed `https://kiko.pixart.pt`.
 - Production registration API route exists (`GET` returns the expected HTTP 405 with `Allow: POST`).
@@ -46,11 +46,11 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Capability                           | Current state                      |                  E2E | Production-ready | Severity / primary gap                                            |
 | ------------------------------------ | ---------------------------------- | -------------------: | ---------------: | ----------------------------------------------------------------- |
 | Public website                       | Missing                            |                   No |               No | HIGH — `/` redirects directly to dashboard                        |
-| Registration                         | Implemented, deployed incorrectly  |                   No |               No | BLOCKER — bad compiled API host; no legal consent or verification |
+| Registration                         | Implemented; deployment fix pending | Browser smoke only |               No | BLOCKER — corrected bundle not deployed                            |
 | Login/logout/refresh                 | Implemented                        |              Partial |               No | HIGH — no real browser journey or session UI                      |
-| Email verification                   | Missing                            |                   No |               No | BLOCKER                                                           |
-| Password recovery/reset/change       | Missing                            |                   No |               No | BLOCKER                                                           |
-| Session listing/revocation           | Missing                            |                   No |               No | HIGH                                                              |
+| Email verification                   | Implemented, delivery unproven     | API/unit + UI smoke |               No | HIGH — real provider and browser E2E pending                      |
+| Password recovery/reset/change       | Reset implemented; change missing  | API/unit + UI smoke |               No | HIGH                                                              |
+| Session listing/revocation           | API implemented                    |            API tests |               No | HIGH — settings UI pending                                        |
 | Profile/deactivation/deletion        | Missing                            |                   No |               No | HIGH                                                              |
 | Platform/workspace roles             | Partial                            |                   No |               No | BLOCKER — only Knowledge membership roles exist                   |
 | Workspaces                           | Partial                            |       Knowledge only |               No | BLOCKER — business resources are not workspace-scoped             |
@@ -106,12 +106,19 @@ Implemented:
 - basic Redis-backed rate limiting;
 - non-enumerating login failure messages.
 
-Missing or incomplete:
+Implemented in the R1 identity increment:
 
-- Terms and Privacy acceptance fields and immutable evidence;
-- email verification tokens, expiry, one-shot use, resend throttling, and delivery;
-- recovery/reset/change-password flows;
-- current sessions and selective/global revocation;
+- versioned Terms and Privacy acceptance evidence;
+- hashed, expiring, one-shot email verification and password-reset tokens;
+- non-enumerating registration, resend, and recovery responses;
+- encrypted transactional-email outbox with SMTP delivery and bounded retry;
+- recovery/reset with global refresh-session revocation;
+- current session inventory and selective/global revocation APIs.
+
+Still missing or incomplete:
+
+- authenticated password change;
+- settings UI for current sessions;
 - profile editing, deactivation, deletion, and retention policy;
 - platform super-admin separation;
 - Workspace Owner/Admin/Manager/Member/Viewer enforcement across modules;
@@ -126,7 +133,7 @@ Missing or incomplete:
 - The dashboard declares every catalog agent `Ready` regardless of provider configuration or operational evidence.
 - `/` redirects to `/dashboard`; there is no commercial landing experience.
 - Unauthenticated users reach a dashboard loading shell before client-side redirection.
-- Registration lacks Terms/Privacy acceptance, verification feedback, and recovery routes.
+- Registration includes consent controls, verification feedback, and recovery routes; policy pages and full browser E2E remain pending.
 - The primary product interaction is command creation rather than a persistent conversation workspace.
 - Several backend mutations have no complete UI workflow; CRM and Marketing pages are primarily lists/search.
 - Empty/loading/error states exist inconsistently and no browser-level audit currently covers them.
@@ -190,14 +197,15 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 - [x] Inventory routes, models, migrations, tests, deployment artifacts, and UI routes.
 - [x] Run current static/unit gates.
 - [x] Diagnose registration without production mutation.
-- [ ] Add a release-safe web API-origin contract and deployment assertion.
+- [x] Add a release-safe same-origin web API contract.
 - [ ] Run clean PostgreSQL migration upgrade/downgrade and Redis integration tests locally or in CI evidence.
 
 ### R1 — Identity and onboarding
 
-- [ ] Extend user/account schema for verified email, profile, status, legal acceptance, and platform role.
-- [ ] Implement one-shot hashed verification and password-reset tokens with throttled resend.
-- [ ] Implement session inventory/revocation and password change.
+- [x] Extend user/account schema for verified email and versioned legal acceptance.
+- [x] Implement one-shot hashed verification and password-reset tokens with throttled resend.
+- [x] Implement session inventory/revocation and reset-driven session invalidation.
+- [ ] Complete profile, status, platform role, and authenticated password-change flows.
 - [ ] Complete workspace profile/lifecycle, roles, invitations, switching, and ownership transfer.
 - [ ] Tenant-scope all business roots with staged backfill and server-side membership enforcement.
 - [ ] Add onboarding persistence and first-success journey.

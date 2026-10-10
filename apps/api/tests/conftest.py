@@ -11,6 +11,7 @@ os.environ.setdefault(
     "AUTH_SECRET_KEY",
     "test-only-auth-secret-with-at-least-32-characters",
 )
+os.environ.setdefault("AUTH_REQUIRE_EMAIL_VERIFICATION", "false")
 
 from app.db.base import Base
 from app.db.session import get_db

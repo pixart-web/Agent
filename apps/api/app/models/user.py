@@ -45,6 +45,17 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    email_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    privacy_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    terms_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    privacy_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     @validates("email")
     def normalize_email_value(self, _key: str, value: str) -> str:

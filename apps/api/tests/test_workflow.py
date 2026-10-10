@@ -27,10 +27,18 @@ def register_user(
 ) -> dict[str, str]:
     response = client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "full_name": full_name},
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "full_name": full_name,
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        },
     )
-    assert response.status_code == 201
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    assert response.status_code == 202
+    login = client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+    assert login.status_code == 200
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
 def create_command(

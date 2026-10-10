@@ -32,10 +32,18 @@ def register_and_create_command(
 ) -> tuple[dict[str, str], dict[str, object]]:
     registration = client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "full_name": "Supervisor User"},
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "full_name": "Supervisor User",
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        },
     )
-    assert registration.status_code == 201
-    headers = {"Authorization": f"Bearer {registration.json()['access_token']}"}
+    assert registration.status_code == 202
+    login = client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
     command = client.post(
         "/api/v1/commands",
         headers=headers,

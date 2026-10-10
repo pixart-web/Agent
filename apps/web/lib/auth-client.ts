@@ -29,35 +29,90 @@ async function expectJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function login(
-  email: string,
-  password: string,
-): Promise<AuthResponse> {
+export async function login(email: string, password: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const result = await expectJson<AuthResponse>(response);
-  accessToken = result.access_token;
-  return result;
+  await expectJson<{ message: string }>(response);
 }
 
 export async function register(
   fullName: string,
   email: string,
   password: string,
+  termsAccepted: boolean,
+  privacyAccepted: boolean,
 ): Promise<AuthResponse> {
   const response = await fetch(`${apiBaseUrl}/api/v1/auth/register`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ full_name: fullName, email, password }),
+    body: JSON.stringify({
+      full_name: fullName,
+      email,
+      password,
+      terms_accepted: termsAccepted,
+      privacy_accepted: privacyAccepted,
+    }),
   });
   const result = await expectJson<AuthResponse>(response);
   accessToken = result.access_token;
   return result;
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/auth/verify-email`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  await expectJson<{ message: string }>(response);
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/auth/resend-verification`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    },
+  );
+  await expectJson<{ message: string }>(response);
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/auth/password-reset/request`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    },
+  );
+  await expectJson<{ message: string }>(response);
+}
+
+export async function confirmPasswordReset(
+  token: string,
+  password: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/v1/auth/password-reset/confirm`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    },
+  );
+  await expectJson<{ message: string }>(response);
 }
 
 async function performRefresh(): Promise<string | null> {

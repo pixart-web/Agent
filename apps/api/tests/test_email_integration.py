@@ -285,21 +285,34 @@ def test_email_accounts_endpoint_is_owned_and_never_returns_credentials(client, 
     from app.models.user import User
     from app.models.workflow_enums import IntegrationAccountStatus, IntegrationAccountType
 
-    first = client.post(
+    first_registration = client.post(
         "/api/v1/auth/register",
         json={
             "email": "mail-owner@example.com",
             "password": "securePassword123",
             "full_name": "Mail Owner",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
-    ).json()
-    second = client.post(
+    )
+    second_registration = client.post(
         "/api/v1/auth/register",
         json={
             "email": "other-mail-owner@example.com",
             "password": "securePassword123",
             "full_name": "Other Owner",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
+    )
+    assert first_registration.status_code == second_registration.status_code == 202
+    first = client.post(
+        "/api/v1/auth/login",
+        json={"email": "mail-owner@example.com", "password": "securePassword123"},
+    ).json()
+    second = client.post(
+        "/api/v1/auth/login",
+        json={"email": "other-mail-owner@example.com", "password": "securePassword123"},
     ).json()
     users = {value.email: value for value in db_session.query(User).all()}
     for address, owner in (

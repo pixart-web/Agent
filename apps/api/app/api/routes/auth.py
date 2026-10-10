@@ -1,4 +1,6 @@
+from contextlib import suppress
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
@@ -14,12 +16,26 @@ from app.api.dependencies.origin import require_allowed_origin
 from app.api.dependencies.rate_limit import auth_rate_limit
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import AccessTokenResponse, AuthResponse
-from app.schemas.user import UserCreate, UserLogin, UserPublic
+from app.schemas.auth import (
+    AccessTokenResponse,
+    AuthResponse,
+    MessageResponse,
+    SessionRead,
+)
+from app.schemas.user import (
+    EmailRequest,
+    PasswordResetConfirm,
+    TokenRequest,
+    UserCreate,
+    UserLogin,
+    UserPublic,
+)
 from app.services.auth_service import (
+    AccountTokenRateLimitedError,
     AuthResult,
     AuthService,
-    DuplicateEmailError,
+    EmailVerificationRequiredError,
+    InvalidAccountTokenError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
 )
@@ -42,8 +58,8 @@ def _auth_response(result: AuthResult) -> AuthResponse:
 
 @router.post(
     "/register",
-    response_model=AuthResponse,
-    status_code=status.HTTP_201_CREATED,
+    response_model=MessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     dependencies=[
         Depends(require_allowed_origin),
         Depends(auth_rate_limit("register")),
@@ -52,20 +68,11 @@ def _auth_response(result: AuthResult) -> AuthResponse:
 def register(
     data: UserCreate,
     request: Request,
-    response: Response,
     db: Annotated[Session, Depends(get_db)],
-) -> AuthResponse:
+) -> MessageResponse:
     user_agent, ip_address = _request_context(request)
-    try:
-        result = AuthService(db).register(data, user_agent, ip_address)
-    except DuplicateEmailError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An account with this email already exists",
-        ) from error
-
-    set_refresh_cookie(response, result.refresh_token)
-    return _auth_response(result)
+    AuthService(db).register(data, user_agent, ip_address)
+    return MessageResponse(message="If the address is eligible, a verification email was queued")
 
 
 @router.post(
@@ -95,6 +102,11 @@ def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
+        ) from error
+    except EmailVerificationRequiredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required",
         ) from error
 
     set_refresh_cookie(response, result.refresh_token)
@@ -159,8 +171,127 @@ def logout(
     return response
 
 
+@router.post(
+    "/verify-email",
+    response_model=MessageResponse,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("verify-email"))],
+)
+def verify_email(
+    data: TokenRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> MessageResponse:
+    try:
+        AuthService(db).verify_email(data.token)
+    except InvalidAccountTokenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        ) from error
+    return MessageResponse(message="Email verified")
+
+
+@router.post(
+    "/resend-verification",
+    response_model=MessageResponse,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("resend-verification"))],
+)
+def resend_verification(
+    data: EmailRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> MessageResponse:
+    with suppress(AccountTokenRateLimitedError):
+        AuthService(db).resend_verification(str(data.email))
+    return MessageResponse(message="If the account is eligible, a verification email was queued")
+
+
+@router.post(
+    "/password-reset/request",
+    response_model=MessageResponse,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("password-reset"))],
+)
+def request_password_reset(
+    data: EmailRequest,
+    db: Annotated[Session, Depends(get_db)],
+) -> MessageResponse:
+    with suppress(AccountTokenRateLimitedError):
+        AuthService(db).request_password_reset(str(data.email))
+    return MessageResponse(message="If the account is eligible, a password reset email was queued")
+
+
+@router.post(
+    "/password-reset/confirm",
+    response_model=MessageResponse,
+    dependencies=[
+        Depends(require_allowed_origin),
+        Depends(auth_rate_limit("password-reset-confirm")),
+    ],
+)
+def confirm_password_reset(
+    data: PasswordResetConfirm,
+    db: Annotated[Session, Depends(get_db)],
+) -> MessageResponse:
+    try:
+        AuthService(db).reset_password(data.token, data.password)
+    except InvalidAccountTokenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token",
+        ) from error
+    return MessageResponse(message="Password reset completed")
+
+
 @router.get("/me", response_model=UserPublic)
 def me(
     user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserPublic:
     return UserPublic.model_validate(user)
+
+
+@router.get("/sessions", response_model=list[SessionRead])
+def list_sessions(
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_active_user)],
+    refresh_token: Annotated[str | None, Cookie(alias=REFRESH_COOKIE_NAME)] = None,
+) -> list[SessionRead]:
+    sessions = AuthService(db).list_sessions(user.id, refresh_token)
+    return [
+        SessionRead(
+            id=item.id,
+            created_at=item.created_at,
+            expires_at=item.expires_at,
+            user_agent=item.user_agent,
+            ip_address=item.ip_address,
+            current=bool(getattr(item, "is_current", False)),
+        )
+        for item in sessions
+    ]
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def revoke_session(
+    session_id: UUID,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_active_user)],
+) -> Response:
+    if not AuthService(db).revoke_session(user.id, session_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/sessions",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def revoke_all_sessions(
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_active_user)],
+) -> Response:
+    AuthService(db).revoke_all_sessions(user.id)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_refresh_cookie(response)
+    return response

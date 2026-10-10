@@ -7,6 +7,7 @@ export type User = {
   created_at: string;
   updated_at: string;
   last_login_at: string | null;
+  email_verified_at: string | null;
 };
 
 export type AuthResponse = {

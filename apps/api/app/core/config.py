@@ -30,6 +30,22 @@ class Settings(BaseSettings):
     auth_rate_limit_window_seconds: int = Field(default=60, gt=0)
     auth_rate_limit_fail_open: bool = True
     auth_cleanup_retention_days: int = Field(default=7, ge=0)
+    auth_require_email_verification: bool = True
+    email_verification_expire_minutes: int = Field(default=60, ge=10, le=1440)
+    password_reset_expire_minutes: int = Field(default=30, ge=10, le=240)
+    account_token_resend_cooldown_seconds: int = Field(default=60, ge=30, le=3600)
+    legal_terms_version: str = Field(default="2026-10-10", min_length=1, max_length=32)
+    legal_privacy_version: str = Field(default="2026-10-10", min_length=1, max_length=32)
+    public_web_url: str = "http://localhost:3000"
+    transactional_email_enabled: bool = False
+    transactional_email_from: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_starttls: bool = True
+    transactional_email_batch_size: int = Field(default=25, ge=1, le=200)
+    transactional_email_max_attempts: int = Field(default=5, ge=1, le=20)
     ai_provider: Literal["openai", "fake"] = "openai"
     openai_api_key: str | None = None
     openai_model: str = Field(default="gpt-5.4-mini", min_length=1)
@@ -116,6 +132,10 @@ class Settings(BaseSettings):
         "google_calendar_redirect_uri",
         "integration_encryption_key",
         "observability_metrics_token",
+        "transactional_email_from",
+        "smtp_host",
+        "smtp_username",
+        "smtp_password",
         mode="before",
     )
     @classmethod
@@ -250,6 +270,14 @@ class Settings(BaseSettings):
                 raise ValueError("Production cannot use the fake AI provider")
             if self.ai_provider == "openai" and self.openai_api_key is None:
                 raise ValueError("Production OpenAI provider requires OPENAI_API_KEY")
+            if self.auth_require_email_verification and not self.transactional_email_enabled:
+                raise ValueError(
+                    "Production email verification requires TRANSACTIONAL_EMAIL_ENABLED=true"
+                )
+            if self.transactional_email_enabled and not all(
+                (self.transactional_email_from, self.smtp_host)
+            ):
+                raise ValueError("Transactional email requires sender and SMTP host")
         return self
 
 

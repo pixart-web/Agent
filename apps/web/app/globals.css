@@ -268,6 +268,19 @@ h1 {
   font: inherit;
 }
 
+.auth-form .checkbox-field {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.auth-form .checkbox-field input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+}
+
 .auth-form input:focus {
   border-color: var(--accent);
   outline: 3px solid rgba(21, 94, 117, 0.14);

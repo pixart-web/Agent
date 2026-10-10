@@ -8,6 +8,28 @@ and superuser flags, and UTC timestamps. Public schemas never contain
 its user and rotation family, expiry and revocation timestamps, replacement link, and
 optional request metadata.
 
+New accounts also persist versioned Terms and Privacy acceptance timestamps. Existing
+pre-migration accounts are marked with the explicit `legacy` version so the migration
+does not silently lock out operators.
+
+## Verification and recovery
+
+Registration returns the same HTTP 202 response for new and existing addresses, so it
+cannot be used to enumerate accounts. New accounts are unverified by default and
+cannot log in or use protected endpoints until verification completes.
+
+Email-verification and password-reset secrets are random opaque values. Only SHA-256
+hashes are stored in `account_tokens`; tokens are short-lived, single-use, and a new
+token consumes previous active tokens for the same purpose. Password reset revokes all
+refresh sessions. Recovery requests return the same public response for missing,
+inactive, unverified, and eligible accounts.
+
+The raw secret is stored only inside a Fernet-encrypted transactional-email outbox
+payload. A separate dispatcher decrypts and sends bounded batches through configured
+SMTP, records only a bounded error class, and stops retrying after the configured
+attempt limit. Production refuses to start with required verification but without a
+transactional email provider.
+
 ## Passwords and access tokens
 
 Passwords require at least 10 characters, one letter, and one number. Argon2id is
@@ -57,7 +79,7 @@ missing or invalid authentication and 403 for an inactive user.
 
 ## Frontend flow
 
-Registration and login receive an access token and refresh cookie. When the protected
+Registration redirects to the verification page. Login receives an access token and refresh cookie. When the protected
 dashboard starts, the client calls refresh and then `/me`. Unauthorized API requests
 perform at most one renewal attempt. Concurrent requests share one refresh promise,
 preventing rotation races and retry loops. Logout clears backend and in-memory state;
@@ -89,6 +111,20 @@ AUTH_RATE_LIMIT_REQUESTS=10
 AUTH_RATE_LIMIT_WINDOW_SECONDS=60
 AUTH_RATE_LIMIT_FAIL_OPEN=true
 AUTH_CLEANUP_RETENTION_DAYS=7
+AUTH_REQUIRE_EMAIL_VERIFICATION=true
+EMAIL_VERIFICATION_EXPIRE_MINUTES=60
+PASSWORD_RESET_EXPIRE_MINUTES=30
+ACCOUNT_TOKEN_RESEND_COOLDOWN_SECONDS=60
+LEGAL_TERMS_VERSION=2026-10-10
+LEGAL_PRIVACY_VERSION=2026-10-10
+PUBLIC_WEB_URL=https://kiko.example.com
+TRANSACTIONAL_EMAIL_ENABLED=true
+TRANSACTIONAL_EMAIL_FROM=Kiko <no-reply@example.com>
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_STARTTLS=true
 ```
 
 Expiries and limits must be positive, the algorithm is restricted to HS256, and
@@ -97,7 +133,11 @@ Production refuses the documented development secret and requires
 `AUTH_COOKIE_SECURE=true`. `WEB_ORIGINS` accepts a comma-separated allowlist; CORS
 credentials are enabled and wildcard origins are not used.
 
-## Maintenance and limitations
+## Sessions and maintenance
+
+Authenticated users can list active refresh sessions, see which session matches the
+current cookie, revoke one owned session, or revoke all sessions. Session identifiers
+are always scoped to the authenticated user.
 
 Run `make cleanup-auth` or:
 
@@ -107,6 +147,5 @@ python -m app.scripts.cleanup_refresh_tokens
 ```
 
 The command removes expired tokens and tokens revoked before the configured retention
-period. There is no scheduler yet. Social login, password recovery, organizations,
-advanced authorization, security audit trails, and administrative user management
-remain future work.
+period. Social login, MFA, workspace-wide authorization, and administrative user
+management remain future work.

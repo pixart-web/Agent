@@ -21,11 +21,15 @@ describe('authentication form validation', () => {
       email: 'invalid',
       password: 'short',
       confirmPassword: 'different',
+      termsAccepted: false,
+      privacyAccepted: false,
     });
 
     expect(errors.fullName).toBeDefined();
     expect(errors.email).toBeDefined();
     expect(errors.password).toBeDefined();
     expect(errors.confirmPassword).toBe('Passwords do not match.');
+    expect(errors.termsAccepted).toBeDefined();
+    expect(errors.privacyAccepted).toBeDefined();
   });
 });

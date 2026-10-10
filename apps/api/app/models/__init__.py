@@ -1,5 +1,6 @@
 """SQLAlchemy models."""
 
+from app.models.account_token import AccountToken
 from app.models.agent import Agent
 from app.models.agent_run import AgentRun
 from app.models.approval_request import ApprovalRequest
@@ -52,10 +53,12 @@ from app.models.task_action import TaskAction
 from app.models.task_dependency import TaskDependency
 from app.models.task_execution import TaskExecution
 from app.models.task_status_history import TaskStatusHistory
+from app.models.transactional_email import TransactionalEmailOutbox
 from app.models.user import User
 
 __all__ = [
     "AgentRun",
+    "AccountToken",
     "Agent",
     "CalendarReference",
     "CalendarWriteRecord",
@@ -102,6 +105,7 @@ __all__ = [
     "SupervisorRun",
     "Task",
     "TaskStatusHistory",
+    "TransactionalEmailOutbox",
     "User",
     "TaskAction",
     "TaskDependency",

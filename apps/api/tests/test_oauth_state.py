@@ -33,10 +33,17 @@ def register(client: TestClient, email: str) -> dict[str, object]:
             "email": email,
             "password": "securePassword123",
             "full_name": "OAuth User",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
     )
-    assert response.status_code == 201
-    return response.json()
+    assert response.status_code == 202
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "securePassword123"},
+    )
+    assert login.status_code == 200
+    return login.json()
 
 
 def bearer(auth: dict[str, object]) -> dict[str, str]:

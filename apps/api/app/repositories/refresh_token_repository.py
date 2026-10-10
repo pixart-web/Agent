@@ -32,6 +32,39 @@ class RefreshTokenRepository:
         result = self.session.execute(statement)
         return result.rowcount or 0
 
+    def revoke_all_for_user(self, user_id: UUID, revoked_at: datetime) -> int:
+        result = self.session.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=revoked_at)
+        )
+        return result.rowcount or 0
+
+    def list_active_for_user(self, user_id: UUID, now: datetime) -> list[RefreshToken]:
+        return list(
+            self.session.scalars(
+                select(RefreshToken)
+                .where(
+                    RefreshToken.user_id == user_id,
+                    RefreshToken.revoked_at.is_(None),
+                    RefreshToken.expires_at > now,
+                )
+                .order_by(RefreshToken.created_at.desc(), RefreshToken.id.desc())
+            )
+        )
+
+    def revoke_for_user(self, token_id: UUID, user_id: UUID, revoked_at: datetime) -> int:
+        result = self.session.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.id == token_id,
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=revoked_at)
+        )
+        return result.rowcount or 0
+
     def delete_expired_or_old_revoked(
         self,
         now: datetime,

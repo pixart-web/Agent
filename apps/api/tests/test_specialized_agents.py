@@ -35,10 +35,18 @@ def ready_task(client: TestClient, db: Session, agent_id: str, email: str = "age
         ]
     )
     db.commit()
-    auth = client.post(
+    registration = client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "full_name": "Agent Owner"},
-    ).json()
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "full_name": "Agent Owner",
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        },
+    )
+    assert registration.status_code == 202
+    auth = client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD}).json()
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     command = client.post(
         "/api/v1/commands", headers=headers, json={"input": "Prepare work"}
@@ -207,7 +215,13 @@ def test_active_run_and_ownership_are_enforced(client: TestClient, db_session: S
 
     client.post(
         "/api/v1/auth/register",
-        json={"email": "other-agent@example.com", "password": PASSWORD, "full_name": "Other"},
+        json={
+            "email": "other-agent@example.com",
+            "password": PASSWORD,
+            "full_name": "Other",
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        },
     ).json()
     other_user = db_session.scalar(select(User).where(User.email == "other-agent@example.com"))
     with pytest.raises(WorkflowNotFoundError):
