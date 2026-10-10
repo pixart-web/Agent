@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.command import Command
 from app.models.supervisor_run import SupervisorRun
 from app.models.workflow_enums import SupervisorRunStatus
+from app.workspaces.scope import active_workspace_id
 
 
 class SupervisorRunRepository:
@@ -16,16 +17,24 @@ class SupervisorRunRepository:
         self.session.add(run)
 
     def get_owned(self, run_id: UUID, user_id: UUID) -> SupervisorRun | None:
-        statement = select(SupervisorRun).where(
-            SupervisorRun.id == run_id,
-            SupervisorRun.user_id == user_id,
+        statement = (
+            select(SupervisorRun)
+            .join(Command, Command.id == SupervisorRun.command_id)
+            .where(
+                SupervisorRun.id == run_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
         )
         return self.session.scalar(statement)
 
     def get_owned_for_update(self, run_id: UUID, user_id: UUID) -> SupervisorRun | None:
         statement = (
             select(SupervisorRun)
-            .where(SupervisorRun.id == run_id, SupervisorRun.user_id == user_id)
+            .join(Command, Command.id == SupervisorRun.command_id)
+            .where(
+                SupervisorRun.id == run_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
             .with_for_update(of=SupervisorRun)
         )
         return self.session.scalar(statement)
@@ -47,7 +56,7 @@ class SupervisorRunRepository:
             .join(Command, Command.id == SupervisorRun.command_id)
             .where(
                 SupervisorRun.command_id == command_id,
-                Command.user_id == user_id,
+                Command.workspace_id == active_workspace_id(user_id),
             )
             .order_by(SupervisorRun.created_at.desc(), SupervisorRun.id)
         )

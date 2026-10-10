@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.command import Command
-from app.models.user import User
 from app.models.workflow_enums import CommandStatus
+from app.workspaces.scope import active_workspace_id
 
 
 class CommandRepository:
@@ -18,7 +18,7 @@ class CommandRepository:
     def get_owned(self, command_id: UUID, user_id: UUID) -> Command | None:
         statement = select(Command).where(
             Command.id == command_id,
-            Command.workspace_id == self._active_workspace(user_id),
+            Command.workspace_id == active_workspace_id(user_id),
         )
         return self.session.scalar(statement)
 
@@ -27,7 +27,7 @@ class CommandRepository:
             select(Command)
             .where(
                 Command.id == command_id,
-                Command.workspace_id == self._active_workspace(user_id),
+                Command.workspace_id == active_workspace_id(user_id),
             )
             .with_for_update(of=Command)
         )
@@ -42,7 +42,7 @@ class CommandRepository:
     ) -> list[Command]:
         statement = (
             select(Command)
-            .where(Command.workspace_id == self._active_workspace(user_id))
+            .where(Command.workspace_id == active_workspace_id(user_id))
             .order_by(Command.created_at.desc(), Command.id)
             .limit(limit)
             .offset(offset)
@@ -50,7 +50,3 @@ class CommandRepository:
         if command_status is not None:
             statement = statement.where(Command.status == command_status)
         return list(self.session.scalars(statement))
-
-    @staticmethod
-    def _active_workspace(user_id: UUID):
-        return select(User.active_workspace_id).where(User.id == user_id).scalar_subquery()

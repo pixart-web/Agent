@@ -101,6 +101,14 @@ def test_workspace_invitation_lifecycle_and_authorization(client, db_session) ->
     assert shared.status_code == 200
     assert [item["id"] for item in shared.json()] == [command.json()["id"]]
     assert client.get("/api/v1/commands", headers=outsider).json() == []
+    plan = client.post(
+        f"/api/v1/commands/{command.json()['id']}/plan",
+        headers=owner,
+        json={"title": "Shared report", "objective": "Prepare a tenant-scoped report"},
+    )
+    assert plan.status_code == 201
+    assert client.get(f"/api/v1/plans/{plan.json()['id']}", headers=invited).status_code == 200
+    assert client.get(f"/api/v1/plans/{plan.json()['id']}", headers=outsider).status_code == 404
 
 
 def test_workspace_invitation_can_be_revoked(client) -> None:

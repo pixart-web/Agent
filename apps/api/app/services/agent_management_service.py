@@ -16,6 +16,7 @@ from app.repositories.agent_run_repository import AgentRunRepository
 from app.repositories.task_repository import TaskRepository
 from app.services.audit_service import AuditService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
+from app.workspaces.scope import active_workspace_id
 
 
 class AgentManagementService:
@@ -54,7 +55,10 @@ class AgentManagementService:
                 select(Task.status, func.count(Task.id))
                 .join(Plan, Plan.id == Task.plan_id)
                 .join(Command, Command.id == Plan.command_id)
-                .where(Task.agent_id == agent_id, Command.user_id == user_id)
+                .where(
+                    Task.agent_id == agent_id,
+                    Command.workspace_id == active_workspace_id(user_id),
+                )
                 .group_by(Task.status)
             ).all()
         )

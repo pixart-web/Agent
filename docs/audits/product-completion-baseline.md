@@ -57,7 +57,7 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Invitations and ownership transfer   | API lifecycle implemented           |            API tests |               No | HIGH — administration UI and E2E pending                         |
 | Onboarding                           | Missing                            |                   No |               No | HIGH                                                              |
 | Kiko conversational workspace        | Missing                            |                   No |               No | BLOCKER — command form is not persistent conversation             |
-| Commands and plans                   | Commands tenant-scoped; plans pending | API/component tests |               No | HIGH — graph migration and lifecycle gaps remain               |
+| Commands and plans                   | Operational graph tenant-scoped     | API/component tests |               No | HIGH — lifecycle/search/archive/duplicate gaps remain              |
 | Tasks                                | Partial                            |  API/component tests |               No | HIGH — no full assignment/project/filtered product UX             |
 | Projects                             | Partial CRM projects               |                   No |               No | HIGH — not a general project-management product                   |
 | Specialized agents                   | Implemented foundation             |  Fake-provider tests |               No | HIGH — configuration/status/performance incomplete                |

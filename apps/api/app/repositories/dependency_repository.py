@@ -7,6 +7,7 @@ from app.models.command import Command
 from app.models.plan import Plan
 from app.models.task import Task
 from app.models.task_dependency import TaskDependency
+from app.workspaces.scope import active_workspace_id
 
 
 class DependencyRepository:
@@ -27,7 +28,10 @@ class DependencyRepository:
             .join(Task, Task.id == TaskDependency.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(TaskDependency.task_id == task_id, Command.user_id == user_id)
+            .where(
+                TaskDependency.task_id == task_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
         )
         return list(self.session.scalars(statement))
 

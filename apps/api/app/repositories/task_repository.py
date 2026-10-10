@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.command import Command
 from app.models.plan import Plan
 from app.models.task import Task
+from app.workspaces.scope import active_workspace_id
 
 
 class TaskRepository:
@@ -23,7 +24,7 @@ class TaskRepository:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
         )
         return self.session.scalar(statement)
 
@@ -32,7 +33,7 @@ class TaskRepository:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
             .with_for_update(of=Task)
         )
         return self.session.scalar(statement)
@@ -42,7 +43,7 @@ class TaskRepository:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.plan_id == plan_id, Command.user_id == user_id)
+            .where(Task.plan_id == plan_id, Command.workspace_id == active_workspace_id(user_id))
             .order_by(Task.sequence, Task.created_at, Task.id)
         )
         return list(self.session.scalars(statement))
@@ -52,7 +53,7 @@ class TaskRepository:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.plan_id == plan_id, Command.user_id == user_id)
+            .where(Task.plan_id == plan_id, Command.workspace_id == active_workspace_id(user_id))
             .order_by(Task.sequence, Task.id)
             .with_for_update(of=Task)
         )

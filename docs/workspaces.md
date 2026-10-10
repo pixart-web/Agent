@@ -10,9 +10,11 @@ active membership. Migration `20261010_0018` backfills the earliest existing
 membership without inventing access for users that do not belong to a workspace.
 New registrations receive a personal owner workspace, so operational records always
 have a tenant context. Commands are the first migrated business root: creation stores
-a non-null `workspace_id`, and list/detail/cancel authorization resolves the active
-workspace rather than the creating user. Plans, tasks, executions, and approvals are
-next in the staged graph migration.
+a non-null `workspace_id`, and authorization resolves the active workspace rather
+than the creating user. The complete dependent graph—plans, tasks, dependencies,
+actions, executions, approvals, audit history, Supervisor runs, specialist-agent
+runs, and Codex runs—inherits that boundary through joins to Command. Creator
+`user_id` values remain immutable attribution, not tenant authorization.
 
 ## Invitation lifecycle
 

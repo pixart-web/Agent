@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.audit_log import AuditLog
 from app.models.command import Command
+from app.workspaces.scope import active_workspace_id
 
 
 class AuditRepository:
@@ -19,7 +20,8 @@ class AuditRepository:
     ) -> list[AuditLog]:
         owned = self.session.scalar(
             select(Command.id).where(
-                Command.correlation_id == correlation_id, Command.user_id == user_id
+                Command.correlation_id == correlation_id,
+                Command.workspace_id == active_workspace_id(user_id),
             )
         )
         if owned is None:

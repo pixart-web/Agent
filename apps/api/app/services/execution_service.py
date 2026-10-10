@@ -28,6 +28,7 @@ from app.services.codex_run_service import CodexRunService
 from app.services.dependency_service import DependencyService
 from app.services.execution_queue_service import ExecutionQueueService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
+from app.workspaces.scope import active_workspace_id
 
 
 @dataclass(frozen=True)
@@ -376,7 +377,7 @@ class ExecutionService:
             select(Command)
             .join(Plan, Plan.command_id == Command.id)
             .join(Task, Task.plan_id == Plan.id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
             .with_for_update(of=Command)
         )
         if command is None:

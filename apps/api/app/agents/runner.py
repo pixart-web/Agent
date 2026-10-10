@@ -40,6 +40,7 @@ from app.services.audit_service import AuditService
 from app.services.dependency_service import DependencyService
 from app.services.execution_service import ExecutionService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
+from app.workspaces.scope import active_workspace_id
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,10 @@ class AgentRunnerService:
             plan = self.session.get(Plan, task.plan_id)
             command = self.session.scalar(
                 select(Command)
-                .where(Command.id == plan.command_id, Command.user_id == user_id)
+                .where(
+                    Command.id == plan.command_id,
+                    Command.workspace_id == active_workspace_id(user_id),
+                )
                 .with_for_update(of=Command)
             )
             if command.status in TERMINAL_COMMAND_STATUSES or plan.status in {

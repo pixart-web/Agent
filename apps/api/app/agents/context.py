@@ -10,6 +10,7 @@ from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.task_dependency import TaskDependency
 from app.models.task_execution import TaskExecution
+from app.workspaces.scope import active_workspace_id
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,10 @@ class AgentContextBuilder:
     ) -> AgentTaskContext:
         plan = self.session.get(Plan, task.plan_id)
         command = self.session.scalar(
-            select(Command).where(Command.id == plan.command_id, Command.user_id == user_id)
+            select(Command).where(
+                Command.id == plan.command_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
         )
         dependencies = tuple(
             self.session.scalars(

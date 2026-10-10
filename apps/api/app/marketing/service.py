@@ -55,6 +55,7 @@ from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
+from app.workspaces.scope import active_workspace_id
 
 TRANSITIONS: dict[str, frozenset[str]] = {
     "idea": frozenset({"draft", "archived"}),
@@ -652,7 +653,7 @@ class MarketingService:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
         )
         if task is None:
             raise MarketingNotFoundError("Task was not found")
