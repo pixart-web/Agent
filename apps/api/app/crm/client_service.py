@@ -51,6 +51,7 @@ from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
+from app.workspaces.scope import active_workspace_id, workspace_or_legacy_owner
 
 
 class ClientManagementService:
@@ -63,7 +64,7 @@ class ClientManagementService:
             query = (
                 select(CrmClient)
                 .join(CrmOrganization, CrmOrganization.id == CrmClient.organization_id)
-                .where(CrmClient.user_id == context.user_id)
+                .where(workspace_or_legacy_owner(CrmClient, context.user_id))
                 .order_by(CrmOrganization.name, CrmClient.id)
                 .offset(value.offset)
                 .limit(value.limit)
@@ -86,7 +87,7 @@ class ClientManagementService:
                 session.scalars(
                     select(CrmContact)
                     .where(
-                        CrmContact.user_id == context.user_id,
+                        workspace_or_legacy_owner(CrmContact, context.user_id),
                         CrmContact.organization_id == client.organization_id,
                     )
                     .order_by(CrmContact.full_name, CrmContact.id)
@@ -101,7 +102,7 @@ class ClientManagementService:
             activities = list(
                 session.scalars(
                     select(CrmActivity)
-                    .where(CrmActivity.user_id == context.user_id, activity_target)
+                    .where(activity_target)
                     .order_by(CrmActivity.occurred_at.desc(), CrmActivity.id.desc())
                     .limit(200)
                 )
@@ -110,7 +111,6 @@ class ClientManagementService:
                 session.scalars(
                     select(CrmProject)
                     .where(
-                        CrmProject.user_id == context.user_id,
                         CrmProject.client_id == client.id,
                     )
                     .order_by(CrmProject.updated_at.desc(), CrmProject.id)
@@ -120,7 +120,6 @@ class ClientManagementService:
                 session.scalars(
                     select(CrmOpportunity)
                     .where(
-                        CrmOpportunity.user_id == context.user_id,
                         CrmOpportunity.client_id == client.id,
                     )
                     .order_by(CrmOpportunity.updated_at.desc(), CrmOpportunity.id)
@@ -129,7 +128,7 @@ class ClientManagementService:
             notes = list(
                 session.scalars(
                     select(CrmNote)
-                    .where(CrmNote.user_id == context.user_id, note_target)
+                    .where(note_target)
                     .order_by(CrmNote.created_at.desc(), CrmNote.id.desc())
                     .limit(100)
                 )
@@ -140,9 +139,8 @@ class ClientManagementService:
                 .join(Plan, Plan.id == Task.plan_id)
                 .join(Command, Command.id == Plan.command_id)
                 .where(
-                    CrmTaskLink.user_id == context.user_id,
                     CrmTaskLink.client_id == client.id,
-                    Command.user_id == context.user_id,
+                    Command.workspace_id == active_workspace_id(context.user_id),
                 )
                 .order_by(Task.created_at.desc(), Task.id)
             ).all()
@@ -164,7 +162,7 @@ class ClientManagementService:
                 session.scalars(
                     select(CrmRecordHistory)
                     .where(
-                        CrmRecordHistory.user_id == context.user_id,
+                        CrmRecordHistory.workspace_id == active_workspace_id(context.user_id),
                         or_(*entity_conditions),
                     )
                     .order_by(
@@ -197,7 +195,6 @@ class ClientManagementService:
             query = (
                 select(CrmProject)
                 .where(
-                    CrmProject.user_id == context.user_id,
                     CrmProject.client_id == value.client_id,
                 )
                 .order_by(CrmProject.updated_at.desc(), CrmProject.id)
@@ -220,7 +217,7 @@ class ClientManagementService:
             pipelines = list(
                 session.scalars(
                     select(CrmPipeline)
-                    .where(CrmPipeline.user_id == context.user_id)
+                    .where(workspace_or_legacy_owner(CrmPipeline, context.user_id))
                     .order_by(
                         CrmPipeline.is_default.desc(),
                         CrmPipeline.name,
@@ -244,7 +241,6 @@ class ClientManagementService:
             query = (
                 select(CrmOpportunity)
                 .where(
-                    CrmOpportunity.user_id == context.user_id,
                     CrmOpportunity.client_id == value.client_id,
                 )
                 .order_by(CrmOpportunity.updated_at.desc(), CrmOpportunity.id)
@@ -272,13 +268,14 @@ class ClientManagementService:
             organization = self.crm._organization(session, context.user_id, value.organization_id)
             duplicate = session.scalar(
                 select(CrmClient).where(
-                    CrmClient.user_id == context.user_id,
+                    workspace_or_legacy_owner(CrmClient, context.user_id),
                     CrmClient.organization_id == organization.id,
                 )
             )
             if duplicate:
                 raise CrmConflictError("Organization is already a client")
             client = CrmClient(
+                workspace_id=self.crm._workspace_id(session, context.user_id),
                 user_id=context.user_id,
                 organization_id=organization.id,
                 owner_user_id=context.user_id,
@@ -388,7 +385,7 @@ class ClientManagementService:
             display_name = self.crm._display(value.name)
             duplicate = session.scalar(
                 select(CrmPipeline).where(
-                    CrmPipeline.user_id == context.user_id,
+                    workspace_or_legacy_owner(CrmPipeline, context.user_id),
                     CrmPipeline.name == display_name,
                 )
             )
@@ -397,10 +394,11 @@ class ClientManagementService:
             if value.is_default:
                 session.execute(
                     update(CrmPipeline)
-                    .where(CrmPipeline.user_id == context.user_id)
+                    .where(workspace_or_legacy_owner(CrmPipeline, context.user_id))
                     .values(is_default=False)
                 )
             pipeline = CrmPipeline(
+                workspace_id=self.crm._workspace_id(session, context.user_id),
                 user_id=context.user_id,
                 name=display_name,
                 description=value.description,
@@ -566,14 +564,13 @@ class ClientManagementService:
                 .join(Command, Command.id == Plan.command_id)
                 .where(
                     Task.id == value.task_id,
-                    Command.user_id == context.user_id,
+                    Command.workspace_id == active_workspace_id(context.user_id),
                 )
             )
             if task is None:
                 raise CrmNotFoundError("Task was not found")
             duplicate = session.scalar(
                 select(CrmTaskLink).where(
-                    CrmTaskLink.user_id == context.user_id,
                     CrmTaskLink.task_id == task.id,
                 )
             )
@@ -622,7 +619,7 @@ class ClientManagementService:
     ) -> CrmClient:
         query = select(CrmClient).where(
             CrmClient.id == client_id,
-            CrmClient.user_id == user_id,
+            workspace_or_legacy_owner(CrmClient, user_id),
         )
         if lock:
             query = query.with_for_update()
@@ -641,7 +638,9 @@ class ClientManagementService:
     ) -> CrmProject:
         query = select(CrmProject).where(
             CrmProject.id == project_id,
-            CrmProject.user_id == user_id,
+            CrmProject.client_id.in_(
+                select(CrmClient.id).where(workspace_or_legacy_owner(CrmClient, user_id))
+            ),
         )
         if lock:
             query = query.with_for_update()
@@ -660,7 +659,9 @@ class ClientManagementService:
     ) -> CrmOpportunity:
         query = select(CrmOpportunity).where(
             CrmOpportunity.id == opportunity_id,
-            CrmOpportunity.user_id == user_id,
+            CrmOpportunity.client_id.in_(
+                select(CrmClient.id).where(workspace_or_legacy_owner(CrmClient, user_id))
+            ),
         )
         if lock:
             query = query.with_for_update()
@@ -685,8 +686,7 @@ class ClientManagementService:
             .where(
                 CrmPipelineStage.id == stage_id,
                 CrmPipelineStage.pipeline_id == pipeline_id,
-                CrmPipelineStage.user_id == user_id,
-                CrmPipeline.user_id == user_id,
+                workspace_or_legacy_owner(CrmPipeline, user_id),
             )
         )
         if stage is None:
@@ -694,7 +694,9 @@ class ClientManagementService:
         return stage
 
     def _client_output(self, session: Session, value: CrmClient) -> ClientOutput:
-        organization = self.crm._organization(session, value.user_id, value.organization_id)
+        organization = session.get(CrmOrganization, value.organization_id)
+        if organization is None:
+            raise CrmNotFoundError("Organization was not found")
         return ClientOutput(
             id=value.id,
             organization=self.crm._organization_output(session, organization),
@@ -749,7 +751,6 @@ class ClientManagementService:
             session.scalars(
                 select(CrmPipelineStage)
                 .where(
-                    CrmPipelineStage.user_id == value.user_id,
                     CrmPipelineStage.pipeline_id == value.id,
                 )
                 .order_by(CrmPipelineStage.position, CrmPipelineStage.id)
@@ -830,8 +831,8 @@ class ClientManagementService:
             )
         return facts
 
-    @staticmethod
     def _history(
+        self,
         session: Session,
         context: ExecutionContext,
         entity_type: str,
@@ -841,6 +842,7 @@ class ClientManagementService:
     ) -> None:
         session.add(
             CrmRecordHistory(
+                workspace_id=self.crm._workspace_id(session, context.user_id),
                 user_id=context.user_id,
                 entity_type=entity_type,
                 entity_id=entity_id,

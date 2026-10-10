@@ -1,7 +1,7 @@
 import re
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -109,7 +109,7 @@ class KnowledgeService:
         with self.session_factory() as session, session.begin():
             membership = self._membership(session, workspace_id, user_id)
             self._require_role(membership, EDIT_ROLES)
-            self._validate_scopes(session, user_id, value.client_id, value.project_id)
+            self._validate_scopes(session, user_id, workspace_id, value.client_id, value.project_id)
             item = KnowledgeItem(
                 workspace_id=workspace_id,
                 created_by_user_id=user_id,
@@ -273,19 +273,37 @@ class KnowledgeService:
 
     @staticmethod
     def _validate_scopes(
-        session: Session, user_id: UUID, client_id: UUID | None, project_id: UUID | None
+        session: Session,
+        user_id: UUID,
+        workspace_id: UUID,
+        client_id: UUID | None,
+        project_id: UUID | None,
     ) -> None:
         if (
             client_id
             and session.scalar(
-                select(CrmClient.id).where(CrmClient.id == client_id, CrmClient.user_id == user_id)
+                select(CrmClient.id).where(
+                    CrmClient.id == client_id,
+                    or_(
+                        CrmClient.workspace_id == workspace_id,
+                        and_(CrmClient.workspace_id.is_(None), CrmClient.user_id == user_id),
+                    ),
+                )
             )
             is None
         ):
             raise KnowledgeNotFoundError("Resource not found")
         if project_id:
             project = session.scalar(
-                select(CrmProject).where(CrmProject.id == project_id, CrmProject.user_id == user_id)
+                select(CrmProject)
+                .join(CrmClient, CrmClient.id == CrmProject.client_id)
+                .where(
+                    CrmProject.id == project_id,
+                    or_(
+                        CrmClient.workspace_id == workspace_id,
+                        and_(CrmClient.workspace_id.is_(None), CrmClient.user_id == user_id),
+                    ),
+                )
             )
             if project is None or (client_id is not None and project.client_id != client_id):
                 raise KnowledgeNotFoundError("Resource not found")

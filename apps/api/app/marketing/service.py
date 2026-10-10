@@ -55,7 +55,7 @@ from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
-from app.workspaces.scope import active_workspace_id
+from app.workspaces.scope import active_workspace_id, workspace_or_legacy_owner
 
 TRANSITIONS: dict[str, frozenset[str]] = {
     "idea": frozenset({"draft", "archived"}),
@@ -640,7 +640,7 @@ class MarketingService:
         client = session.scalar(
             select(CrmClient).where(
                 CrmClient.id == client_id,
-                CrmClient.user_id == user_id,
+                workspace_or_legacy_owner(CrmClient, user_id),
             )
         )
         if client is None:

@@ -1,6 +1,7 @@
 # CRM tenant migration
 
-CRM currently repeats `user_id` across every table. The migration must preserve
+CRM historically repeated `user_id` across every table. Migration `20261010_0022`
+establishes the workspace boundary while preserving
 creator/owner attribution while moving authorization to Workspace.
 
 ## Canonical roots
@@ -35,3 +36,9 @@ switching every query would create misleading partial isolation.
 
 The CRM migration is not complete until all six roots, every parent join, uniqueness
 constraint, API query, and two-workspace adversarial test pass in the same revision.
+
+Delivered in `20261010_0022`: all six roots are workspace-scoped and non-null after
+backfill, root uniqueness and indexes use `workspace_id`, child reads inherit scope
+from validated parents, and an adversarial test proves member visibility and outsider
+isolation. Nullable ORM fields and the `workspace_or_legacy_owner` predicate exist
+only to keep pre-migration fixtures readable; the production migration removes nulls.
