@@ -117,6 +117,7 @@ def calendar_connect(
     now = utc_now()
     oauth_state = IntegrationOAuthState(
         user_id=user.id,
+        workspace_id=user.active_workspace_id,
         provider=OAUTH_PROVIDER,
         purpose=OAUTH_PURPOSE,
         expires_at=now + timedelta(minutes=settings.calendar_oauth_state_expire_minutes),
@@ -138,14 +139,14 @@ def calendar_callback(
     _require_enabled(settings)
     oauth = GoogleCalendarOAuthClient(settings)
     claims = oauth.decode_state(state_token)
-    consumed = IntegrationOAuthStateRepository(db).consume(
+    workspace_id = IntegrationOAuthStateRepository(db).consume(
         claims.state_id,
         claims.user_id,
         OAUTH_PROVIDER,
         OAUTH_PURPOSE,
         utc_now(),
     )
-    if not consumed:
+    if workspace_id is None:
         db.rollback()
         raise CalendarAuthenticationError(INVALID_STATE_MESSAGE)
     db.commit()
@@ -176,6 +177,7 @@ def calendar_callback(
         account = repository.add(
             IntegrationAccount(
                 user_id=claims.user_id,
+                workspace_id=workspace_id,
                 provider=OAUTH_PROVIDER,
                 account_type=IntegrationAccountType.PERSONAL,
                 external_account_id=primary.id,

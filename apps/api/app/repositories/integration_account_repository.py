@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.integration_account import IntegrationAccount
+from app.workspaces.scope import active_workspace_id
 
 
 class IntegrationAccountRepository:
@@ -19,7 +20,7 @@ class IntegrationAccountRepository:
     ) -> IntegrationAccount | None:
         conditions = [
             IntegrationAccount.id == account_id,
-            IntegrationAccount.user_id == user_id,
+            self._scope(user_id),
         ]
         if provider is not None:
             conditions.append(IntegrationAccount.provider == provider)
@@ -30,14 +31,14 @@ class IntegrationAccountRepository:
     ) -> IntegrationAccount | None:
         return self.session.scalar(
             select(IntegrationAccount).where(
-                IntegrationAccount.user_id == user_id,
+                self._scope(user_id),
                 IntegrationAccount.provider == provider,
                 IntegrationAccount.external_account_id == external_id,
             )
         )
 
     def list_owned(self, user_id: UUID, provider: str | None = None) -> list[IntegrationAccount]:
-        conditions = [IntegrationAccount.user_id == user_id]
+        conditions = [self._scope(user_id)]
         if provider is not None:
             conditions.append(IntegrationAccount.provider == provider)
         return list(
@@ -46,4 +47,11 @@ class IntegrationAccountRepository:
                 .where(*conditions)
                 .order_by(IntegrationAccount.email_address)
             )
+        )
+
+    @staticmethod
+    def _scope(user_id: UUID):
+        return or_(
+            IntegrationAccount.workspace_id == active_workspace_id(user_id),
+            (IntegrationAccount.workspace_id.is_(None) & (IntegrationAccount.user_id == user_id)),
         )

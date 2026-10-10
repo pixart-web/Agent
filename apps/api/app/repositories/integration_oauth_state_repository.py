@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.integration_oauth_state import IntegrationOAuthState
+from app.models.user import User
 
 
 class IntegrationOAuthStateRepository:
@@ -22,9 +23,9 @@ class IntegrationOAuthStateRepository:
         provider: str,
         purpose: str,
         now: datetime,
-    ) -> bool:
-        result = self.session.execute(
-            update(IntegrationOAuthState)
+    ) -> UUID | None:
+        value = self.session.scalar(
+            select(IntegrationOAuthState)
             .where(
                 IntegrationOAuthState.id == state_id,
                 IntegrationOAuthState.user_id == user_id,
@@ -33,9 +34,17 @@ class IntegrationOAuthStateRepository:
                 IntegrationOAuthState.expires_at > now,
                 IntegrationOAuthState.consumed_at.is_(None),
             )
-            .values(consumed_at=now)
+            .with_for_update()
         )
-        return result.rowcount == 1
+        if value is None:
+            return None
+        value.consumed_at = now
+        if value.workspace_id is not None:
+            return value.workspace_id
+        return (
+            self.session.scalar(select(User.active_workspace_id).where(User.id == value.user_id))
+            or value.user_id
+        )
 
     def cleanup(self, now: datetime, consumed_before: datetime) -> int:
         result = self.session.execute(
