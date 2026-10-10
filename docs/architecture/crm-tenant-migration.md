@@ -30,3 +30,8 @@ columns while preserving object-level authorization.
 
 The schema and repository changes must land together; adding tenant columns without
 switching every query would create misleading partial isolation.
+
+## Delivery gate
+
+The CRM migration is not complete until all six roots, every parent join, uniqueness
+constraint, API query, and two-workspace adversarial test pass in the same revision.
