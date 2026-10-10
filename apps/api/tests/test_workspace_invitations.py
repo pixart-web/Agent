@@ -99,3 +99,74 @@ def test_workspace_invitation_can_be_revoked(client) -> None:
     assert revoked.status_code == 204
     listed = client.get(f"/api/v1/workspaces/{workspace['id']}/invitations", headers=headers).json()
     assert listed["invitations"][0]["status"] == "revoked"
+
+
+def test_owner_can_manage_roles_remove_members_and_transfer_ownership(client, db_session) -> None:
+    owner_body, _ = register(client, email="lifecycle-owner@example.com")
+    owner_headers = bearer(owner_body["access_token"])
+    admin_body, _ = register(client, email="lifecycle-admin@example.com")
+    admin_headers = bearer(admin_body["access_token"])
+    member_body, _ = register(client, email="lifecycle-member@example.com")
+    workspace = client.post(
+        "/api/v1/knowledge/workspaces",
+        headers=owner_headers,
+        json={"name": "Lifecycle", "slug": "workspace-lifecycle"},
+    ).json()
+    workspace_id = UUID(workspace["id"])
+    owner_id = UUID(owner_body["user"]["id"])
+    admin_id = UUID(admin_body["user"]["id"])
+    member_user_id = UUID(member_body["user"]["id"])
+    admin = WorkspaceMember(
+        workspace_id=workspace_id,
+        user_id=admin_id,
+        role="admin",
+        created_by_user_id=owner_id,
+    )
+    member = WorkspaceMember(
+        workspace_id=workspace_id,
+        user_id=member_user_id,
+        role="member",
+        created_by_user_id=owner_id,
+    )
+    db_session.add_all([admin, member])
+    db_session.commit()
+
+    assert (
+        client.patch(
+            f"/api/v1/workspaces/{workspace_id}/members/{member.id}",
+            headers=admin_headers,
+            json={"role": "manager"},
+        ).status_code
+        == 200
+    )
+    owner_member = db_session.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.user_id == owner_id,
+        )
+    )
+    assert owner_member is not None
+    assert (
+        client.delete(
+            f"/api/v1/workspaces/{workspace_id}/members/{owner_member.id}",
+            headers=admin_headers,
+        ).status_code
+        == 403
+    )
+
+    transferred = client.post(
+        f"/api/v1/workspaces/{workspace_id}/ownership-transfer",
+        headers=owner_headers,
+        json={"user_id": str(admin_id)},
+    )
+    assert transferred.status_code == 200
+    assert transferred.json()["role"] == "owner"
+    db_session.expire_all()
+    assert db_session.get(WorkspaceMember, owner_member.id).role == "admin"
+
+    removed = client.delete(
+        f"/api/v1/workspaces/{workspace_id}/members/{member.id}",
+        headers=admin_headers,
+    )
+    assert removed.status_code == 204
+    assert db_session.get(WorkspaceMember, member.id) is None

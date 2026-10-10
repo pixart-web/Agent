@@ -54,7 +54,7 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Profile/deactivation/deletion        | Missing                            |                   No |               No | HIGH                                                              |
 | Platform/workspace roles             | Partial                            |                   No |               No | BLOCKER — only Knowledge membership roles exist                   |
 | Workspaces                           | Partial                            |       Knowledge only |               No | BLOCKER — business resources are not workspace-scoped             |
-| Invitations and ownership transfer   | Invitations implemented; transfer missing | API tests |               No | HIGH                                                      |
+| Invitations and ownership transfer   | API lifecycle implemented           |            API tests |               No | HIGH — administration UI and E2E pending                         |
 | Onboarding                           | Missing                            |                   No |               No | HIGH                                                              |
 | Kiko conversational workspace        | Missing                            |                   No |               No | BLOCKER — command form is not persistent conversation             |
 | Commands and plans                   | Partial                            |  API/component tests |               No | HIGH — incomplete lifecycle/search/archive/duplicate              |

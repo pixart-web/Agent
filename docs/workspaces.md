@@ -24,6 +24,14 @@ does not reveal whether a workspace, invitation, or different target email exist
 Direct member insertion under the legacy Knowledge routes remains available for
 backward compatibility. New product surfaces should use the invitation lifecycle.
 
+## Membership administration
+
+Owners and admins can change non-owner member roles and remove members. An admin
+cannot alter or remove another admin, preserving an owner-only privilege boundary.
+The current owner cannot be removed or demoted directly. Ownership transfer is a
+single transaction that promotes an existing member to owner and demotes the previous
+owner to admin, so a workspace can never be left without an owner by that workflow.
+
 ## Remaining migration
 
 Knowledge records are already workspace-scoped. Other business aggregates still

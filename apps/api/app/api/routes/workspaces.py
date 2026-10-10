@@ -19,7 +19,9 @@ from app.workspaces.schemas import (
     InvitationCreate,
     InvitationList,
     InvitationRead,
+    MemberRoleUpdate,
     MembershipRead,
+    OwnershipTransfer,
 )
 from app.workspaces.service import WorkspaceService
 
@@ -99,4 +101,57 @@ def accept_invitation(
     try:
         return WorkspaceService(db).accept(user, value.token)
     except (WorkspaceInvitationError, WorkspaceConflictError) as error:
+        _raise(error)
+
+
+@router.patch(
+    "/{workspace_id}/members/{member_id}",
+    response_model=MembershipRead,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def update_member(
+    workspace_id: UUID,
+    member_id: UUID,
+    value: MemberRoleUpdate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MembershipRead:
+    try:
+        return WorkspaceService(db).update_member(user.id, workspace_id, member_id, value)
+    except (WorkspaceNotFoundError, WorkspacePermissionError) as error:
+        _raise(error)
+
+
+@router.delete(
+    "/{workspace_id}/members/{member_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def remove_member(
+    workspace_id: UUID,
+    member_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    try:
+        WorkspaceService(db).remove_member(user.id, workspace_id, member_id)
+    except (WorkspaceNotFoundError, WorkspacePermissionError) as error:
+        _raise(error)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{workspace_id}/ownership-transfer",
+    response_model=MembershipRead,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def transfer_ownership(
+    workspace_id: UUID,
+    value: OwnershipTransfer,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MembershipRead:
+    try:
+        return WorkspaceService(db).transfer_ownership(user.id, workspace_id, value)
+    except (WorkspaceNotFoundError, WorkspacePermissionError, WorkspaceConflictError) as error:
         _raise(error)

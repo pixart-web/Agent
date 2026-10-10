@@ -21,6 +21,14 @@ class InvitationAccept(StrictWorkspaceModel):
     token: str = Field(min_length=32, max_length=512)
 
 
+class MemberRoleUpdate(StrictWorkspaceModel):
+    role: InvitableRole
+
+
+class OwnershipTransfer(StrictWorkspaceModel):
+    user_id: UUID
+
+
 class InvitationRead(StrictWorkspaceModel):
     id: UUID
     workspace_id: UUID
