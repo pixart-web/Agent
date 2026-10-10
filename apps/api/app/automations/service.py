@@ -31,7 +31,7 @@ from app.models.outbox_event import OutboxEvent
 from app.models.user import User
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
-from app.workspaces.scope import active_workspace_id
+from app.workspaces.scope import active_workspace_id, workspace_or_legacy_owner
 
 MAX_EVENT_BYTES = 32_768
 
@@ -301,7 +301,8 @@ class AutomationService:
         with self.session_factory() as session:
             query = (
                 select(AutomationRun)
-                .where(AutomationRun.user_id == user_id)
+                .join(Automation, Automation.id == AutomationRun.automation_id)
+                .where(Automation.workspace_id == active_workspace_id(user_id))
                 .order_by(AutomationRun.created_at.desc(), AutomationRun.id)
                 .offset(offset)
                 .limit(limit)
@@ -444,7 +445,6 @@ class AutomationService:
                 select(AutomationRun).where(
                     AutomationRun.automation_id == automation_id,
                     AutomationRun.dedupe_key == dedupe_key,
-                    AutomationRun.user_id == user_id,
                 )
             )
             if existing is None:
@@ -520,7 +520,7 @@ class AutomationService:
         account = session.scalar(
             select(IntegrationAccount.id).where(
                 IntegrationAccount.id == UUID(str(account_id)),
-                IntegrationAccount.user_id == user_id,
+                workspace_or_legacy_owner(IntegrationAccount, user_id),
                 IntegrationAccount.provider == provider,
             )
         )
@@ -602,9 +602,13 @@ class AutomationService:
         *,
         lock: bool = False,
     ) -> AutomationRun:
-        query = select(AutomationRun).where(
-            AutomationRun.id == run_id,
-            AutomationRun.user_id == user_id,
+        query = (
+            select(AutomationRun)
+            .join(Automation, Automation.id == AutomationRun.automation_id)
+            .where(
+                AutomationRun.id == run_id,
+                Automation.workspace_id == active_workspace_id(user_id),
+            )
         )
         if lock:
             query = query.with_for_update()

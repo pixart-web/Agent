@@ -11,9 +11,10 @@ from app.automations.service import AutomationService
 from app.core.time import utc_now
 from app.execution.dispatcher import OutboxDispatcher
 from app.models.audit_log import AuditLog
-from app.models.automation import AutomationRun
+from app.models.automation import Automation, AutomationRun
 from app.models.command import Command
 from app.models.integration_account import IntegrationAccount
+from app.models.knowledge import WorkspaceMember
 from app.models.outbox_event import OutboxEvent
 from app.models.user import User
 from app.models.workflow_enums import OutboxStatus
@@ -363,6 +364,45 @@ def test_planning_lifecycle_can_complete_or_fail(client, db_session) -> None:
     assert stored.status == "failed"
     assert stored.error_code == "synthetic_failure"
     assert stored.error_message == "Safe failure summary"
+
+
+def test_automation_runs_are_visible_to_workspace_members_only(client, db_session) -> None:
+    register(client, "automation-shared-owner@example.com")
+    register(client, "automation-shared-member@example.com")
+    register(client, "automation-isolated@example.com")
+    users = {item.email: item for item in db_session.scalars(select(User))}
+    owner = users["automation-shared-owner@example.com"]
+    member = users["automation-shared-member@example.com"]
+    outsider = users["automation-isolated@example.com"]
+    service = AutomationService(sessionmaker(bind=db_session.get_bind(), expire_on_commit=False))
+    automation = service.create(
+        owner.id,
+        AutomationCreate(
+            name="Shared run history",
+            trigger_type="manual",
+            command_template="Plan a shared synthetic run.",
+        ),
+    )
+    stored_automation = db_session.get(Automation, automation.id)
+    member.active_workspace_id = stored_automation.workspace_id
+    db_session.add(
+        WorkspaceMember(
+            workspace_id=stored_automation.workspace_id,
+            user_id=member.id,
+            role="member",
+            created_by_user_id=owner.id,
+        )
+    )
+    db_session.commit()
+    run = service.trigger_owned(
+        owner.id,
+        automation.id,
+        AutomationTrigger(event_key="shared-run", payload={}),
+    )
+
+    assert service.get_run(member.id, run.id).id == run.id
+    assert [item.id for item in service.list_runs(member.id).runs] == [run.id]
+    assert service.list_runs(outsider.id).runs == []
 
 
 def test_exhausted_queue_dispatch_marks_run_failed(client, db_session) -> None:

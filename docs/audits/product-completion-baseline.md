@@ -23,7 +23,7 @@ Passing unit tests demonstrate useful internal correctness, not commercial readi
 
 - Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 209 tests, skipped 5 integration tests.
 - Frontend: ESLint, TypeScript, and production build passed; Vitest passed 42 tests across 17 files.
-- Database: one Alembic head, `20261010_0023`; offline upgrade and new revision downgrades are valid.
+- Database: one Alembic head, `20261010_0024`; offline upgrade and new revision downgrades are valid.
 - Production public checks: `/health` and `/ready` returned HTTP 200; database and Redis reported healthy.
 - Production CORS preflight for `POST /api/v1/auth/register` returned HTTP 200 and allowed `https://kiko.pixart.pt`.
 - Production registration API route exists (`GET` returns the expected HTTP 405 with `Allow: POST`).
@@ -84,10 +84,10 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 ## Tenant-isolation audit
 
 `workspaces`, Workspace Knowledge, the command/execution graph, Automations,
-integration credentials, CRM aggregate roots, and the Marketing aggregate are
-workspace-scoped. Several provider-reference and operational aggregates still
-require an explicit tenant review or migration before the product can claim complete
-isolation.
+integration credentials and references, CRM aggregate roots, the Marketing aggregate,
+and Automation run history are workspace-scoped directly or through a validated root.
+Other operational aggregates still require an explicit tenant review before the
+product can claim complete isolation.
 
 This creates two product defects:
 

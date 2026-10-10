@@ -111,7 +111,7 @@ class AutomationRun(Base):
         CheckConstraint("depth BETWEEN 0 AND 10", name="ck_automation_runs_depth"),
         UniqueConstraint("automation_id", "dedupe_key", name="uq_automation_runs_dedupe"),
         UniqueConstraint("command_id", name="uq_automation_runs_command"),
-        Index("ix_automation_runs_owner_created", "user_id", "created_at"),
+        Index("ix_automation_runs_automation_created", "automation_id", "created_at"),
         Index("ix_automation_runs_automation_status", "automation_id", "status"),
         Index("ix_automation_runs_correlation", "correlation_id"),
     )
