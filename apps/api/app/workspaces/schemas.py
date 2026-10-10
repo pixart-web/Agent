@@ -29,6 +29,10 @@ class OwnershipTransfer(StrictWorkspaceModel):
     user_id: UUID
 
 
+class WorkspaceSwitch(StrictWorkspaceModel):
+    workspace_id: UUID
+
+
 class InvitationRead(StrictWorkspaceModel):
     id: UUID
     workspace_id: UUID

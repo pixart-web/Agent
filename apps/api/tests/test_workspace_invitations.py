@@ -101,6 +101,34 @@ def test_workspace_invitation_can_be_revoked(client) -> None:
     assert listed["invitations"][0]["status"] == "revoked"
 
 
+def test_first_workspace_becomes_active_and_member_can_switch(client) -> None:
+    body, _ = register(client, email="workspace-switch@example.com")
+    headers = bearer(body["access_token"])
+    first = client.post(
+        "/api/v1/knowledge/workspaces",
+        headers=headers,
+        json={"name": "First", "slug": "switch-first"},
+    ).json()
+    second = client.post(
+        "/api/v1/knowledge/workspaces",
+        headers=headers,
+        json={"name": "Second", "slug": "switch-second"},
+    ).json()
+    assert (
+        client.get("/api/v1/auth/me", headers=headers).json()["active_workspace_id"] == first["id"]
+    )
+
+    switched = client.post(
+        "/api/v1/workspaces/switch",
+        headers=headers,
+        json={"workspace_id": second["id"]},
+    )
+    assert switched.status_code == 204
+    assert (
+        client.get("/api/v1/auth/me", headers=headers).json()["active_workspace_id"] == second["id"]
+    )
+
+
 def test_owner_can_manage_roles_remove_members_and_transfer_ownership(client, db_session) -> None:
     owner_body, _ = register(client, email="lifecycle-owner@example.com")
     owner_headers = bearer(owner_body["access_token"])

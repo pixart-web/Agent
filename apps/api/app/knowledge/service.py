@@ -54,6 +54,9 @@ class KnowledgeService:
                 session.flush()
             except IntegrityError as error:
                 raise KnowledgeConflictError("Workspace slug is already in use") from error
+            user = session.get(User, user_id)
+            if user is not None and user.active_workspace_id is None:
+                user.active_workspace_id = workspace.id
             return self._workspace_read(workspace, member.role)
 
     def list_workspaces(self, user_id: UUID) -> WorkspaceList:

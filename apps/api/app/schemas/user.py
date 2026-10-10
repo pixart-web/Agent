@@ -106,3 +106,4 @@ class UserPublic(BaseModel):
     updated_at: datetime
     last_login_at: datetime | None
     email_verified_at: datetime | None
+    active_workspace_id: UUID | None

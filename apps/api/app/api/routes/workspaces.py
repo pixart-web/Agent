@@ -22,6 +22,7 @@ from app.workspaces.schemas import (
     MemberRoleUpdate,
     MembershipRead,
     OwnershipTransfer,
+    WorkspaceSwitch,
 )
 from app.workspaces.service import WorkspaceService
 
@@ -155,3 +156,20 @@ def transfer_ownership(
         return WorkspaceService(db).transfer_ownership(user.id, workspace_id, value)
     except (WorkspaceNotFoundError, WorkspacePermissionError, WorkspaceConflictError) as error:
         _raise(error)
+
+
+@router.post(
+    "/switch",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def switch_workspace(
+    value: WorkspaceSwitch,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    try:
+        WorkspaceService(db).switch(user, value)
+    except WorkspaceNotFoundError as error:
+        _raise(error)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -4,6 +4,11 @@ Workspace is Kiko's company boundary. Membership is always checked server-side a
 unknown or inaccessible workspace identifiers return the same not-found response.
 The supported roles are `owner`, `admin`, `manager`, `member`, and `viewer`.
 
+Each user has a nullable `active_workspace_id`. Creating the first workspace selects
+it automatically; `/api/v1/workspaces/switch` changes it only after verifying an
+active membership. Migration `20261010_0018` backfills the earliest existing
+membership without inventing access for users that do not belong to a workspace.
+
 ## Invitation lifecycle
 
 Owners and admins can create and list invitations at

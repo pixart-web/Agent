@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.core.time import utc_now
@@ -56,6 +56,16 @@ class User(Base):
     )
     terms_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
     privacy_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    active_workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "workspaces.id",
+            name="fk_users_active_workspace_id",
+            ondelete="SET NULL",
+            use_alter=True,
+        ),
+        nullable=True,
+        index=True,
+    )
 
     @validates("email")
     def normalize_email_value(self, _key: str, value: str) -> str:

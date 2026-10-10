@@ -29,6 +29,7 @@ from app.workspaces.schemas import (
     MemberRoleUpdate,
     MembershipRead,
     OwnershipTransfer,
+    WorkspaceSwitch,
 )
 
 MANAGE_ROLES = frozenset({"owner", "admin"})
@@ -213,6 +214,14 @@ class WorkspaceService:
         self.session.commit()
         self.session.refresh(target)
         return MembershipRead.model_validate(target, from_attributes=True)
+
+    def switch(self, user: User, value: WorkspaceSwitch) -> None:
+        membership = self._membership(value.workspace_id, user.id)
+        workspace = self.session.get(Workspace, membership.workspace_id)
+        if workspace is None or workspace.status != "active":
+            raise WorkspaceNotFoundError
+        user.active_workspace_id = workspace.id
+        self.session.commit()
 
     def _membership(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember:
         member = self.session.scalar(
