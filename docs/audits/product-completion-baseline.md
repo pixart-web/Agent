@@ -23,7 +23,7 @@ Passing unit tests demonstrate useful internal correctness, not commercial readi
 
 - Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 209 tests, skipped 5 integration tests.
 - Frontend: ESLint, TypeScript, and production build passed; Vitest passed 42 tests across 17 files.
-- Database: one Alembic head, `20261010_0016`; offline upgrade and the new revision downgrade are valid.
+- Database: one Alembic head, `20261010_0017`; offline upgrade and the two new revision downgrades are valid.
 - Production public checks: `/health` and `/ready` returned HTTP 200; database and Redis reported healthy.
 - Production CORS preflight for `POST /api/v1/auth/register` returned HTTP 200 and allowed `https://kiko.pixart.pt`.
 - Production registration API route exists (`GET` returns the expected HTTP 405 with `Allow: POST`).
@@ -54,7 +54,7 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Profile/deactivation/deletion        | Missing                            |                   No |               No | HIGH                                                              |
 | Platform/workspace roles             | Partial                            |                   No |               No | BLOCKER — only Knowledge membership roles exist                   |
 | Workspaces                           | Partial                            |       Knowledge only |               No | BLOCKER — business resources are not workspace-scoped             |
-| Invitations and ownership transfer   | Missing                            |                   No |               No | BLOCKER                                                           |
+| Invitations and ownership transfer   | Invitations implemented; transfer missing | API tests |               No | HIGH                                                      |
 | Onboarding                           | Missing                            |                   No |               No | HIGH                                                              |
 | Kiko conversational workspace        | Missing                            |                   No |               No | BLOCKER — command form is not persistent conversation             |
 | Commands and plans                   | Partial                            |  API/component tests |               No | HIGH — incomplete lifecycle/search/archive/duplicate              |
@@ -114,6 +114,7 @@ Implemented in the R1 identity increment:
 - encrypted transactional-email outbox with SMTP delivery and bounded retry;
 - recovery/reset with global refresh-session revocation;
 - current session inventory and selective/global revocation APIs.
+- expiring, revocable, email-bound workspace invitations and the Manager role.
 
 Still missing or incomplete:
 

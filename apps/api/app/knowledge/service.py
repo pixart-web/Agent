@@ -31,7 +31,7 @@ from app.models.knowledge import KnowledgeItem, KnowledgeRevision, Workspace, Wo
 from app.models.user import User
 
 MANAGE_ROLES = frozenset({"owner", "admin"})
-EDIT_ROLES = frozenset({"owner", "admin", "member"})
+EDIT_ROLES = frozenset({"owner", "admin", "manager", "member"})
 
 
 class KnowledgeService:
@@ -264,7 +264,7 @@ class KnowledgeService:
     def _sensitivity_filter(query, role: str):
         if role == "viewer":
             return query.where(KnowledgeItem.sensitivity == "internal")
-        if role == "member":
+        if role in {"manager", "member"}:
             return query.where(KnowledgeItem.sensitivity != "restricted")
         return query
 

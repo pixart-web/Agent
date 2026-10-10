@@ -25,7 +25,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      router.replace('/dashboard');
+      const requested = new URLSearchParams(window.location.search).get('next');
+      const destination =
+        requested?.startsWith('/') && !requested.startsWith('//')
+          ? requested
+          : '/dashboard';
+      router.replace(destination);
     } catch (error) {
       setMessage(
         error instanceof AuthClientError

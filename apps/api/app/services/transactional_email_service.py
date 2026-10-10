@@ -102,4 +102,12 @@ class TransactionalEmailDispatcher:
                 f"Hello {full_name},\n\nReset your password using this link:\n{link}\n\n"
                 "If you did not request this change, you can ignore this message.",
             )
+        if template == "workspace_invitation":
+            link = f"{base}/invite?{urlencode({'token': token})}"
+            workspace_name = payload["workspace_name"]
+            return (
+                f"Join {workspace_name} on Kiko",
+                f"Hello {full_name},\n\nYou were invited to join {workspace_name} on Kiko:\n"
+                f"{link}\n\nIf you were not expecting this invitation, ignore this message.",
+            )
         raise ValueError("Unsupported transactional email template")

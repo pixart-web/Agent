@@ -35,7 +35,13 @@ from app.models.email_reference import EmailReference
 from app.models.email_send_record import EmailSendRecord
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
-from app.models.knowledge import KnowledgeItem, KnowledgeRevision, Workspace, WorkspaceMember
+from app.models.knowledge import (
+    KnowledgeItem,
+    KnowledgeRevision,
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMember,
+)
 from app.models.marketing import (
     MarketingAsset,
     MarketingCampaign,
@@ -101,6 +107,7 @@ __all__ = [
     "KnowledgeItem",
     "KnowledgeRevision",
     "Workspace",
+    "WorkspaceInvitation",
     "WorkspaceMember",
     "SupervisorRun",
     "Task",

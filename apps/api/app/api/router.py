@@ -20,6 +20,7 @@ from app.api.routes import (
     specialized_agents,
     supervisor,
     tasks,
+    workspaces,
 )
 
 api_router = APIRouter()
@@ -40,5 +41,6 @@ api_router.include_router(execution.router, prefix="/api/v1")
 api_router.include_router(specialized_agents.router, prefix="/api/v1")
 api_router.include_router(integrations.router, prefix="/api/v1")
 api_router.include_router(knowledge.router, prefix="/api/v1")
+api_router.include_router(workspaces.router, prefix="/api/v1")
 api_router.include_router(marketing.router, prefix="/api/v1")
 api_router.include_router(metrics.router)

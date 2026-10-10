@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -45,7 +46,8 @@ class WorkspaceMember(Base):
     __tablename__ = "workspace_members"
     __table_args__ = (
         CheckConstraint(
-            "role IN ('owner', 'admin', 'member', 'viewer')", name="ck_workspace_members_role"
+            "role IN ('owner', 'admin', 'manager', 'member', 'viewer')",
+            name="ck_workspace_members_role",
         ),
         UniqueConstraint("workspace_id", "user_id", name="uq_workspace_members_workspace_user"),
         Index("ix_workspace_members_user_workspace", "user_id", "workspace_id"),
@@ -62,6 +64,55 @@ class WorkspaceMember(Base):
     created_by_user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
+    )
+
+
+class WorkspaceInvitation(Base):
+    __tablename__ = "workspace_invitations"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('admin', 'manager', 'member', 'viewer')",
+            name="ck_workspace_invitations_role",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'revoked', 'expired')",
+            name="ck_workspace_invitations_status",
+        ),
+        UniqueConstraint("token_hash", name="uq_workspace_invitations_token_hash"),
+        Index(
+            "ix_workspace_invitations_scope",
+            "workspace_id",
+            "status",
+            "expires_at",
+        ),
+        Index(
+            "uq_workspace_invitations_pending_email",
+            "workspace_id",
+            "email",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    invited_by_user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    accepted_by_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, server_default=func.now()
     )

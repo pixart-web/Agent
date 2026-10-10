@@ -222,6 +222,15 @@ export async function revokeSession(id: string): Promise<void> {
   }
 }
 
+export async function acceptWorkspaceInvitation(token: string): Promise<void> {
+  const response = await authFetch('/api/v1/workspaces/invitations/accept', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  await expectJson(response);
+}
+
 export async function logout(): Promise<void> {
   try {
     await fetch(`${apiBaseUrl}/api/v1/auth/logout`, {

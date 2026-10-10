@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     email_verification_expire_minutes: int = Field(default=60, ge=10, le=1440)
     password_reset_expire_minutes: int = Field(default=30, ge=10, le=240)
     account_token_resend_cooldown_seconds: int = Field(default=60, ge=30, le=3600)
+    workspace_invitation_expire_hours: int = Field(default=72, ge=1, le=720)
     legal_terms_version: str = Field(default="2026-10-10", min_length=1, max_length=32)
     legal_privacy_version: str = Field(default="2026-10-10", min_length=1, max_length=32)
     public_web_url: str = "http://localhost:3000"
