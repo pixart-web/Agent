@@ -1,6 +1,5 @@
 import type { AccessTokenResponse, AuthResponse, User } from './auth-types';
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+import { apiBaseUrl } from './api-url';
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
@@ -34,7 +33,7 @@ export async function login(
   email: string,
   password: string,
 ): Promise<AuthResponse> {
-  const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
+  const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -50,7 +49,7 @@ export async function register(
   email: string,
   password: string,
 ): Promise<AuthResponse> {
-  const response = await fetch(`${apiUrl}/api/v1/auth/register`, {
+  const response = await fetch(`${apiBaseUrl}/api/v1/auth/register`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -63,7 +62,7 @@ export async function register(
 
 async function performRefresh(): Promise<string | null> {
   try {
-    const response = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
+    const response = await fetch(`${apiBaseUrl}/api/v1/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -103,7 +102,7 @@ export async function authFetch(
   retryAfterRefresh = true,
 ): Promise<Response> {
   const send = () =>
-    fetch(`${apiUrl}${path}`, {
+    fetch(`${apiBaseUrl}${path}`, {
       ...init,
       credentials: 'include',
       headers: authorizedHeaders(init.headers),
@@ -131,7 +130,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function logout(): Promise<void> {
   try {
-    await fetch(`${apiUrl}/api/v1/auth/logout`, {
+    await fetch(`${apiBaseUrl}/api/v1/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });

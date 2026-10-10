@@ -36,6 +36,12 @@ metrics must never contain request bodies, OAuth states, credentials or provider
 
 ## Preflight configuration
 
+The production web bundle always uses same-origin API paths. The reverse proxy must route
+`/api/*`, `/health`, `/ready`, and the protected `/metrics` endpoint to the API service. Do not
+inject `NEXT_PUBLIC_API_URL` into the production image; that build-time setting previously allowed
+an obsolete hostname to make registration unreachable. `NEXT_PUBLIC_API_URL` remains a local
+development convenience only.
+
 `APP_ENV=production` activates fail-fast checks:
 
 - secure cookies and HTTPS web origins;

@@ -4,6 +4,7 @@ import { AGENT_CATALOG, type AgentId, type AgentOverview } from '@agent/shared';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../components/dashboard-nav';
+import { apiBaseUrl } from '../../lib/api-url';
 import { getAgentOverview } from '../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
@@ -40,8 +41,6 @@ function AgentMetrics({ agentId }: { agentId: AgentId }) {
     </dl>
   );
 }
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-
 export default function DashboardPage() {
   const { user, loading } = useAuthenticatedUser();
   const [apiState, setApiState] = useState<ApiState>('checking');
@@ -51,7 +50,7 @@ export default function DashboardPage() {
 
     async function checkApi() {
       try {
-        const response = await fetch(`${apiUrl}/health`);
+        const response = await fetch(`${apiBaseUrl}/health`);
         if (active) setApiState(response.ok ? 'online' : 'offline');
       } catch {
         if (active) setApiState('offline');
