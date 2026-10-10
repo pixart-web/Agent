@@ -24,11 +24,13 @@ from app.schemas.auth import (
 )
 from app.schemas.user import (
     EmailRequest,
+    PasswordChange,
     PasswordResetConfirm,
     TokenRequest,
     UserCreate,
     UserLogin,
     UserPublic,
+    UserUpdate,
 )
 from app.services.auth_service import (
     AccountTokenRateLimitedError,
@@ -245,6 +247,38 @@ def me(
     user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserPublic:
     return UserPublic.model_validate(user)
+
+
+@router.patch("/me", response_model=UserPublic, dependencies=[Depends(require_allowed_origin)])
+def update_me(
+    data: UserUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_active_user)],
+) -> UserPublic:
+    updated = AuthService(db).update_profile(user, data.full_name)
+    return UserPublic.model_validate(updated)
+
+
+@router.post(
+    "/password/change",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("password-change"))],
+)
+def change_password(
+    data: PasswordChange,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_active_user)],
+) -> Response:
+    try:
+        AuthService(db).change_password(user, data.current_password, data.new_password)
+    except InvalidCredentialsError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        ) from error
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_refresh_cookie(response)
+    return response
 
 
 @router.get("/sessions", response_model=list[SessionRead])

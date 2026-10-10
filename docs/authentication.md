@@ -24,6 +24,10 @@ token consumes previous active tokens for the same purpose. Password reset revok
 refresh sessions. Recovery requests return the same public response for missing,
 inactive, unverified, and eligible accounts.
 
+Authenticated users can update their normalized display name and change their
+password after proving the current password. A password change revokes every refresh
+session and clears the current cookie, requiring a fresh sign-in.
+
 The raw secret is stored only inside a Fernet-encrypted transactional-email outbox
 payload. A separate dispatcher decrypts and sends bounded batches through configured
 SMTP, records only a bounded error class, and stops retrying after the configured
@@ -79,8 +83,9 @@ missing or invalid authentication and 403 for an inactive user.
 
 ## Frontend flow
 
-Registration redirects to the verification page. Login receives an access token and refresh cookie. When the protected
-dashboard starts, the client calls refresh and then `/me`. Unauthorized API requests
+Registration redirects to the verification page. Login receives an access token and
+refresh cookie. When the protected dashboard starts, the client calls refresh and
+then `/me`. Unauthorized API requests
 perform at most one renewal attempt. Concurrent requests share one refresh promise,
 preventing rotation races and retry loops. Logout clears backend and in-memory state;
 failed renewal redirects to `/login`. Password confirmation is validated only in the
@@ -137,7 +142,8 @@ credentials are enabled and wildcard origins are not used.
 
 Authenticated users can list active refresh sessions, see which session matches the
 current cookie, revoke one owned session, or revoke all sessions. Session identifiers
-are always scoped to the authenticated user.
+are always scoped to the authenticated user. The Settings screen exposes profile,
+password-change, and selective session-revocation workflows.
 
 Run `make cleanup-auth` or:
 

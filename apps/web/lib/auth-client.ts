@@ -1,4 +1,4 @@
-import type { AccessTokenResponse, AuthResponse, User } from './auth-types';
+import type { AccessTokenResponse, User } from './auth-types';
 import { apiBaseUrl } from './api-url';
 
 let accessToken: string | null = null;
@@ -45,7 +45,7 @@ export async function register(
   password: string,
   termsAccepted: boolean,
   privacyAccepted: boolean,
-): Promise<AuthResponse> {
+): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/api/v1/auth/register`, {
     method: 'POST',
     credentials: 'include',
@@ -58,9 +58,7 @@ export async function register(
       privacy_accepted: privacyAccepted,
     }),
   });
-  const result = await expectJson<AuthResponse>(response);
-  accessToken = result.access_token;
-  return result;
+  await expectJson<{ message: string }>(response);
 }
 
 export async function verifyEmail(token: string): Promise<void> {
@@ -181,6 +179,47 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
   return (await response.json()) as User;
+}
+
+export async function updateProfile(fullName: string): Promise<User> {
+  const response = await authFetch('/api/v1/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_name: fullName }),
+  });
+  return expectJson<User>(response);
+}
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const response = await authFetch('/api/v1/auth/password/change', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+  if (!response.ok) {
+    throw new AuthClientError(await errorMessage(response), response.status);
+  }
+  clearAuthState();
+}
+
+export async function listSessions(): Promise<import('./auth-types').Session[]> {
+  const response = await authFetch('/api/v1/auth/sessions');
+  return expectJson<import('./auth-types').Session[]>(response);
+}
+
+export async function revokeSession(id: string): Promise<void> {
+  const response = await authFetch(`/api/v1/auth/sessions/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new AuthClientError(await errorMessage(response), response.status);
+  }
 }
 
 export async function logout(): Promise<void> {

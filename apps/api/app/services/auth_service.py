@@ -320,6 +320,19 @@ class AuthService:
         self.refresh_tokens.revoke_all_for_user(user.id, now)
         self.session.commit()
 
+    def change_password(self, user: User, current_password: str, new_password: str) -> None:
+        if not verify_password_or_dummy(current_password, user.password_hash):
+            raise InvalidCredentialsError
+        user.password_hash = hash_password(new_password)
+        self.refresh_tokens.revoke_all_for_user(user.id, utc_now())
+        self.session.commit()
+
+    def update_profile(self, user: User, full_name: str) -> User:
+        user.full_name = full_name
+        self.session.commit()
+        self.session.refresh(user)
+        return user
+
     def list_sessions(self, user_id: UUID, current_raw_token: str | None) -> list[RefreshToken]:
         current_hash = hash_refresh_token(current_raw_token) if current_raw_token else None
         sessions = self.refresh_tokens.list_active_for_user(user_id, utc_now())

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 class UserCreate(BaseModel):
@@ -60,6 +60,38 @@ class PasswordResetConfirm(TokenRequest):
         ):
             raise ValueError("Password must contain at least one letter and one number")
         return value
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=10, max_length=256)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        if not any(character.isalpha() for character in value) or not any(
+            character.isdigit() for character in value
+        ):
+            raise ValueError("Password must contain at least one letter and one number")
+        return value
+
+    @model_validator(mode="after")
+    def require_different_password(self) -> "PasswordChange":
+        if self.current_password == self.new_password:
+            raise ValueError("New password must be different")
+        return self
+
+
+class UserUpdate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=200)
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str) -> str:
+        normalized = " ".join(value.split())
+        if len(normalized) < 2:
+            raise ValueError("Full name must contain at least two characters")
+        return normalized
 
 
 class UserPublic(BaseModel):

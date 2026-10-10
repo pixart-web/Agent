@@ -262,6 +262,45 @@ def test_login_updates_last_login(
     assert user.last_login_at is not None
 
 
+def test_update_profile_and_change_password_revoke_sessions(client: TestClient) -> None:
+    body, _ = register(client)
+    headers = bearer(str(body["access_token"]))
+
+    updated = client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"full_name": "  Updated   Name  "},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["full_name"] == "Updated Name"
+
+    wrong = client.post(
+        "/api/v1/auth/password/change",
+        headers=headers,
+        json={"current_password": "wrong", "new_password": "newSecurePassword456"},
+    )
+    assert wrong.status_code == 400
+
+    changed = client.post(
+        "/api/v1/auth/password/change",
+        headers=headers,
+        json={
+            "current_password": REGISTER_PAYLOAD["password"],
+            "new_password": "newSecurePassword456",
+        },
+    )
+    assert changed.status_code == 204
+    assert REFRESH_COOKIE_NAME not in changed.cookies
+    assert client.post("/api/v1/auth/refresh").status_code == 401
+    assert (
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": REGISTER_PAYLOAD["email"], "password": "newSecurePassword456"},
+        ).status_code
+        == 200
+    )
+
+
 def test_invalid_login_errors_are_identical(client: TestClient) -> None:
     register(client)
     missing = client.post(

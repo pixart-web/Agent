@@ -405,6 +405,24 @@ h1 {
   padding: clamp(24px, 4vw, 38px);
 }
 
+.settings-sessions,
+.settings-message {
+  margin: 1.5rem clamp(1rem, 4vw, 4rem);
+}
+
+.settings-session {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+}
+
+.settings-session p {
+  color: var(--muted);
+  margin: 0.25rem 0 0;
+}
+
 .workflow-panel__heading,
 .task-control,
 .task-control__actions {

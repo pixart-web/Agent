@@ -20,3 +20,12 @@ export type AccessTokenResponse = {
   access_token: string;
   token_type: 'bearer';
 };
+
+export type Session = {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  user_agent: string | null;
+  ip_address: string | null;
+  current: boolean;
+};

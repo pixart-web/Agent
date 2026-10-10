@@ -53,6 +53,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/integrations">
           Integrations
         </Link>
+        <Link className="nav-link" href="/dashboard/settings">
+          Settings
+        </Link>
         <span className="nav-user">
           {user.full_name} · {user.email}
         </span>
