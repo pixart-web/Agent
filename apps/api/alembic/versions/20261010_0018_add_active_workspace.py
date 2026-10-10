@@ -37,6 +37,19 @@ def upgrade() -> None:
     )
     op.create_index("ix_users_active_workspace_id", "users", ["active_workspace_id"])
     op.execute(
+        "INSERT INTO workspaces (id, name, slug, description, status, created_by_user_id) "
+        "SELECT md5(u.id::text || ':workspace')::uuid, u.full_name || '''s Workspace', "
+        "'personal-' || replace(u.id::text, '-', ''), NULL, 'active', u.id FROM users u "
+        "WHERE NOT EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.user_id = u.id)"
+    )
+    op.execute(
+        "INSERT INTO workspace_members "
+        "(id, workspace_id, user_id, role, created_by_user_id) "
+        "SELECT md5(u.id::text || ':membership')::uuid, "
+        "md5(u.id::text || ':workspace')::uuid, u.id, 'owner', u.id FROM users u "
+        "WHERE NOT EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.user_id = u.id)"
+    )
+    op.execute(
         "UPDATE users SET active_workspace_id = ("
         "SELECT wm.workspace_id FROM workspace_members wm "
         "WHERE wm.user_id = users.id ORDER BY wm.created_at, wm.id LIMIT 1)"

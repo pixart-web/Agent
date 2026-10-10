@@ -22,7 +22,10 @@ def create_command(
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> CommandRead:
-    return CommandRead.model_validate(CommandService(db).create(user.id, data))
+    try:
+        return CommandRead.model_validate(CommandService(db).create(user.id, data))
+    except WorkflowConflictError as error:
+        raise_workflow_http_error(error)
 
 
 @router.get("", response_model=list[CommandRead])

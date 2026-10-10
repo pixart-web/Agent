@@ -18,6 +18,9 @@ class Command(Base):
         nullable=False,
         index=True,
     )
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     input: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[CommandStatus] = mapped_column(
         Enum(

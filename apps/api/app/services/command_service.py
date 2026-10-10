@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.time import utc_now
 from app.models.command import Command
+from app.models.user import User
 from app.models.workflow_enums import CommandStatus
 from app.repositories.command_repository import CommandRepository
 from app.schemas.command import CommandCreate
@@ -18,7 +19,14 @@ class CommandService:
         self.execution_cancellation = ExecutionCancellationService(session)
 
     def create(self, user_id: UUID, data: CommandCreate) -> Command:
-        command = Command(user_id=user_id, input=data.input)
+        user = self.session.get(User, user_id)
+        if user is None or user.active_workspace_id is None:
+            raise WorkflowConflictError("An active workspace is required")
+        command = Command(
+            user_id=user_id,
+            workspace_id=user.active_workspace_id,
+            input=data.input,
+        )
         self.commands.add(command)
         self.session.commit()
         self.session.refresh(command)

@@ -19,6 +19,7 @@ from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.command import Command
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
+from app.models.knowledge import Workspace, WorkspaceMember
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
 from app.models.task import Task
@@ -163,7 +164,27 @@ def test_postgres_calendar_write_reservation_allows_one_winner(integration_url: 
         )
         session.add_all([user, agent])
         session.flush()
-        command = Command(user_id=user_id, input="Reserve one calendar write")
+        workspace = Workspace(
+            name="Calendar Lock",
+            slug=f"calendar-lock-{user_id}",
+            created_by_user_id=user_id,
+        )
+        session.add(workspace)
+        session.flush()
+        session.add(
+            WorkspaceMember(
+                workspace_id=workspace.id,
+                user_id=user_id,
+                role="owner",
+                created_by_user_id=user_id,
+            )
+        )
+        user.active_workspace_id = workspace.id
+        command = Command(
+            user_id=user_id,
+            workspace_id=workspace.id,
+            input="Reserve one calendar write",
+        )
         session.add(command)
         session.flush()
         plan = Plan(command_id=command.id, title="Calendar", objective="Concurrency")

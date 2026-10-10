@@ -8,6 +8,11 @@ Each user has a nullable `active_workspace_id`. Creating the first workspace sel
 it automatically; `/api/v1/workspaces/switch` changes it only after verifying an
 active membership. Migration `20261010_0018` backfills the earliest existing
 membership without inventing access for users that do not belong to a workspace.
+New registrations receive a personal owner workspace, so operational records always
+have a tenant context. Commands are the first migrated business root: creation stores
+a non-null `workspace_id`, and list/detail/cancel authorization resolves the active
+workspace rather than the creating user. Plans, tasks, executions, and approvals are
+next in the staged graph migration.
 
 ## Invitation lifecycle
 

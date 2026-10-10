@@ -23,7 +23,7 @@ Passing unit tests demonstrate useful internal correctness, not commercial readi
 
 - Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 209 tests, skipped 5 integration tests.
 - Frontend: ESLint, TypeScript, and production build passed; Vitest passed 42 tests across 17 files.
-- Database: one Alembic head, `20261010_0018`; offline upgrade and new revision downgrades are valid.
+- Database: one Alembic head, `20261010_0019`; offline upgrade and new revision downgrades are valid.
 - Production public checks: `/health` and `/ready` returned HTTP 200; database and Redis reported healthy.
 - Production CORS preflight for `POST /api/v1/auth/register` returned HTTP 200 and allowed `https://kiko.pixart.pt`.
 - Production registration API route exists (`GET` returns the expected HTTP 405 with `Allow: POST`).
@@ -57,7 +57,7 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Invitations and ownership transfer   | API lifecycle implemented           |            API tests |               No | HIGH — administration UI and E2E pending                         |
 | Onboarding                           | Missing                            |                   No |               No | HIGH                                                              |
 | Kiko conversational workspace        | Missing                            |                   No |               No | BLOCKER — command form is not persistent conversation             |
-| Commands and plans                   | Partial                            |  API/component tests |               No | HIGH — incomplete lifecycle/search/archive/duplicate              |
+| Commands and plans                   | Commands tenant-scoped; plans pending | API/component tests |               No | HIGH — graph migration and lifecycle gaps remain               |
 | Tasks                                | Partial                            |  API/component tests |               No | HIGH — no full assignment/project/filtered product UX             |
 | Projects                             | Partial CRM projects               |                   No |               No | HIGH — not a general project-management product                   |
 | Specialized agents                   | Implemented foundation             |  Fake-provider tests |               No | HIGH — configuration/status/performance incomplete                |

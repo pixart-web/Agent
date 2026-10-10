@@ -22,6 +22,7 @@ class CommandRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    workspace_id: UUID
     user_id: UUID
     input: str
     status: CommandStatus

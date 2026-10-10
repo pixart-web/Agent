@@ -28,6 +28,7 @@ from app.models.automation import Automation, AutomationRun
 from app.models.command import Command
 from app.models.integration_account import IntegrationAccount
 from app.models.outbox_event import OutboxEvent
+from app.models.user import User
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
 
@@ -373,8 +374,12 @@ class AutomationService:
                 session.add(run)
                 session.flush()
                 if skipped_reason is None:
+                    user = session.get(User, user_id)
+                    if user is None or user.active_workspace_id is None:
+                        raise AutomationConflictError("An active workspace is required")
                     command = Command(
                         user_id=user_id,
+                        workspace_id=user.active_workspace_id,
                         input=automation.command_template,
                         correlation_id=run.correlation_id,
                     )

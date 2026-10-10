@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models.account_token import AccountToken
+from app.models.knowledge import Workspace, WorkspaceMember
 from app.models.refresh_token import RefreshToken
 from app.models.transactional_email import TransactionalEmailOutbox
 from app.models.user import User
@@ -149,6 +150,22 @@ class AuthService:
             )
             self.users.add(user)
             self.session.flush()
+            workspace = Workspace(
+                name=f"{user.full_name}'s Workspace",
+                slug=f"personal-{user.id.hex}",
+                created_by_user_id=user.id,
+            )
+            self.session.add(workspace)
+            self.session.flush()
+            self.session.add(
+                WorkspaceMember(
+                    workspace_id=workspace.id,
+                    user_id=user.id,
+                    role="owner",
+                    created_by_user_id=user.id,
+                )
+            )
+            user.active_workspace_id = workspace.id
             if self.settings.auth_require_email_verification:
                 self._queue_account_token(user, "email_verification")
             self.session.commit()

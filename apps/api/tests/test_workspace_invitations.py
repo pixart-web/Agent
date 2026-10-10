@@ -77,6 +77,31 @@ def test_workspace_invitation_lifecycle_and_authorization(client, db_session) ->
     )
     assert member is not None and member.role == "manager"
 
+    assert (
+        client.post(
+            "/api/v1/workspaces/switch",
+            headers=owner,
+            json={"workspace_id": str(workspace_id)},
+        ).status_code
+        == 204
+    )
+    command = client.post(
+        "/api/v1/commands",
+        headers=owner,
+        json={"input": "Prepare the shared workspace report"},
+    )
+    assert command.status_code == 201
+    switched = client.post(
+        "/api/v1/workspaces/switch",
+        headers=invited,
+        json={"workspace_id": str(workspace_id)},
+    )
+    assert switched.status_code == 204
+    shared = client.get("/api/v1/commands", headers=invited)
+    assert shared.status_code == 200
+    assert [item["id"] for item in shared.json()] == [command.json()["id"]]
+    assert client.get("/api/v1/commands", headers=outsider).json() == []
+
 
 def test_workspace_invitation_can_be_revoked(client) -> None:
     body, _ = register(client, email="workspace-owner@example.com")
@@ -114,9 +139,10 @@ def test_first_workspace_becomes_active_and_member_can_switch(client) -> None:
         headers=headers,
         json={"name": "Second", "slug": "switch-second"},
     ).json()
-    assert (
-        client.get("/api/v1/auth/me", headers=headers).json()["active_workspace_id"] == first["id"]
-    )
+    personal_workspace_id = client.get("/api/v1/auth/me", headers=headers).json()[
+        "active_workspace_id"
+    ]
+    assert personal_workspace_id not in {first["id"], second["id"]}
 
     switched = client.post(
         "/api/v1/workspaces/switch",
