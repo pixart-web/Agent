@@ -78,7 +78,7 @@ class MarketingService:
         with self.session_factory() as session:
             query = (
                 select(MarketingCampaign)
-                .where(MarketingCampaign.user_id == context.user_id)
+                .where(workspace_or_legacy_owner(MarketingCampaign, context.user_id))
                 .order_by(MarketingCampaign.updated_at.desc(), MarketingCampaign.id)
                 .offset(value.offset)
                 .limit(value.limit)
@@ -109,7 +109,6 @@ class MarketingService:
             query = (
                 select(MarketingContent)
                 .where(
-                    MarketingContent.user_id == context.user_id,
                     MarketingContent.campaign_id == value.campaign_id,
                 )
                 .order_by(MarketingContent.updated_at.desc(), MarketingContent.id)
@@ -132,7 +131,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingContentHistory)
                     .where(
-                        MarketingContentHistory.user_id == context.user_id,
                         MarketingContentHistory.content_id == content.id,
                     )
                     .order_by(
@@ -145,7 +143,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingAsset)
                     .where(
-                        MarketingAsset.user_id == context.user_id,
                         MarketingAsset.content_id == content.id,
                     )
                     .order_by(MarketingAsset.created_at, MarketingAsset.id)
@@ -155,7 +152,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPublication)
                     .where(
-                        MarketingPublication.user_id == context.user_id,
                         MarketingPublication.content_id == content.id,
                     )
                     .order_by(
@@ -168,7 +164,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPerformanceMetric)
                     .where(
-                        MarketingPerformanceMetric.user_id == context.user_id,
                         MarketingPerformanceMetric.content_id == content.id,
                     )
                     .order_by(
@@ -191,8 +186,12 @@ class MarketingService:
         with self.session_factory() as session:
             query = (
                 select(MarketingContent)
+                .join(
+                    MarketingCampaign,
+                    MarketingCampaign.id == MarketingContent.campaign_id,
+                )
                 .where(
-                    MarketingContent.user_id == context.user_id,
+                    workspace_or_legacy_owner(MarketingCampaign, context.user_id),
                     MarketingContent.scheduled_for >= value.starts_at,
                     MarketingContent.scheduled_for < value.ends_at,
                 )
@@ -215,7 +214,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPerformanceMetric)
                     .where(
-                        MarketingPerformanceMetric.user_id == context.user_id,
                         MarketingPerformanceMetric.campaign_id == value.campaign_id,
                     )
                     .order_by(
@@ -248,6 +246,7 @@ class MarketingService:
             if value.client_id:
                 self._client(session, context.user_id, value.client_id)
             campaign = MarketingCampaign(
+                workspace_id=self._workspace_id(session, context.user_id),
                 user_id=context.user_id,
                 client_id=value.client_id,
                 owner_user_id=context.user_id,
@@ -462,7 +461,6 @@ class MarketingService:
                 raise MarketingValidationError("Publication confirmation cannot be in the future")
             duplicate = session.scalar(
                 select(MarketingPublication).where(
-                    MarketingPublication.user_id == context.user_id,
                     MarketingPublication.content_id == content.id,
                     MarketingPublication.external_reference == value.external_reference,
                 )
@@ -607,7 +605,7 @@ class MarketingService:
     ) -> MarketingCampaign:
         query = select(MarketingCampaign).where(
             MarketingCampaign.id == campaign_id,
-            MarketingCampaign.user_id == user_id,
+            workspace_or_legacy_owner(MarketingCampaign, user_id),
         )
         if lock:
             query = query.with_for_update()
@@ -624,9 +622,13 @@ class MarketingService:
         *,
         lock: bool = False,
     ) -> MarketingContent:
-        query = select(MarketingContent).where(
-            MarketingContent.id == content_id,
-            MarketingContent.user_id == user_id,
+        query = (
+            select(MarketingContent)
+            .join(MarketingCampaign, MarketingCampaign.id == MarketingContent.campaign_id)
+            .where(
+                MarketingContent.id == content_id,
+                workspace_or_legacy_owner(MarketingCampaign, user_id),
+            )
         )
         if lock:
             query = query.with_for_update()
@@ -663,6 +665,13 @@ class MarketingService:
     def _require_transition(previous: str, target: str) -> None:
         if target not in TRANSITIONS[previous]:
             raise MarketingConflictError(f"Content cannot transition from {previous} to {target}")
+
+    @staticmethod
+    def _workspace_id(session: Session, user_id: UUID) -> UUID:
+        workspace_id = session.scalar(select(active_workspace_id(user_id)))
+        if workspace_id is None:
+            raise MarketingValidationError("An active workspace is required")
+        return workspace_id
 
     @staticmethod
     def _history(
