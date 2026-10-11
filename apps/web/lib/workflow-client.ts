@@ -19,6 +19,8 @@ import type {
   CrmClient360,
   CrmContact,
   CrmOrganization,
+  CrmPipeline,
+  CrmOpportunity,
   EmailAccount,
   EmailIntegrationStatus,
   EmailMessage,
@@ -734,6 +736,153 @@ export function listCrmClients(query = ''): Promise<{ clients: CrmClient[] }> {
 export function getCrmClient360(clientId: string): Promise<CrmClient360> {
   return request(
     '/api/v1/crm/clients/' + encodeURIComponent(clientId) + '/360',
+  );
+}
+
+export function createCrmOrganization(data: {
+  name: string;
+  website?: string;
+  tags?: string[];
+}): Promise<CrmOrganization> {
+  return request('/api/v1/crm/organizations', jsonRequest('POST', data));
+}
+
+export function updateCrmOrganization(
+  organizationId: string,
+  data: { name?: string; website?: string; status?: string; tags?: string[] },
+): Promise<CrmOrganization> {
+  return request(
+    `/api/v1/crm/organizations/${encodeURIComponent(organizationId)}`,
+    jsonRequest('PATCH', { organization_id: organizationId, ...data }),
+  );
+}
+
+export function createCrmContact(data: {
+  full_name: string;
+  organization_id?: string;
+  job_title?: string;
+  methods?: {
+    method_type: 'email' | 'phone';
+    value: string;
+    is_primary?: boolean;
+  }[];
+  tags?: string[];
+}): Promise<CrmContact> {
+  return request('/api/v1/crm/contacts', jsonRequest('POST', data));
+}
+
+export function updateCrmContact(
+  contactId: string,
+  data: {
+    full_name?: string;
+    job_title?: string;
+    status?: string;
+    tags?: string[];
+  },
+): Promise<CrmContact> {
+  return request(
+    `/api/v1/crm/contacts/${encodeURIComponent(contactId)}`,
+    jsonRequest('PATCH', { contact_id: contactId, ...data }),
+  );
+}
+
+export function createCrmClient(data: {
+  organization_id: string;
+  lifecycle_status?: string;
+  industry?: string;
+}): Promise<CrmClient> {
+  return request('/api/v1/crm/clients', jsonRequest('POST', data));
+}
+
+export function updateCrmClient(
+  clientId: string,
+  data: { lifecycle_status?: string; industry?: string; summary?: string },
+): Promise<CrmClient> {
+  return request(
+    `/api/v1/crm/clients/${encodeURIComponent(clientId)}`,
+    jsonRequest('PATCH', { client_id: clientId, ...data }),
+  );
+}
+
+export function listCrmPipelines(): Promise<{ pipelines: CrmPipeline[] }> {
+  return request('/api/v1/crm/pipelines');
+}
+
+export function createCrmPipeline(data: {
+  name: string;
+  description?: string;
+  is_default?: boolean;
+  stages: {
+    name: string;
+    position: number;
+    default_probability: number;
+    is_terminal?: boolean;
+  }[];
+}): Promise<CrmPipeline> {
+  return request('/api/v1/crm/pipelines', jsonRequest('POST', data));
+}
+
+export type CrmImportPreview = {
+  fingerprint: string;
+  rows: {
+    row: number;
+    record_type: string;
+    name: string;
+    valid: boolean;
+    errors: string[];
+  }[];
+  valid_rows: number;
+  invalid_rows: number;
+};
+
+export function previewCrmImport(file: File): Promise<CrmImportPreview> {
+  const form = new FormData();
+  form.set('upload', file);
+  return request('/api/v1/crm/import/preview', { method: 'POST', body: form });
+}
+
+export function confirmCrmImport(
+  file: File,
+  fingerprint: string,
+): Promise<{ created: number }> {
+  const form = new FormData();
+  form.set('upload', file);
+  form.set('fingerprint', fingerprint);
+  return request('/api/v1/crm/import/confirm', { method: 'POST', body: form });
+}
+
+export async function downloadCrmExport(
+  resource: 'organizations' | 'contacts',
+): Promise<void> {
+  const response = await authFetch(
+    `/api/v1/crm/export?resource=${resource}&format=csv`,
+  );
+  if (!response.ok) {
+    throw new WorkflowApiError('CRM export failed.', response.status);
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `crm-${resource}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export function listCrmOpportunities(
+  clientId: string,
+): Promise<{ opportunities: CrmOpportunity[] }> {
+  return request(
+    `/api/v1/crm/clients/${encodeURIComponent(clientId)}/opportunities`,
+  );
+}
+
+export function updateCrmOpportunity(
+  opportunityId: string,
+  data: Partial<CrmOpportunity>,
+): Promise<CrmOpportunity> {
+  return request(
+    `/api/v1/crm/opportunities/${encodeURIComponent(opportunityId)}`,
+    jsonRequest('PATCH', { opportunity_id: opportunityId, ...data }),
   );
 }
 

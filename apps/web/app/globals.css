@@ -1589,6 +1589,88 @@ h1 {
   display: grid;
   gap: 7px;
 }
+.crm-create-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 28px;
+}
+.crm-create-panel form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.crm-create-panel label {
+  display: grid;
+  gap: 7px;
+}
+.crm-panel-heading,
+.crm-import-panel,
+.crm-panel-heading form,
+.crm-import-panel .button-row {
+  display: flex;
+  align-items: var(--form-cross-alignment, flex-end);
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.crm-panel-heading form,
+.crm-import-panel .button-row {
+  justify-content: flex-start;
+}
+.crm-panel-heading label,
+.crm-import-panel > label,
+.crm-pipeline article label {
+  display: grid;
+  gap: 7px;
+}
+.crm-import-panel > div:first-child {
+  width: 100%;
+}
+.import-summary {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.import-summary span {
+  margin-left: 16px;
+}
+.crm-pipeline {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.crm-pipeline > section {
+  min-height: 180px;
+  padding: 14px;
+  background: var(--surface-muted);
+  border-radius: 12px;
+}
+.crm-pipeline > section > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.crm-pipeline article {
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.crm-pipeline article p {
+  margin: 6px 0;
+}
+@media (max-width: 760px) {
+  .crm-create-panel,
+  .crm-create-panel form {
+    grid-template-columns: 1fr;
+  }
+}
 
 .onboarding-shell {
   min-height: 100vh;

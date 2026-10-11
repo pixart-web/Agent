@@ -721,6 +721,22 @@ export type CrmOpportunity = {
   created_at: string;
   updated_at: string;
 };
+export type CrmPipelineStage = {
+  id: string;
+  name: string;
+  position: number;
+  default_probability: number;
+  is_terminal: boolean;
+};
+export type CrmPipeline = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+  stages: CrmPipelineStage[];
+  created_at: string;
+  updated_at: string;
+};
 export type CrmTaskSummary = {
   id: string;
   project_id: string | null;

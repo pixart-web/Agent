@@ -7,7 +7,10 @@ import { useEffect, useState } from 'react';
 
 import { ClientInsight } from '../../../../../components/client-insight';
 import { DashboardNav } from '../../../../../components/dashboard-nav';
-import { getCrmClient360 } from '../../../../../lib/workflow-client';
+import {
+  getCrmClient360,
+  updateCrmClient,
+} from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 
 function money(amountMinor: number, currency: string) {
@@ -55,6 +58,28 @@ export default function Client360Page() {
         <>
           <section className="workflow-panel">
             <h2>Overview</h2>
+            <label>
+              Lifecycle
+              <select
+                value={view.client.lifecycle_status}
+                onChange={async (event) => {
+                  try {
+                    const updated = await updateCrmClient(view.client.id, {
+                      lifecycle_status: event.target.value,
+                    });
+                    setView({ ...view, client: updated });
+                  } catch {
+                    setError('Unable to update this client.');
+                  }
+                }}
+              >
+                <option value="prospect">Prospect</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="former">Former</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
             <p>{view.client.summary || 'No client summary.'}</p>
             <p>
               Owner: {view.client.owner_user_id} · CRM facts are separated from

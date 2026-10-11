@@ -256,12 +256,19 @@ class ClientManagementService:
                 offset=value.offset,
             )
 
-    def create_client(self, context: ExecutionContext, value: ClientCreateInput) -> ClientOutput:
+    def create_client(
+        self, context: ExecutionContext, value: ClientCreateInput, *, governed: bool = True
+    ) -> ClientOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(CrmClient).where(CrmClient.created_by_action_id == context.action_id)
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(CrmClient).where(CrmClient.created_by_action_id == context.action_id)
+                )
+                if governed
+                else None
             )
             if existing:
                 return self._client_output(session, existing)
@@ -282,7 +289,7 @@ class ClientManagementService:
                 lifecycle_status=value.lifecycle_status,
                 industry=self.crm._optional_display(value.industry),
                 summary=value.summary,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(client)
             session.flush()
@@ -291,10 +298,13 @@ class ClientManagementService:
             session.commit()
             return self._client_output(session, client)
 
-    def update_client(self, context: ExecutionContext, value: ClientUpdateInput) -> ClientOutput:
+    def update_client(
+        self, context: ExecutionContext, value: ClientUpdateInput, *, governed: bool = True
+    ) -> ClientOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             client = self._client(session, context.user_id, value.client_id, lock=True)
             if value.lifecycle_status is not None:
                 client.lifecycle_status = value.lifecycle_status
@@ -372,13 +382,22 @@ class ClientManagementService:
             return self._project_output(project)
 
     def create_pipeline(
-        self, context: ExecutionContext, value: PipelineCreateInput
+        self,
+        context: ExecutionContext,
+        value: PipelineCreateInput,
+        *,
+        governed: bool = True,
     ) -> PipelineOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(CrmPipeline).where(CrmPipeline.created_by_action_id == context.action_id)
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(CrmPipeline).where(CrmPipeline.created_by_action_id == context.action_id)
+                )
+                if governed
+                else None
             )
             if existing:
                 return self._pipeline_output(session, existing)
@@ -403,7 +422,7 @@ class ClientManagementService:
                 name=display_name,
                 description=value.description,
                 is_default=value.is_default,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(pipeline)
             session.flush()
@@ -431,15 +450,24 @@ class ClientManagementService:
             return self._pipeline_output(session, pipeline)
 
     def create_opportunity(
-        self, context: ExecutionContext, value: OpportunityCreateInput
+        self,
+        context: ExecutionContext,
+        value: OpportunityCreateInput,
+        *,
+        governed: bool = True,
     ) -> OpportunityOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(CrmOpportunity).where(
-                    CrmOpportunity.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(CrmOpportunity).where(
+                        CrmOpportunity.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._opportunity_output(existing)
@@ -465,7 +493,7 @@ class ClientManagementService:
                 ),
                 status=value.status,
                 expected_close_on=value.expected_close_on,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(opportunity)
             session.flush()
@@ -488,11 +516,16 @@ class ClientManagementService:
             return self._opportunity_output(opportunity)
 
     def update_opportunity(
-        self, context: ExecutionContext, value: OpportunityUpdateInput
+        self,
+        context: ExecutionContext,
+        value: OpportunityUpdateInput,
+        *,
+        governed: bool = True,
     ) -> OpportunityOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             opportunity = self._opportunity(
                 session,
                 context.user_id,
@@ -840,6 +873,7 @@ class ClientManagementService:
         event_type: str,
         changes: dict[str, object],
     ) -> None:
+        action_exists = session.get(TaskAction, context.action_id) is not None
         session.add(
             CrmRecordHistory(
                 workspace_id=self.crm._workspace_id(session, context.user_id),
@@ -848,7 +882,7 @@ class ClientManagementService:
                 entity_id=entity_id,
                 event_type=event_type,
                 changes=changes,
-                actor_action_id=context.action_id,
+                actor_action_id=context.action_id if action_exists else None,
             )
         )
 
@@ -861,7 +895,11 @@ class ClientManagementService:
         resource_id: UUID,
     ) -> None:
         AuditService(session).record(
-            actor_type=ActorType.WORKER,
+            actor_type=(
+                ActorType.WORKER
+                if session.get(TaskAction, context.action_id) is not None
+                else ActorType.USER
+            ),
             actor_id=context.user_id,
             event_type=event_type,
             resource_type=resource_type,

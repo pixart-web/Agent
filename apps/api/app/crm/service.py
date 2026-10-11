@@ -30,6 +30,7 @@ from app.crm.schemas import (
     CrmOrganizationOutput,
     CrmOrganizationsInput,
     CrmOrganizationsOutput,
+    CrmOrganizationUpdateInput,
     CrmSearchContactsInput,
 )
 from app.db.session import SessionLocal
@@ -161,15 +162,24 @@ class CrmService:
             )
 
     def create_organization(
-        self, context: ExecutionContext, value: CrmOrganizationCreateInput
+        self,
+        context: ExecutionContext,
+        value: CrmOrganizationCreateInput,
+        *,
+        governed: bool = True,
     ) -> CrmOrganizationOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(CrmOrganization).where(
-                    CrmOrganization.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(CrmOrganization).where(
+                        CrmOrganization.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._organization_output(session, existing)
@@ -181,7 +191,7 @@ class CrmService:
                 website=str(value.website) if value.website else None,
                 status=value.status,
                 source=value.source,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(organization)
             session.flush()
@@ -197,13 +207,22 @@ class CrmService:
             return self._organization_output(session, organization)
 
     def create_contact(
-        self, context: ExecutionContext, value: CrmContactCreateInput
+        self,
+        context: ExecutionContext,
+        value: CrmContactCreateInput,
+        *,
+        governed: bool = True,
     ) -> CrmContactOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(CrmContact).where(CrmContact.created_by_action_id == context.action_id)
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(CrmContact).where(CrmContact.created_by_action_id == context.action_id)
+                )
+                if governed
+                else None
             )
             if existing:
                 return self._contact_output(session, existing)
@@ -219,7 +238,7 @@ class CrmService:
                 website=str(value.website) if value.website else None,
                 status=value.status,
                 source=value.source,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(contact)
             session.flush()
@@ -240,12 +259,50 @@ class CrmService:
             session.commit()
             return self._contact_output(session, contact)
 
+    def update_organization(
+        self,
+        context: ExecutionContext,
+        value: CrmOrganizationUpdateInput,
+        *,
+        governed: bool = True,
+    ) -> CrmOrganizationOutput:
+        payload = value.model_dump(mode="json")
+        with self.session_factory() as session:
+            if governed:
+                self._approved_action(session, context, payload)
+            organization = self._organization(
+                session, context.user_id, value.organization_id, lock=True
+            )
+            if value.name is not None:
+                organization.name = self._display(value.name)
+                organization.normalized_name = self._normalize(value.name)
+            if value.clear_website or value.website is not None:
+                organization.website = None if value.clear_website else str(value.website)
+            if value.status is not None:
+                organization.status = value.status
+            if value.tags is not None:
+                self._set_organization_tags(session, context.user_id, organization.id, value.tags)
+            self._audit(
+                session,
+                context,
+                "crm_organization_updated",
+                "crm_organization",
+                organization.id,
+            )
+            session.commit()
+            return self._organization_output(session, organization)
+
     def update_contact(
-        self, context: ExecutionContext, value: CrmContactUpdateInput
+        self,
+        context: ExecutionContext,
+        value: CrmContactUpdateInput,
+        *,
+        governed: bool = True,
     ) -> CrmContactOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             contact = self._contact(session, context.user_id, value.contact_id, lock=True)
             if value.full_name is not None:
                 contact.full_name = self._display(value.full_name)
@@ -438,13 +495,16 @@ class CrmService:
         return contact
 
     @staticmethod
-    def _organization(session: Session, user_id: UUID, organization_id: UUID) -> CrmOrganization:
-        organization = session.scalar(
-            select(CrmOrganization).where(
-                CrmOrganization.id == organization_id,
-                workspace_or_legacy_owner(CrmOrganization, user_id),
-            )
+    def _organization(
+        session: Session, user_id: UUID, organization_id: UUID, *, lock: bool = False
+    ) -> CrmOrganization:
+        statement = select(CrmOrganization).where(
+            CrmOrganization.id == organization_id,
+            workspace_or_legacy_owner(CrmOrganization, user_id),
         )
+        if lock:
+            statement = statement.with_for_update(of=CrmOrganization)
+        organization = session.scalar(statement)
         if organization is None:
             raise CrmNotFoundError("Organization was not found")
         return organization
@@ -727,7 +787,11 @@ class CrmService:
         resource_id: UUID,
     ) -> None:
         AuditService(session).record(
-            actor_type=ActorType.WORKER,
+            actor_type=(
+                ActorType.WORKER
+                if session.get(TaskAction, context.action_id) is not None
+                else ActorType.USER
+            ),
             actor_id=context.user_id,
             event_type=event_type,
             resource_type=resource_type,

@@ -8,6 +8,7 @@ import { DashboardNav } from '../../../../../components/dashboard-nav';
 import {
   getCrmContact,
   listCrmActivities,
+  updateCrmContact,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 
@@ -47,6 +48,27 @@ export default function CrmContactPage() {
       {contact && (
         <section className="workflow-panel">
           <h2>Contact methods</h2>
+          <label>
+            Lifecycle
+            <select
+              value={contact.status}
+              onChange={async (event) => {
+                try {
+                  setContact(
+                    await updateCrmContact(contact.id, {
+                      status: event.target.value,
+                    }),
+                  );
+                } catch {
+                  setError('Unable to update this contact.');
+                }
+              }}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
           {contact.methods.map((method) => (
             <p key={method.id}>
               {method.method_type}: {method.value}{' '}

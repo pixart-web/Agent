@@ -8,6 +8,7 @@ import { DashboardNav } from '../../../../../components/dashboard-nav';
 import {
   getCrmOrganization,
   listCrmActivities,
+  updateCrmOrganization,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 
@@ -50,6 +51,27 @@ export default function CrmOrganizationPage() {
       {error && <p className="workflow-alert">{error}</p>}
       {organization && (
         <section className="workflow-panel">
+          <label>
+            Lifecycle
+            <select
+              value={organization.status}
+              onChange={async (event) => {
+                try {
+                  setOrganization(
+                    await updateCrmOrganization(organization.id, {
+                      status: event.target.value,
+                    }),
+                  );
+                } catch {
+                  setError('Unable to update this organization.');
+                }
+              }}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
           <p>Status: {organization.status}</p>
           <p>Website: {organization.website || 'Not set'}</p>
           <p>Tags: {organization.tags.join(', ') || 'None'}</p>
