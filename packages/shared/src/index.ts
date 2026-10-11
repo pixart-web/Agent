@@ -369,6 +369,26 @@ export type ApprovalRequest = {
   correlation_id: string;
 };
 
+export type ApprovalComment = {
+  id: string;
+  author_user_id: string | null;
+  body: string;
+  created_at: string;
+};
+export type ApprovalDetail = {
+  approval: ApprovalRequest;
+  action: TaskAction;
+  requesting_agent: string;
+  target_integration: string;
+  comments: ApprovalComment[];
+  history: {
+    event_type: string;
+    actor_id: string | null;
+    created_at: string;
+    metadata: Record<string, unknown>;
+  }[];
+};
+
 export type DispatchResponse = {
   action: TaskAction;
   execution: TaskExecution | null;

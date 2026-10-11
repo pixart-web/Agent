@@ -67,6 +67,7 @@ class Settings(BaseSettings):
     agent_max_context_chars: int = Field(default=20_000, ge=1_000, le=100_000)
     agent_max_actions_per_task: int = Field(default=10, ge=1, le=50)
     agent_max_feedback_chars: int = Field(default=5_000, ge=100, le=50_000)
+    approval_expire_hours: int = Field(default=24, ge=1, le=720)
     github_integration_enabled: bool = False
     github_token: SecretStr | None = None
     github_allowed_repositories: str = "pixart-web/Agent"

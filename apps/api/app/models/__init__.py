@@ -4,6 +4,7 @@ from app.models.account_token import AccountToken
 from app.models.agent import Agent
 from app.models.agent_configuration import AgentConfiguration
 from app.models.agent_run import AgentRun
+from app.models.approval_comment import ApprovalComment
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
 from app.models.automation import Automation, AutomationRun
@@ -104,6 +105,7 @@ __all__ = [
     "IntegrationAccount",
     "IntegrationOAuthState",
     "ApprovalRequest",
+    "ApprovalComment",
     "AuditLog",
     "Automation",
     "AutomationRun",

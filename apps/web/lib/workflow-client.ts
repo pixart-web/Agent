@@ -54,6 +54,8 @@ import type {
 import { authFetch } from './auth-client';
 import type {
   ApprovalRequest,
+  ApprovalDetail,
+  ApprovalComment,
   ApprovalStatus,
   AuditLog,
   DispatchResponse,
@@ -468,6 +470,20 @@ export function listApprovals(
   if (options.risk_level) query.set('risk_level', options.risk_level);
   const suffix = query.size ? `?${query.toString()}` : '';
   return request(`/api/v1/approvals${suffix}`);
+}
+
+export function getApprovalDetail(approvalId: string): Promise<ApprovalDetail> {
+  return request(`/api/v1/approvals/${approvalId}/detail`);
+}
+
+export function addApprovalComment(
+  approvalId: string,
+  body: string,
+): Promise<ApprovalComment> {
+  return request(
+    `/api/v1/approvals/${approvalId}/comments`,
+    jsonRequest('POST', { body }),
+  );
 }
 
 export function approveAction(

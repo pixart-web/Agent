@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import UUID
 
 import pytest
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.time import utc_now
 from app.execution.context_safety import sanitize_execution_payload
 from app.execution.dispatcher import OutboxDispatcher
 from app.execution.exceptions import (
@@ -555,3 +557,39 @@ def test_celery_sender_applies_registered_tool_timeout(
     CeleryExecutionSender().send_execution(UUID(dispatched["execution"]["id"]), db_session)
     assert calls[0]["soft_time_limit"] == 10
     assert calls[0]["time_limit"] == 15
+
+
+def test_approval_detail_comments_and_expiry(client: TestClient, db_session: Session) -> None:
+    headers, _command, _plan, tasks = setup_ready_tasks(client, db_session)
+    action, dispatched = create_and_dispatch(
+        client,
+        headers,
+        str(tasks[0]["id"]),
+        "internal.simulate_external_action",
+        {"action": "publish_post", "description": "Review this exact payload"},
+    )
+    approval_id = dispatched["approval"]["id"]
+    comment = client.post(
+        f"/api/v1/approvals/{approval_id}/comments",
+        headers=headers,
+        json={"body": "Confirm the target before approval."},
+    )
+    assert comment.status_code == 201
+    detail = client.get(f"/api/v1/approvals/{approval_id}/detail", headers=headers)
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["action"]["input_payload"]["description"] == "Review this exact payload"
+    assert detail.json()["requesting_agent"] == "marketing"
+    assert detail.json()["comments"][0]["body"].startswith("Confirm")
+    assert [item["event_type"] for item in detail.json()["history"]] == [
+        "approval_requested",
+        "approval_commented",
+    ]
+
+    approval = db_session.get(ApprovalRequest, UUID(approval_id))
+    approval.expires_at = utc_now() - timedelta(minutes=1)
+    db_session.commit()
+    listed = client.get("/api/v1/approvals?status=expired", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["status"] == "expired"
+    assert db_session.get(TaskAction, UUID(action["id"])).status == TaskActionStatus.PROPOSED
+    assert db_session.get(Task, UUID(tasks[0]["id"])).status == TaskStatus.READY

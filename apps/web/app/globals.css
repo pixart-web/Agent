@@ -1557,6 +1557,38 @@ h1 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.approval-evidence {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--surface-muted);
+  border-radius: 12px;
+}
+.approval-evidence summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.approval-evidence pre {
+  overflow: auto;
+  max-height: 280px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.approval-comments {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.approval-comments p {
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.approval-comments label {
+  display: grid;
+  gap: 7px;
+}
 
 .onboarding-shell {
   min-height: 100vh;

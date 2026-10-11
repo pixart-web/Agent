@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -346,6 +347,7 @@ class ExecutionService:
             status=ApprovalStatus.PENDING,
             action_fingerprint=action.action_fingerprint,
             correlation_id=action.correlation_id,
+            expires_at=utc_now() + timedelta(hours=get_settings().approval_expire_hours),
         )
         self.executions.add_approval(approval)
         action.status = TaskActionStatus.WAITING_APPROVAL

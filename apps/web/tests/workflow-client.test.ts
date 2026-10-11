@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authFetch } from '../lib/auth-client';
 import {
   approvePlan,
+  addApprovalComment,
   createTaskDependency,
   createProject,
   deleteTaskDependency,
@@ -12,6 +13,7 @@ import {
   listProjects,
   listPlans,
   listWorkspaceTasks,
+  getApprovalDetail,
   scheduleTask,
   regenerateSupervisorPlan,
   transitionTask,
@@ -144,6 +146,30 @@ describe('workflow client', () => {
     expect(mockedAuthFetch).toHaveBeenCalledWith(
       '/api/v1/tasks/task-1/dependencies/dependency-1',
       { method: 'DELETE' },
+    );
+  });
+
+  it('loads approval evidence and adds a comment', async () => {
+    mockedAuthFetch.mockImplementation(async () =>
+      jsonResponse({ id: 'item-1' }),
+    );
+
+    await getApprovalDetail('approval-1');
+    await addApprovalComment('approval-1', 'Check the recipient');
+
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/approvals/approval-1/detail',
+      {},
+    );
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/approvals/approval-1/comments',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: 'Check the recipient' }),
+      },
     );
   });
 
