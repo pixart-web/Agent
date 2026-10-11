@@ -422,6 +422,16 @@ def test_dependencies_reject_self_and_cycles_and_block_dispatch(
     assert blocked.status_code == 409
     assert db_session.get(Task, UUID(first["id"])).status == TaskStatus.BLOCKED
 
+    removed = client.delete(
+        f"/api/v1/tasks/{first['id']}/dependencies/{accepted.json()['id']}",
+        headers=headers,
+    )
+    scheduled = client.post(f"/api/v1/tasks/{first['id']}/schedule", headers=headers)
+    assert removed.status_code == 204
+    assert client.get(f"/api/v1/tasks/{first['id']}/dependencies", headers=headers).json() == []
+    assert scheduled.status_code == 200
+    assert scheduled.json()["status"] == "ready"
+
 
 def test_execution_resources_are_hidden_from_other_users(
     client: TestClient, db_session: Session

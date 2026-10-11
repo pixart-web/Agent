@@ -3,11 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authFetch } from '../lib/auth-client';
 import {
   approvePlan,
+  createTaskDependency,
+  deleteTaskDependency,
   createCommand,
   generateSupervisorPlan,
   listCommands,
   listPlans,
   listWorkspaceTasks,
+  scheduleTask,
   regenerateSupervisorPlan,
   transitionTask,
   WorkflowApiError,
@@ -86,6 +89,41 @@ describe('workflow client', () => {
     expect(mockedAuthFetch).toHaveBeenCalledWith(
       '/api/v1/tasks?status=blocked&priority=urgent&agent_id=development&search=launch&limit=50',
       {},
+    );
+  });
+
+  it('manages dependencies and evaluates scheduling', async () => {
+    mockedAuthFetch.mockImplementation(async () =>
+      jsonResponse({ id: 'dependency-1' }, 201),
+    );
+
+    await createTaskDependency('task-1', 'task-2');
+    await scheduleTask('task-1');
+
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/tasks/task-1/dependencies',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ depends_on_task_id: 'task-2' }),
+      },
+    );
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/tasks/task-1/schedule',
+      { method: 'POST' },
+    );
+  });
+
+  it('removes a dependency without parsing an empty response', async () => {
+    mockedAuthFetch.mockResolvedValue(new Response(null, { status: 204 }));
+
+    await deleteTaskDependency('task-1', 'dependency-1');
+
+    expect(mockedAuthFetch).toHaveBeenCalledWith(
+      '/api/v1/tasks/task-1/dependencies/dependency-1',
+      { method: 'DELETE' },
     );
   });
 

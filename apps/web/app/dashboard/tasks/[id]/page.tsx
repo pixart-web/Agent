@@ -7,8 +7,10 @@ import {
   type AgentId,
   type RiskLevel,
   type TaskDetail,
+  type TaskDependency,
   type TaskPriority,
   type TaskStatus,
+  type WorkflowTask,
 } from '@agent/shared';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -18,9 +20,14 @@ import { DashboardNav } from '../../../../components/dashboard-nav';
 import { StatusBadge } from '../../../../components/status-badge';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import {
+  createTaskDependency,
+  deleteTaskDependency,
   getTask,
   listAgents,
+  listTaskDependencies,
+  listTasks,
   reassignTaskAgent,
+  scheduleTask,
   transitionTask,
   updateTask,
   type Agent,
@@ -40,6 +47,9 @@ export default function TaskDetailPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [planTasks, setPlanTasks] = useState<WorkflowTask[]>([]);
+  const [dependencies, setDependencies] = useState<TaskDependency[]>([]);
+  const [dependencyTaskId, setDependencyTaskId] = useState('');
   const [title, setTitle] = useState('');
   const [instructions, setInstructions] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('normal');
@@ -53,12 +63,14 @@ export default function TaskDetailPage() {
 
   const load = useCallback(async () => {
     try {
-      const [loadedTask, loadedAgents] = await Promise.all([
-        getTask(id),
-        listAgents(),
-      ]);
+      const loadedTask = await getTask(id);
+      const loadedAgents = await listAgents();
+      const loadedPlanTasks = await listTasks(loadedTask.plan_id);
+      const loadedDependencies = await listTaskDependencies(id);
       setTask(loadedTask);
       setAgents(loadedAgents);
+      setPlanTasks(loadedPlanTasks);
+      setDependencies(loadedDependencies);
       setTitle(loadedTask.title);
       setInstructions(loadedTask.instructions);
       setPriority(loadedTask.priority);
@@ -66,6 +78,14 @@ export default function TaskDetailPage() {
       setAgentId(loadedTask.agent_id);
       setDueAt(localDateTime(loadedTask.due_at));
       setNextStatus(TASK_TRANSITIONS[loadedTask.status][0] ?? '');
+      const dependencyIds = new Set(
+        loadedDependencies.map((item) => item.depends_on_task_id),
+      );
+      setDependencyTaskId(
+        loadedPlanTasks.find(
+          (item) => item.id !== id && !dependencyIds.has(item.id),
+        )?.id ?? '',
+      );
       setError('');
     } catch (loadError) {
       setError(
@@ -115,6 +135,48 @@ export default function TaskDetailPage() {
         transitionError instanceof WorkflowApiError
           ? transitionError.message
           : 'Unable to change status.',
+      );
+    }
+  }
+
+  async function addDependency() {
+    if (!task || !dependencyTaskId) return;
+    try {
+      await createTaskDependency(task.id, dependencyTaskId);
+      await load();
+    } catch (dependencyError) {
+      setError(
+        dependencyError instanceof WorkflowApiError
+          ? dependencyError.message
+          : 'Unable to add the dependency.',
+      );
+    }
+  }
+
+  async function removeDependency(dependencyId: string) {
+    if (!task) return;
+    try {
+      await deleteTaskDependency(task.id, dependencyId);
+      await load();
+    } catch (dependencyError) {
+      setError(
+        dependencyError instanceof WorkflowApiError
+          ? dependencyError.message
+          : 'Unable to remove the dependency.',
+      );
+    }
+  }
+
+  async function schedule() {
+    if (!task) return;
+    try {
+      await scheduleTask(task.id);
+      await load();
+    } catch (scheduleError) {
+      setError(
+        scheduleError instanceof WorkflowApiError
+          ? scheduleError.message
+          : 'Unable to evaluate this task.',
       );
     }
   }
@@ -248,6 +310,90 @@ export default function TaskDetailPage() {
               </div>
             </section>
           )}
+          <section className="workflow-panel">
+            <div className="workflow-panel__heading">
+              <div>
+                <p className="eyebrow">Plan graph</p>
+                <h2>Dependencies</h2>
+              </div>
+              {(task.status === 'ready' || task.status === 'blocked') && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void schedule()}
+                >
+                  Evaluate schedule
+                </button>
+              )}
+            </div>
+            {dependencies.length === 0 ? (
+              <p className="empty-state">No dependencies configured.</p>
+            ) : (
+              <ul className="task-dependencies">
+                {dependencies.map((dependency) => {
+                  const dependencyTask = planTasks.find(
+                    (item) => item.id === dependency.depends_on_task_id,
+                  );
+                  return (
+                    <li key={dependency.id}>
+                      <Link
+                        href={`/dashboard/tasks/${dependency.depends_on_task_id}`}
+                      >
+                        {dependencyTask?.title ?? 'Plan task'}
+                      </Link>
+                      <StatusBadge
+                        status={dependencyTask?.status ?? 'pending'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void removeDependency(dependency.id)}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {planTasks.some(
+              (item) =>
+                item.id !== task.id &&
+                !dependencies.some(
+                  (dependency) => dependency.depends_on_task_id === item.id,
+                ),
+            ) && (
+              <div className="dependency-add-controls">
+                <select
+                  aria-label="Dependency task"
+                  value={dependencyTaskId}
+                  onChange={(event) => setDependencyTaskId(event.target.value)}
+                >
+                  {planTasks
+                    .filter(
+                      (item) =>
+                        item.id !== task.id &&
+                        !dependencies.some(
+                          (dependency) =>
+                            dependency.depends_on_task_id === item.id,
+                        ),
+                    )
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!dependencyTaskId}
+                  onClick={() => void addDependency()}
+                >
+                  Add dependency
+                </button>
+              </div>
+            )}
+          </section>
           <section className="workflow-panel">
             <h2>History</h2>
             <ol className="task-history">

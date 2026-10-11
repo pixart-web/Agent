@@ -17,6 +17,28 @@ class DependencyRepository:
     def add(self, dependency: TaskDependency) -> None:
         self.session.add(dependency)
 
+    def delete(self, dependency: TaskDependency) -> None:
+        self.session.delete(dependency)
+
+    def get_for_task_owned(
+        self,
+        dependency_id: UUID,
+        task_id: UUID,
+        user_id: UUID,
+    ) -> TaskDependency | None:
+        statement = (
+            select(TaskDependency)
+            .join(Task, Task.id == TaskDependency.task_id)
+            .join(Plan, Plan.id == Task.plan_id)
+            .join(Command, Command.id == Plan.command_id)
+            .where(
+                TaskDependency.id == dependency_id,
+                TaskDependency.task_id == task_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
+        )
+        return self.session.scalar(statement)
+
     def list_for_task(self, task_id: UUID) -> list[TaskDependency]:
         return list(
             self.session.scalars(select(TaskDependency).where(TaskDependency.task_id == task_id))

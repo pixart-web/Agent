@@ -842,6 +842,117 @@ h1 {
   color: var(--muted);
 }
 
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-switcher button,
+.task-dependencies button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 7px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.view-switcher button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-muted);
+}
+
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(250px, 1fr));
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 18px;
+}
+
+.task-board__column {
+  min-height: 300px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.task-board__heading,
+.task-dependencies li,
+.dependency-add-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-board__heading {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.task-board__cards {
+  display: grid;
+  gap: 10px;
+}
+
+.task-board__cards article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.task-board__cards a,
+.task-dependencies a {
+  color: var(--ink);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.task-board__cards p,
+.task-board__cards span,
+.task-board__cards > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.task-dependencies {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.task-dependencies li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-dependencies li a {
+  flex: 1;
+}
+
+.dependency-add-controls {
+  margin-top: 16px;
+}
+
+.dependency-add-controls select {
+  min-height: 42px;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 9px 11px;
+}
+
 .empty-state {
   padding: 28px;
   color: var(--muted);
@@ -1143,6 +1254,15 @@ h1 {
   .workspace-task-row,
   .task-transition-controls {
     grid-template-columns: 1fr;
+  }
+
+  .view-switcher {
+    flex-wrap: wrap;
+  }
+
+  .dependency-add-controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .command-row {

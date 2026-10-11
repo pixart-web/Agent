@@ -28,6 +28,7 @@ export default function TasksPage() {
   const [status, setStatus] = useState<TaskStatus | ''>('');
   const [priority, setPriority] = useState<TaskPriority | ''>('');
   const [agentId, setAgentId] = useState('');
+  const [view, setView] = useState<'list' | 'board'>('list');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -35,24 +36,27 @@ export default function TasksPage() {
     if (!user) return;
     let active = true;
     setLoading(true);
-    Promise.all([
-      listWorkspaceTasks({
-        search: search || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-        agentId: agentId || undefined,
-        limit: 100,
-      }),
-      listAgents(),
-    ])
-      .then(([loadedTasks, loadedAgents]) => {
+    async function loadTasks() {
+      try {
+        const loadedTasks = await listWorkspaceTasks({
+          search: search || undefined,
+          status: status || undefined,
+          priority: priority || undefined,
+          agentId: agentId || undefined,
+          limit: 100,
+        });
+        const loadedAgents = await listAgents();
         if (!active) return;
         setTasks(loadedTasks);
         setAgents(loadedAgents);
         setError('');
-      })
-      .catch(() => active && setError('Unable to load tasks right now.'))
-      .finally(() => active && setLoading(false));
+      } catch {
+        if (active) setError('Unable to load tasks right now.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void loadTasks();
     return () => {
       active = false;
     };
@@ -75,7 +79,23 @@ export default function TasksPage() {
           <p className="eyebrow">Workspace</p>
           <h1 className="workflow-page-title">Tasks</h1>
         </div>
-        <span>{tasks.length} visible</span>
+        <div className="view-switcher" aria-label="Task view">
+          <button
+            type="button"
+            aria-pressed={view === 'list'}
+            onClick={() => setView('list')}
+          >
+            List
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === 'board'}
+            onClick={() => setView('board')}
+          >
+            Board
+          </button>
+          <span>{tasks.length} visible</span>
+        </div>
       </div>
       <form className="task-filters" onSubmit={submitSearch}>
         <label>
@@ -147,7 +167,7 @@ export default function TasksPage() {
         <p>Loading tasks…</p>
       ) : tasks.length === 0 ? (
         <p className="empty-state">No tasks match these filters.</p>
-      ) : (
+      ) : view === 'list' ? (
         <div className="workspace-task-list">
           {tasks.map((task) => (
             <article className="workspace-task-row" key={task.id}>
@@ -164,6 +184,44 @@ export default function TasksPage() {
               <StatusBadge status={task.status} />
             </article>
           ))}
+        </div>
+      ) : (
+        <div className="task-board">
+          {TASK_STATUSES.filter(
+            (columnStatus) =>
+              !status ||
+              columnStatus === status ||
+              tasks.some((task) => task.status === columnStatus),
+          ).map((columnStatus) => {
+            const columnTasks = tasks.filter(
+              (task) => task.status === columnStatus,
+            );
+            return (
+              <section className="task-board__column" key={columnStatus}>
+                <div className="task-board__heading">
+                  <StatusBadge status={columnStatus} />
+                  <span>{columnTasks.length}</span>
+                </div>
+                <div className="task-board__cards">
+                  {columnTasks.map((task) => (
+                    <article key={task.id}>
+                      <Link href={`/dashboard/tasks/${task.id}`}>
+                        {task.title}
+                      </Link>
+                      <p>{task.command_input}</p>
+                      <span>{task.priority}</span>
+                      <span>
+                        {task.due_at
+                          ? new Date(task.due_at).toLocaleDateString()
+                          : 'No deadline'}
+                      </span>
+                    </article>
+                  ))}
+                  {columnTasks.length === 0 && <p>No tasks</p>}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </main>

@@ -39,6 +39,7 @@ import type {
   SupervisorPlanResponse,
   SupervisorRun,
   TaskDetail,
+  TaskDependency,
   TaskPriority,
   TaskStatus,
   WorkflowTask,
@@ -86,6 +87,20 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new WorkflowApiError(message, response.status);
   }
   return (await response.json()) as T;
+}
+
+async function requestEmpty(path: string, init: RequestInit): Promise<void> {
+  const response = await authFetch(path, init);
+  if (!response.ok) {
+    let message = 'Workflow request failed.';
+    try {
+      const body = (await response.json()) as { detail?: string };
+      message = body.detail ?? message;
+    } catch {
+      // Preserve the safe generic message for non-JSON failures.
+    }
+    throw new WorkflowApiError(message, response.status);
+  }
 }
 
 function jsonRequest(method: string, body: unknown): RequestInit {
@@ -290,6 +305,35 @@ export function transitionTask(
     `/api/v1/tasks/${taskId}/transition`,
     jsonRequest('POST', { status, reason: reason || null }),
   );
+}
+
+export function listTaskDependencies(
+  taskId: string,
+): Promise<TaskDependency[]> {
+  return request(`/api/v1/tasks/${taskId}/dependencies`);
+}
+
+export function createTaskDependency(
+  taskId: string,
+  dependsOnTaskId: string,
+): Promise<TaskDependency> {
+  return request(
+    `/api/v1/tasks/${taskId}/dependencies`,
+    jsonRequest('POST', { depends_on_task_id: dependsOnTaskId }),
+  );
+}
+
+export function deleteTaskDependency(
+  taskId: string,
+  dependencyId: string,
+): Promise<void> {
+  return requestEmpty(`/api/v1/tasks/${taskId}/dependencies/${dependencyId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function scheduleTask(taskId: string): Promise<WorkflowTask> {
+  return request(`/api/v1/tasks/${taskId}/schedule`, { method: 'POST' });
 }
 export function createTaskAction(
   taskId: string,

@@ -242,6 +242,22 @@ def list_dependencies(
     return [TaskDependencyRead.model_validate(item) for item in dependencies]
 
 
+@router.delete(
+    "/tasks/{task_id}/dependencies/{dependency_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_dependency(
+    task_id: UUID,
+    dependency_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    try:
+        DependencyService(db).delete(task_id, dependency_id, user.id)
+    except WorkflowNotFoundError as error:
+        _raise(error)
+
+
 @router.post("/tasks/{task_id}/schedule", response_model=TaskRead)
 def schedule_task(
     task_id: UUID,

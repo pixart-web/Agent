@@ -216,6 +216,12 @@ export type TaskDetail = WorkspaceTask & {
   history: TaskStatusHistory[];
 };
 
+export type TaskDependency = {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
+};
+
 export const TASK_TRANSITIONS: Record<TaskStatus, readonly TaskStatus[]> = {
   pending: ['ready', 'cancelled'],
   ready: ['running', 'cancelled', 'blocked'],
