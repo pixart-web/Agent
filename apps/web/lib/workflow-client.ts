@@ -5,6 +5,7 @@ import type {
 } from '@agent/shared';
 import type {
   AgentOverview,
+  AgentConfiguration,
   Automation,
   AutomationRun,
   AgentRun,
@@ -68,6 +69,16 @@ export type Agent = {
   description: string;
   status: string;
 };
+
+export function updateAgentConfiguration(
+  agentId: string,
+  data: Partial<AgentConfiguration>,
+): Promise<AgentConfiguration> {
+  return request(
+    `/api/v1/agents/${agentId}/configuration`,
+    jsonRequest('PATCH', data),
+  );
+}
 
 export class WorkflowApiError extends Error {
   constructor(

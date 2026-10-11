@@ -43,6 +43,11 @@ export default function AgentsPage() {
             >
               <h2>{agent.name}</h2>
               <p>{agent.description}</p>
+              <p
+                className={`agent-operational agent-operational--${overview?.operational_status ?? 'unavailable'}`}
+              >
+                {overview?.operational_message ?? 'Checking provider…'}
+              </p>
               <dl className="agent-metrics">
                 <div>
                   <dt>Pending</dt>

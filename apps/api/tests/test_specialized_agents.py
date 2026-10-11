@@ -234,3 +234,42 @@ def test_reassignment_is_explicit_and_audited(client: TestClient, db_session: Se
     reassigned = AgentManagementService(db_session).reassign(UUID(task["id"]), user.id, "sales")
     assert reassigned.agent_id == "sales"
     assert db_session.scalar(select(AuditLog).where(AuditLog.event_type == "task_agent_reassigned"))
+
+
+def test_workspace_agent_configuration_is_enforced(client: TestClient, db_session: Session) -> None:
+    headers, _command, task = ready_task(client, db_session, "marketing")
+    overview = client.get("/api/v1/agents/marketing/overview", headers=headers)
+    assert overview.status_code == 200
+    assert overview.json()["operational_status"] in {"sandbox", "unavailable", "operational"}
+    assert overview.json()["configuration"]["enabled"] is True
+
+    changed = client.patch(
+        "/api/v1/agents/marketing/configuration",
+        headers=headers,
+        json={
+            "enabled": False,
+            "allowed_tools": ["internal.create_note"],
+            "approval_policy": "always",
+            "max_actions_per_task": 2,
+        },
+    )
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["enabled"] is False
+
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    with pytest.raises(WorkflowConflictError, match="disabled"):
+        AgentRunnerService(
+            db_session, FakeLLMProvider([outcome(proposal("internal.create_note"))])
+        ).run(UUID(task["id"]), user.id)
+
+
+def test_agent_configuration_rejects_unsupported_tools(
+    client: TestClient, db_session: Session
+) -> None:
+    headers, _command, _task = ready_task(client, db_session, "support")
+    response = client.patch(
+        "/api/v1/agents/support/configuration",
+        headers=headers,
+        json={"allowed_tools": ["github.create_pull_request"]},
+    )
+    assert response.status_code == 409

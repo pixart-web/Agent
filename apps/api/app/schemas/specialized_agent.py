@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -72,6 +73,32 @@ class AgentCapabilitiesRead(BaseModel):
     max_actions: int
 
 
+class AgentConfigurationUpdate(BaseModel):
+    enabled: bool | None = None
+    model: str | None = Field(default=None, min_length=1, max_length=128)
+    allowed_tools: list[str] | None = None
+    approval_policy: Literal["platform_default", "always", "risk_based"] | None = None
+    max_actions_per_task: int | None = Field(default=None, ge=1, le=50)
+    monthly_token_budget: int | None = Field(default=None, ge=1)
+    knowledge_source_ids: list[UUID] | None = None
+
+    @model_validator(mode="after")
+    def require_change(self) -> "AgentConfigurationUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one field must be provided")
+        return self
+
+
+class AgentConfigurationRead(BaseModel):
+    enabled: bool
+    model: str | None
+    allowed_tools: list[str]
+    approval_policy: Literal["platform_default", "always", "risk_based"]
+    max_actions_per_task: int
+    monthly_token_budget: int | None
+    knowledge_source_ids: list[UUID]
+
+
 class AgentOverviewRead(BaseModel):
     capabilities: AgentCapabilitiesRead
     tasks_pending: int
@@ -82,6 +109,9 @@ class AgentOverviewRead(BaseModel):
     completed_runs: int
     failed_runs: int
     success_rate: float
+    operational_status: Literal["operational", "sandbox", "unavailable", "disabled"]
+    operational_message: str
+    configuration: AgentConfigurationRead
 
 
 class AgentReassignmentRequest(BaseModel):

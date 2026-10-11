@@ -4,8 +4,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agents.registry import SpecializedAgentRegistry, build_agent_registry
+from app.models.agent_configuration import AgentConfiguration
 from app.models.agent_run import AgentRun
 from app.models.command import Command
+from app.models.knowledge import KnowledgeItem, WorkspaceMember
 from app.models.plan import Plan
 from app.models.task import Task
 from app.models.task_action import TaskAction
@@ -14,6 +16,7 @@ from app.models.workflow_enums import ActorType, AgentRunStatus, TaskActionStatu
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.agent_run_repository import AgentRunRepository
 from app.repositories.task_repository import TaskRepository
+from app.schemas.specialized_agent import AgentConfigurationUpdate
 from app.services.audit_service import AuditService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
 from app.workspaces.scope import active_workspace_id
@@ -50,6 +53,7 @@ class AgentManagementService:
 
     def overview(self, agent_id: str, user_id: UUID, max_actions: int) -> dict:
         capabilities = self.capabilities(agent_id, max_actions)
+        configuration = self.configuration(agent_id, user_id, max_actions)
         counts = dict(
             self.session.execute(
                 select(Task.status, func.count(Task.id))
@@ -76,7 +80,91 @@ class AgentManagementService:
             "completed_runs": completed,
             "failed_runs": failed,
             "success_rate": round(completed / decided * 100, 2) if decided else 0.0,
+            "operational_status": "disabled" if not configuration["enabled"] else "operational",
+            "operational_message": "Disabled for this workspace"
+            if not configuration["enabled"]
+            else "Provider available",
+            "configuration": configuration,
         }
+
+    def configuration(self, agent_id: str, user_id: UUID, max_actions: int) -> dict:
+        capabilities = self.capabilities(agent_id, max_actions)
+        workspace_id = self.session.scalar(select(active_workspace_id(user_id)))
+        config = self.session.scalar(
+            select(AgentConfiguration).where(
+                AgentConfiguration.workspace_id == workspace_id,
+                AgentConfiguration.agent_id == agent_id,
+            )
+        )
+        return {
+            "enabled": config.enabled if config else True,
+            "model": config.model if config else None,
+            "allowed_tools": config.allowed_tools
+            if config and config.allowed_tools is not None
+            else capabilities["allowed_tools"],
+            "approval_policy": config.approval_policy if config else "platform_default",
+            "max_actions_per_task": config.max_actions_per_task
+            if config and config.max_actions_per_task
+            else capabilities["max_actions"],
+            "monthly_token_budget": config.monthly_token_budget if config else None,
+            "knowledge_source_ids": [UUID(value) for value in config.knowledge_source_ids]
+            if config
+            else [],
+        }
+
+    def update_configuration(
+        self, agent_id: str, user_id: UUID, max_actions: int, data: AgentConfigurationUpdate
+    ) -> dict:
+        capabilities = self.capabilities(agent_id, max_actions)
+        workspace_id = self.session.scalar(select(active_workspace_id(user_id)))
+        membership = self.session.scalar(
+            select(WorkspaceMember).where(
+                WorkspaceMember.workspace_id == workspace_id,
+                WorkspaceMember.user_id == user_id,
+            )
+        )
+        if membership is None or membership.role not in {"owner", "admin"}:
+            raise PermissionError("Workspace administrator permission is required")
+        values = data.model_dump(exclude_unset=True)
+        if values.get("allowed_tools") is not None:
+            unknown = set(values["allowed_tools"]) - set(capabilities["allowed_tools"])
+            if unknown:
+                raise WorkflowConflictError("Configuration contains unsupported tools")
+        if values.get("knowledge_source_ids") is not None:
+            ids = values["knowledge_source_ids"]
+            found = set(
+                self.session.scalars(
+                    select(KnowledgeItem.id).where(
+                        KnowledgeItem.workspace_id == workspace_id,
+                        KnowledgeItem.id.in_(ids),
+                    )
+                )
+            )
+            if found != set(ids):
+                raise WorkflowNotFoundError("Knowledge source not found")
+            values["knowledge_source_ids"] = [str(value) for value in ids]
+        try:
+            config = self.session.scalar(
+                select(AgentConfiguration).where(
+                    AgentConfiguration.workspace_id == workspace_id,
+                    AgentConfiguration.agent_id == agent_id,
+                )
+            )
+            if config is None:
+                config = AgentConfiguration(
+                    workspace_id=workspace_id,
+                    agent_id=agent_id,
+                    updated_by_user_id=user_id,
+                )
+                self.session.add(config)
+            for field, value in values.items():
+                setattr(config, field, value)
+            config.updated_by_user_id = user_id
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+        return self.configuration(agent_id, user_id, max_actions)
 
     def reassign(self, task_id: UUID, user_id: UUID, agent_id: str) -> Task:
         try:

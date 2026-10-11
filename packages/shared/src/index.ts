@@ -443,6 +443,19 @@ export type AgentOverview = {
   completed_runs: number;
   failed_runs: number;
   success_rate: number;
+  operational_status: 'operational' | 'sandbox' | 'unavailable' | 'disabled';
+  operational_message: string;
+  configuration: AgentConfiguration;
+};
+
+export type AgentConfiguration = {
+  enabled: boolean;
+  model: string | null;
+  allowed_tools: string[];
+  approval_policy: 'platform_default' | 'always' | 'risk_based';
+  max_actions_per_task: number;
+  monthly_token_budget: number | null;
+  knowledge_source_ids: string[];
 };
 
 export type GitHubIntegrationStatus = {

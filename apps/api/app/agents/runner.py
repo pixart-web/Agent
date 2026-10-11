@@ -1,8 +1,9 @@
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,7 @@ from app.execution.context_safety import sanitize_execution_payload
 from app.execution.policies import ExecutionRiskPolicy, action_fingerprint, maximum_risk
 from app.execution.registry import ToolRegistry
 from app.execution.tools.registry import build_tool_registry
+from app.models.agent_configuration import AgentConfiguration
 from app.models.agent_run import AgentRun
 from app.models.command import Command
 from app.models.plan import Plan
@@ -28,6 +30,7 @@ from app.models.workflow_enums import (
     AgentRunStatus,
     CommandStatus,
     PlanStatus,
+    RiskLevel,
     TaskActionStatus,
     TaskStatus,
 )
@@ -117,6 +120,37 @@ class AgentRunnerService:
             persisted_agent = self.agents.get(task.agent_id)
             if persisted_agent is None or persisted_agent.status != "ready":
                 raise WorkflowConflictError("Assigned agent is unavailable")
+            configuration = self.session.scalar(
+                select(AgentConfiguration).where(
+                    AgentConfiguration.workspace_id == command.workspace_id,
+                    AgentConfiguration.agent_id == task.agent_id,
+                )
+            )
+            if configuration is not None and not configuration.enabled:
+                raise WorkflowConflictError("Assigned agent is disabled for this workspace")
+            if (
+                configuration is not None
+                and configuration.model is not None
+                and configuration.model != self.provider.model_name
+            ):
+                raise WorkflowConflictError("Configured agent model is unavailable")
+            if configuration is not None and configuration.monthly_token_budget is not None:
+                month_start = datetime.now(UTC).replace(
+                    day=1, hour=0, minute=0, second=0, microsecond=0
+                )
+                tokens_used = self.session.scalar(
+                    select(func.coalesce(func.sum(AgentRun.total_tokens), 0))
+                    .join(Task, Task.id == AgentRun.task_id)
+                    .join(Plan, Plan.id == Task.plan_id)
+                    .join(Command, Command.id == Plan.command_id)
+                    .where(
+                        AgentRun.agent_id == task.agent_id,
+                        AgentRun.created_at >= month_start,
+                        Command.workspace_id == command.workspace_id,
+                    )
+                )
+                if tokens_used >= configuration.monthly_token_budget:
+                    raise WorkflowConflictError("Agent monthly token budget is exhausted")
             previous_runs = self.runs.list_for_task_owned(task.id, user_id)
             previous_actions = self.actions.list_actions_for_task_owned(task.id, user_id)
             if rerun:
@@ -132,10 +166,13 @@ class AgentRunnerService:
                 raise WorkflowConflictError("Use rerun-agent to preserve the previous run history")
             if command.correlation_id is None:
                 command.correlation_id = uuid4()
+            allowed_tools = agent.allowed_tools
+            if configuration is not None and configuration.allowed_tools is not None:
+                allowed_tools = allowed_tools.intersection(configuration.allowed_tools)
             context = self.context_builder.build(
                 task,
                 user_id,
-                agent.allowed_tools,
+                allowed_tools,
                 feedback,
                 self.settings.agent_max_context_chars,
             )
@@ -188,12 +225,25 @@ class AgentRunnerService:
 
     def _validate(self, proposal: AgentProposal, context: AgentTaskContext, agent) -> AgentProposal:
         maximum = min(self.settings.agent_max_actions_per_task, agent.max_actions_per_task)
+        task = self.session.get(Task, context.task_id)
+        plan = self.session.get(Plan, task.plan_id)
+        command = self.session.get(Command, plan.command_id)
+        configuration = self.session.scalar(
+            select(AgentConfiguration).where(
+                AgentConfiguration.workspace_id == command.workspace_id,
+                AgentConfiguration.agent_id == agent.agent_id,
+            )
+        )
+        if configuration is not None and configuration.max_actions_per_task is not None:
+            maximum = min(maximum, configuration.max_actions_per_task)
         if len(proposal.actions) > maximum:
             raise AgentProposalError("Agent proposed too many actions")
         validated = []
-        task = self.session.get(Task, context.task_id)
+        allowed_tools = agent.allowed_tools
+        if configuration is not None and configuration.allowed_tools is not None:
+            allowed_tools = allowed_tools.intersection(configuration.allowed_tools)
         for item in sorted(proposal.actions, key=lambda action: action.sequence):
-            if item.tool_name not in agent.allowed_tools:
+            if item.tool_name not in allowed_tools:
                 raise AgentProposalError("Agent proposed a tool outside its allowlist")
             definition = self.tools.get(item.tool_name, item.tool_version)
             payload = self.tools.validate_input(definition, item.input_payload, agent.agent_id)
@@ -203,6 +253,8 @@ class AgentRunnerService:
                 definition.risk_level,
                 self.risk_policy.evaluate(item.input_payload),
             )
+            if configuration is not None and configuration.approval_policy == "always":
+                risk = maximum_risk(risk, RiskLevel.RED)
             validated.append(
                 item.model_copy(
                     update={

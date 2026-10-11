@@ -1512,6 +1512,39 @@ h1 {
   flex-wrap: wrap;
   gap: 8px;
 }
+.agent-operational {
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.agent-operational--operational {
+  color: #166534;
+}
+.agent-operational--sandbox {
+  color: #854d0e;
+}
+.agent-operational--unavailable,
+.agent-operational--disabled {
+  color: #991b1b;
+}
+.agent-config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.agent-config-grid label {
+  display: grid;
+  gap: 8px;
+}
+.agent-config-grid input[type='checkbox'] {
+  width: auto;
+  justify-self: start;
+}
+@media (max-width: 640px) {
+  .agent-config-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .email-body {
   white-space: pre-wrap;
@@ -1652,7 +1685,7 @@ h1 {
 .inline-form {
   display: flex;
   gap: 10px;
-  align-items: end;
+  align-items: var(--form-cross-alignment, flex-end);
   margin: 14px 0;
 }
 .inline-form label {
