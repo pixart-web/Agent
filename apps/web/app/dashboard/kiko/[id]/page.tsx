@@ -1,11 +1,16 @@
 'use client';
 
-import type { ConversationDetail, ConversationMessage } from '@agent/shared';
+import type {
+  ConversationDetail,
+  ConversationMessage,
+  ConversationOperation,
+} from '@agent/shared';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../../components/dashboard-nav';
+import { ConversationOperationStatus } from '../../../../components/conversation-operation-status';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import {
   getConversation,
@@ -30,7 +35,10 @@ export default function ConversationPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (user) void load();
+    if (!user) return;
+    void load();
+    const interval = window.setInterval(() => void load(), 10_000);
+    return () => window.clearInterval(interval);
   }, [load, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -47,6 +55,17 @@ export default function ConversationPage() {
               ...current,
               conversation: turn.conversation,
               messages: [...current.messages, ...turn.messages],
+              operations: [
+                ...current.operations,
+                {
+                  command: turn.command,
+                  plan: null,
+                  supervisor_status: null,
+                  task_counts: {},
+                  pending_approvals: 0,
+                  latest_error: null,
+                },
+              ],
             }
           : current,
       );
@@ -84,7 +103,13 @@ export default function ConversationPage() {
 
         <div className="conversation-thread" aria-live="polite">
           {detail?.messages.map((item) => (
-            <Message key={item.id} message={item} />
+            <Message
+              key={item.id}
+              message={item}
+              operation={detail.operations.find(
+                (candidate) => candidate.command.id === item.command_id,
+              )}
+            />
           ))}
         </div>
 
@@ -124,7 +149,13 @@ export default function ConversationPage() {
   );
 }
 
-function Message({ message }: { message: ConversationMessage }) {
+function Message({
+  message,
+  operation,
+}: {
+  message: ConversationMessage;
+  operation?: ConversationOperation;
+}) {
   return (
     <article
       className={`conversation-message conversation-message--${message.role}`}
@@ -142,6 +173,7 @@ function Message({ message }: { message: ConversationMessage }) {
           Abrir comando operacional →
         </Link>
       )}
+      {operation && <ConversationOperationStatus operation={operation} />}
     </article>
   );
 }

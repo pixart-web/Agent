@@ -111,6 +111,22 @@ export type ConversationTurn = {
 export type ConversationDetail = {
   conversation: Conversation;
   messages: ConversationMessage[];
+  operations: ConversationOperation[];
+};
+
+export type ConversationOperation = {
+  command: Command;
+  plan: {
+    id: string;
+    title: string;
+    objective: string;
+    status: PlanStatus;
+  } | null;
+  supervisor_status:
+    'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | null;
+  task_counts: Record<string, number>;
+  pending_approvals: number;
+  latest_error: string | null;
 };
 
 export type Plan = {

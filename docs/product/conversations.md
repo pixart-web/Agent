@@ -9,6 +9,8 @@ Kiko AI provides a workspace-scoped conversational entry point for operational w
 - The command retains its `conversation_id`, so planning, execution, approvals, audit history, and cancellation continue through the existing governed workflow.
 - Kiko's persisted acknowledgement links to the command; it does not claim that work has already succeeded.
 - Reloading or returning later restores the conversation and all command links.
+- Each Kiko acknowledgement includes a live operational projection: command and Supervisor status, current plan, task counts, pending approvals, and safe failure information.
+- The projection is read from the governed workflow tables and refreshes while the conversation remains open; it does not duplicate operational state.
 
 ## API
 
@@ -21,4 +23,4 @@ All object access is scoped server-side to the authenticated user's active works
 
 ## Current boundary
 
-This increment establishes durable threads and governed command creation. Generated plan summaries, execution results, approval prompts, and failure/reconciliation events are still viewed in the linked command workflow. Projecting those lifecycle events back into the conversation is the next R2 increment.
+The conversation projects workflow state and safe summaries but deliberately does not expose raw provider payloads or tool outputs. Detailed task actions, execution evidence, audit history, and approval decisions remain available in the linked governed command views.

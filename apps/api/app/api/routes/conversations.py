@@ -42,7 +42,7 @@ def list_conversations(
 ) -> list[ConversationRead]:
     return [
         ConversationRead.model_validate(item)
-        for item in ConversationService(db).list(user.id, limit, offset)
+        for item in ConversationService(db).list_conversations(user.id, limit, offset)
     ]
 
 

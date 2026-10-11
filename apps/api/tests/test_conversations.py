@@ -1,4 +1,15 @@
+from uuid import UUID
+
 from fastapi.testclient import TestClient
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.agent import Agent
+from app.models.approval_request import ApprovalRequest
+from app.models.supervisor_run import SupervisorRun
+from app.models.task_action import TaskAction
+from app.models.user import User
+from app.models.workflow_enums import ActorType, RiskLevel, SupervisorRunStatus
 
 PASSWORD = "ConversationPassword123!"
 
@@ -59,6 +70,91 @@ def test_conversation_turns_create_real_commands(client: TestClient) -> None:
         first["command"]["id"],
         second["command"]["id"],
     }
+
+
+def test_conversation_projects_operational_state(client: TestClient, db_session: Session) -> None:
+    headers = register(client, "conversation-operations@example.com")
+    db_session.add(Agent(id="marketing", name="Marketing", description="Test agent"))
+    db_session.commit()
+    created = client.post(
+        "/api/v1/conversations",
+        headers=headers,
+        json={"message": "Prepare a governed campaign"},
+    ).json()
+    command_id = created["command"]["id"]
+    conversation_id = created["conversation"]["id"]
+    plan = client.post(
+        f"/api/v1/commands/{command_id}/plan",
+        headers=headers,
+        json={"title": "Campaign plan", "objective": "Generate qualified demand"},
+    )
+    assert plan.status_code == 201
+    task = client.post(
+        f"/api/v1/plans/{plan.json()['id']}/tasks",
+        headers=headers,
+        json={
+            "agent_id": "marketing",
+            "title": "Draft campaign",
+            "instructions": "Prepare the governed campaign draft.",
+            "priority": "normal",
+            "risk_level": "green",
+            "sequence": 1,
+        },
+    )
+    assert task.status_code == 201
+    user = db_session.scalar(
+        select(User).where(User.email == "conversation-operations@example.com")
+    )
+    assert user is not None
+    action = TaskAction(
+        task_id=UUID(task.json()["id"]),
+        tool_name="marketing.prepare",
+        tool_version="1",
+        input_payload={},
+        risk_level=RiskLevel.YELLOW,
+        created_by_type=ActorType.SUPERVISOR,
+        action_fingerprint="a" * 64,
+    )
+    db_session.add(action)
+    db_session.flush()
+    db_session.add_all(
+        [
+            ApprovalRequest(
+                user_id=user.id,
+                task_id=UUID(task.json()["id"]),
+                task_action_id=action.id,
+                risk_level=RiskLevel.YELLOW,
+                title="Approve campaign draft",
+                description="Review before publishing.",
+                action_fingerprint=action.action_fingerprint,
+            ),
+            SupervisorRun(
+                command_id=UUID(command_id),
+                user_id=user.id,
+                status=SupervisorRunStatus.COMPLETED,
+                provider="test",
+                model="test-model",
+                prompt_version="test-v1",
+            ),
+        ]
+    )
+    db_session.commit()
+
+    detail = client.get(f"/api/v1/conversations/{conversation_id}", headers=headers)
+    assert detail.status_code == 200
+    operation = detail.json()["operations"][0]
+    assert operation["command"]["id"] == command_id
+    assert operation["command"]["status"] == "planning"
+    assert operation["plan"] == {
+        "id": plan.json()["id"],
+        "title": "Campaign plan",
+        "objective": "Generate qualified demand",
+        "status": "draft",
+    }
+    assert operation["task_counts"] == {"pending": 1}
+    assert operation["supervisor_status"] == "completed"
+    assert operation["pending_approvals"] == 1
+    assert operation["latest_error"] is None
 
 
 def test_conversations_are_workspace_isolated(client: TestClient) -> None:

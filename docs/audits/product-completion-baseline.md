@@ -43,43 +43,43 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 
 ## Functional inventory
 
-| Capability                           | Current state                       |                  E2E | Production-ready | Severity / primary gap                                            |
-| ------------------------------------ | ----------------------------------- | -------------------: | ---------------: | ----------------------------------------------------------------- |
-| Public website                       | Missing                             |                   No |               No | HIGH — `/` redirects directly to dashboard                        |
-| Registration                         | Implemented; deployment fix pending |   Browser smoke only |               No | BLOCKER — corrected bundle not deployed                           |
-| Login/logout/refresh                 | Implemented                         |              Partial |               No | HIGH — no real browser journey or session UI                      |
-| Email verification                   | Implemented, delivery unproven      |  API/unit + UI smoke |               No | HIGH — real provider and browser E2E pending                      |
-| Password recovery/reset/change       | Reset implemented; change missing   |  API/unit + UI smoke |               No | HIGH                                                              |
-| Session listing/revocation           | API implemented                     |            API tests |               No | HIGH — settings UI pending                                        |
-| Profile/deactivation/deletion        | Missing                             |                   No |               No | HIGH                                                              |
-| Platform/workspace roles             | Partial                             |                   No |               No | BLOCKER — only Knowledge membership roles exist                   |
-| Workspaces                           | Partial                             |       Knowledge only |               No | BLOCKER — business resources are not workspace-scoped             |
-| Invitations and ownership transfer   | API lifecycle implemented           |            API tests |               No | HIGH — administration UI and E2E pending                          |
-| Onboarding                           | Missing                             |                   No |               No | HIGH                                                              |
-| Kiko conversational workspace        | Persistent workspace threads        |  API + browser smoke |          Partial | HIGH — lifecycle events still live in linked command views        |
-| Commands and plans                   | Operational graph tenant-scoped     |  API/component tests |               No | HIGH — lifecycle/search/archive/duplicate gaps remain             |
-| Tasks                                | Partial                             |  API/component tests |               No | HIGH — no full assignment/project/filtered product UX             |
-| Projects                             | Partial CRM projects                |                   No |               No | HIGH — not a general project-management product                   |
-| Specialized agents                   | Implemented foundation              |  Fake-provider tests |               No | HIGH — configuration/status/performance incomplete                |
-| Approval Center                      | Implemented foundation              |  API/component tests |               No | HIGH — comments/history/separation-of-duty incomplete             |
-| CRM                                  | Substantial backend, read-heavy UI  |  API/component tests |               No | HIGH — incomplete UI CRUD/import/export/duplicate flows           |
-| Gmail                                | Real adapter plus fake tests        | No real provider E2E |               No | HIGH — test credentials and release validation required           |
-| Google Calendar                      | Real adapter plus fake tests        | No real provider E2E |               No | HIGH — write journey and recurrence incomplete                    |
-| Marketing                            | Implemented foundation              |  API/component tests |               No | MEDIUM/HIGH — incomplete product workflow and provider publishing |
-| Automations                          | Tenant-scoped foundation            |  API/component tests |               No | HIGH — builder/edit/webhook/event coverage incomplete             |
-| Knowledge                            | Workspace-scoped CRUD/search        |            API tests |          Partial | HIGH — document ingestion/indexing/deletion missing               |
-| GitHub                               | Governed tool adapter               |           Fake tests |               No | HIGH — connection UX and real test account validation missing     |
-| Codex                                | Controlled runner foundation        |           Fake tests |               No | HIGH — dedicated hardened runtime evidence missing                |
-| Integrations Center                  | Credentials tenant-scoped           |      Component tests |               No | MEDIUM — administration UX and provider validation pending        |
-| Analytics                            | Missing product analytics           |                   No |               No | HIGH                                                              |
-| Notifications                        | Missing                             |                   No |               No | HIGH                                                              |
-| Personal/workspace/platform settings | Missing                             |                   No |               No | HIGH                                                              |
-| Plans/entitlements/subscriptions     | Missing                             |                   No |               No | BLOCKER for commercial launch                                     |
-| Data import/export/retention         | Missing                             |                   No |               No | HIGH                                                              |
-| Observability                        | Foundation implemented              |           Unit tests |          Partial | MEDIUM — alerting/queue/provider/cost dashboards absent           |
-| Backup/restore                       | Helpers documented                  | No staging rehearsal |               No | HIGH                                                              |
-| Responsive/accessibility QA          | Unproven                            |                   No |               No | HIGH                                                              |
-| Production deployment package        | Partial compose/docs                |    No full rehearsal |               No | BLOCKER                                                           |
+| Capability                           | Current state                        |                  E2E | Production-ready | Severity / primary gap                                            |
+| ------------------------------------ | ------------------------------------ | -------------------: | ---------------: | ----------------------------------------------------------------- |
+| Public website                       | Missing                              |                   No |               No | HIGH — `/` redirects directly to dashboard                        |
+| Registration                         | Implemented; deployment fix pending  |   Browser smoke only |               No | BLOCKER — corrected bundle not deployed                           |
+| Login/logout/refresh                 | Implemented                          |              Partial |               No | HIGH — no real browser journey or session UI                      |
+| Email verification                   | Implemented, delivery unproven       |  API/unit + UI smoke |               No | HIGH — real provider and browser E2E pending                      |
+| Password recovery/reset/change       | Reset implemented; change missing    |  API/unit + UI smoke |               No | HIGH                                                              |
+| Session listing/revocation           | API implemented                      |            API tests |               No | HIGH — settings UI pending                                        |
+| Profile/deactivation/deletion        | Missing                              |                   No |               No | HIGH                                                              |
+| Platform/workspace roles             | Partial                              |                   No |               No | BLOCKER — only Knowledge membership roles exist                   |
+| Workspaces                           | Partial                              |       Knowledge only |               No | BLOCKER — business resources are not workspace-scoped             |
+| Invitations and ownership transfer   | API lifecycle implemented            |            API tests |               No | HIGH — administration UI and E2E pending                          |
+| Onboarding                           | Missing                              |                   No |               No | HIGH                                                              |
+| Kiko conversational workspace        | Persistent threads + live operations |  API + browser smoke |          Partial | HIGH — detailed evidence remains in linked command views          |
+| Commands and plans                   | Operational graph tenant-scoped      |  API/component tests |               No | HIGH — lifecycle/search/archive/duplicate gaps remain             |
+| Tasks                                | Partial                              |  API/component tests |               No | HIGH — no full assignment/project/filtered product UX             |
+| Projects                             | Partial CRM projects                 |                   No |               No | HIGH — not a general project-management product                   |
+| Specialized agents                   | Implemented foundation               |  Fake-provider tests |               No | HIGH — configuration/status/performance incomplete                |
+| Approval Center                      | Implemented foundation               |  API/component tests |               No | HIGH — comments/history/separation-of-duty incomplete             |
+| CRM                                  | Substantial backend, read-heavy UI   |  API/component tests |               No | HIGH — incomplete UI CRUD/import/export/duplicate flows           |
+| Gmail                                | Real adapter plus fake tests         | No real provider E2E |               No | HIGH — test credentials and release validation required           |
+| Google Calendar                      | Real adapter plus fake tests         | No real provider E2E |               No | HIGH — write journey and recurrence incomplete                    |
+| Marketing                            | Implemented foundation               |  API/component tests |               No | MEDIUM/HIGH — incomplete product workflow and provider publishing |
+| Automations                          | Tenant-scoped foundation             |  API/component tests |               No | HIGH — builder/edit/webhook/event coverage incomplete             |
+| Knowledge                            | Workspace-scoped CRUD/search         |            API tests |          Partial | HIGH — document ingestion/indexing/deletion missing               |
+| GitHub                               | Governed tool adapter                |           Fake tests |               No | HIGH — connection UX and real test account validation missing     |
+| Codex                                | Controlled runner foundation         |           Fake tests |               No | HIGH — dedicated hardened runtime evidence missing                |
+| Integrations Center                  | Credentials tenant-scoped            |      Component tests |               No | MEDIUM — administration UX and provider validation pending        |
+| Analytics                            | Missing product analytics            |                   No |               No | HIGH                                                              |
+| Notifications                        | Missing                              |                   No |               No | HIGH                                                              |
+| Personal/workspace/platform settings | Missing                              |                   No |               No | HIGH                                                              |
+| Plans/entitlements/subscriptions     | Missing                              |                   No |               No | BLOCKER for commercial launch                                     |
+| Data import/export/retention         | Missing                              |                   No |               No | HIGH                                                              |
+| Observability                        | Foundation implemented               |           Unit tests |          Partial | MEDIUM — alerting/queue/provider/cost dashboards absent           |
+| Backup/restore                       | Helpers documented                   | No staging rehearsal |               No | HIGH                                                              |
+| Responsive/accessibility QA          | Unproven                             |                   No |               No | HIGH                                                              |
+| Production deployment package        | Partial compose/docs                 |    No full rehearsal |               No | BLOCKER                                                           |
 
 ## Tenant-isolation audit
 
@@ -219,7 +219,7 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 ### R2 — Core Kiko experience
 
 - [x] Persist conversations/messages and route each operational turn through the existing command/Supervisor/Execution Engine graph.
-- [ ] Project plan, execution, approval, failure, and result lifecycle events into Kiko conversations.
+- [x] Project command, Supervisor, plan, task, approval, failure, and completion states into Kiko conversations without duplicating workflow truth.
 - [ ] Complete command/task/project lifecycle and views.
 - [ ] Complete Agent Center configuration and operational status.
 - [ ] Complete approval comments/history/expiry and separation-of-duty policy.

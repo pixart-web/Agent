@@ -535,6 +535,51 @@ h1 {
   font-weight: 750;
 }
 
+.conversation-operation {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.conversation-operation__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.conversation-operation > p,
+.conversation-operation__plan p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.conversation-operation__plan {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f3f7f8;
+}
+
+.conversation-operation__plan span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.conversation-operation .conversation-operation__attention {
+  color: var(--warning);
+  font-weight: 750;
+}
+
+.conversation-operation .conversation-operation__error {
+  color: var(--offline);
+  font-weight: 650;
+}
+
 .kiko-composer--compact {
   margin-top: 24px;
 }

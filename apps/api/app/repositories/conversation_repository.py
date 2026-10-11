@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.command import Command
 from app.models.conversation import Conversation, ConversationMessage
 from app.workspaces.scope import active_workspace_id
 
@@ -43,5 +44,19 @@ class ConversationRepository:
                 .order_by(ConversationMessage.created_at, ConversationMessage.id)
                 .limit(limit)
                 .offset(offset)
+            )
+        )
+
+    def list_commands(self, conversation_id: UUID, command_ids: list[UUID]) -> list[Command]:
+        if not command_ids:
+            return []
+        return list(
+            self.session.scalars(
+                select(Command)
+                .where(
+                    Command.conversation_id == conversation_id,
+                    Command.id.in_(command_ids),
+                )
+                .order_by(Command.created_at, Command.id)
             )
         )

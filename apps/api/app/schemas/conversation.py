@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.models.workflow_enums import PlanStatus, SupervisorRunStatus
 from app.schemas.command import CommandRead
 
 
@@ -52,6 +53,23 @@ class ConversationTurnRead(BaseModel):
     command: CommandRead
 
 
+class ConversationPlanRead(BaseModel):
+    id: UUID
+    title: str
+    objective: str
+    status: PlanStatus
+
+
+class ConversationOperationRead(BaseModel):
+    command: CommandRead
+    plan: ConversationPlanRead | None
+    supervisor_status: SupervisorRunStatus | None
+    task_counts: dict[str, int]
+    pending_approvals: int
+    latest_error: str | None
+
+
 class ConversationDetailRead(BaseModel):
     conversation: ConversationRead
     messages: list[ConversationMessageRead]
+    operations: list[ConversationOperationRead]
