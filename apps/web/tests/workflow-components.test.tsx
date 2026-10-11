@@ -73,6 +73,7 @@ const task: WorkflowTask = {
   updated_at: '2026-08-14T10:02:00Z',
   started_at: '2026-08-14T10:03:00Z',
   completed_at: null,
+  due_at: null,
   error_message: null,
 };
 

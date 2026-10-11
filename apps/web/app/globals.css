@@ -758,6 +758,90 @@ h1 {
   font-size: 0.86rem;
 }
 
+.task-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(130px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.task-filters label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.task-filters input,
+.task-filters select,
+.task-transition-controls input,
+.task-transition-controls select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 9px 11px;
+}
+
+.workspace-task-list {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.workspace-task-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 2fr) 100px 130px auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspace-task-row a {
+  color: var(--ink);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.workspace-task-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.task-transition-controls {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.6fr) minmax(260px, 1.4fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.task-history {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-history li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.task-history p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--muted);
+}
+
 .empty-state {
   padding: 28px;
   color: var(--muted);
@@ -1053,6 +1137,12 @@ h1 {
 
   .workflow-form__wide {
     grid-column: auto;
+  }
+
+  .task-filters,
+  .workspace-task-row,
+  .task-transition-controls {
+    grid-template-columns: 1fr;
   }
 
   .command-row {

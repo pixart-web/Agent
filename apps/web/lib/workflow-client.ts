@@ -42,6 +42,7 @@ import type {
   TaskPriority,
   TaskStatus,
   WorkflowTask,
+  WorkspaceTask,
 } from '@agent/shared';
 
 import { authFetch } from './auth-client';
@@ -237,6 +238,27 @@ export function listTasks(planId: string): Promise<WorkflowTask[]> {
   return request(`/api/v1/plans/${planId}/tasks`);
 }
 
+export function listWorkspaceTasks(
+  options: {
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    agentId?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<WorkspaceTask[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.priority) query.set('priority', options.priority);
+  if (options.agentId) query.set('agent_id', options.agentId);
+  if (options.search) query.set('search', options.search);
+  if (options.limit !== undefined) query.set('limit', String(options.limit));
+  if (options.offset !== undefined) query.set('offset', String(options.offset));
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+  return request(`/api/v1/tasks${suffix}`);
+}
+
 export function getTask(taskId: string): Promise<TaskDetail> {
   return request(`/api/v1/tasks/${taskId}`);
 }
@@ -252,6 +274,7 @@ export function updateTask(
       | 'priority'
       | 'risk_level'
       | 'sequence'
+      | 'due_at'
     >
   >,
 ): Promise<WorkflowTask> {

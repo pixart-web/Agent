@@ -4,9 +4,16 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.time import utc_now
+from app.models.command import Command
+from app.models.plan import Plan
 from app.models.task import Task
 from app.models.task_status_history import TaskStatusHistory
-from app.models.workflow_enums import TERMINAL_COMMAND_STATUSES, PlanStatus, TaskStatus
+from app.models.workflow_enums import (
+    TERMINAL_COMMAND_STATUSES,
+    PlanStatus,
+    TaskPriority,
+    TaskStatus,
+)
 from app.repositories.agent_repository import AgentRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.task_repository import TaskRepository
@@ -38,6 +45,8 @@ ALLOWED_TASK_TRANSITIONS: dict[TaskStatus, frozenset[TaskStatus]] = {
 @dataclass(frozen=True)
 class TaskDetailData:
     task: Task
+    plan: Plan
+    command: Command
     history: list[TaskStatusHistory]
 
 
@@ -104,14 +113,39 @@ class TaskService:
         return self.tasks.list_for_plan_owned(plan_id, user_id)
 
     def get_detail(self, task_id: UUID, user_id: UUID) -> TaskDetailData:
-        task = self._get_owned(task_id, user_id)
+        context = self.tasks.get_owned_context(task_id, user_id)
+        if context is None:
+            raise WorkflowNotFoundError("Task not found")
+        task, plan, command = context
         history = self.history.list_for_task_owned(task_id, user_id)
-        return TaskDetailData(task=task, history=history)
+        return TaskDetailData(task=task, plan=plan, command=command, history=history)
+
+    def list_owned(
+        self,
+        user_id: UUID,
+        limit: int,
+        offset: int,
+        status: TaskStatus | None,
+        priority: TaskPriority | None,
+        agent_id: str | None,
+        search: str | None,
+    ) -> list[tuple[Task, Plan, Command]]:
+        return self.tasks.list_owned(
+            user_id,
+            limit,
+            offset,
+            status.value if status else None,
+            priority.value if priority else None,
+            agent_id,
+            search,
+        )
 
     def update(self, task_id: UUID, user_id: UUID, data: TaskUpdate) -> Task:
         try:
             task = self._get_owned_for_update(task_id, user_id)
             values = data.model_dump(exclude_unset=True, exclude_none=True)
+            if "due_at" in data.model_fields_set:
+                values["due_at"] = data.due_at
             if "agent_id" in values:
                 raise WorkflowConflictError("Use the explicit reassign-agent endpoint")
             for field, value in values.items():
@@ -167,7 +201,4 @@ class TaskService:
             self.session.rollback()
             raise
         self.session.refresh(task)
-        return TaskDetailData(
-            task=task,
-            history=self.history.list_for_task_owned(task.id, user_id),
-        )
+        return self.get_detail(task.id, user_id)

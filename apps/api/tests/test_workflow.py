@@ -376,6 +376,56 @@ def test_task_patch_uses_locked_read(
     plain_read.assert_not_called()
 
 
+def test_workspace_task_search_filters_deadline_and_context(
+    client: TestClient,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    headers, command, plan = workflow
+    task = create_task(client, headers, str(plan["id"]))
+
+    updated = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        headers=headers,
+        json={"due_at": "2026-10-31T17:00:00Z"},
+    )
+    listed = client.get(
+        "/api/v1/tasks?search=restaurant&status=pending&priority=high&agent_id=marketing",
+        headers=headers,
+    )
+    detail = client.get(f"/api/v1/tasks/{task['id']}", headers=headers)
+    no_match = client.get("/api/v1/tasks?search=missing", headers=headers)
+    explicit_assignment = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        headers=headers,
+        json={"agent_id": "sales"},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["due_at"].startswith("2026-10-31T17:00:00")
+    assert listed.status_code == 200
+    assert [item["id"] for item in listed.json()] == [task["id"]]
+    assert listed.json()[0]["command_id"] == command["id"]
+    assert listed.json()[0]["command_input"] == command["input"]
+    assert listed.json()[0]["plan_title"] == plan["title"]
+    assert detail.status_code == 200
+    assert detail.json()["command_id"] == command["id"]
+    assert detail.json()["history"][0]["to_status"] == "pending"
+    assert no_match.json() == []
+    assert explicit_assignment.status_code == 409
+
+
+def test_workspace_task_list_is_tenant_isolated(
+    client: TestClient,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    owner, _, plan = workflow
+    task = create_task(client, owner, str(plan["id"]))
+    outsider = register_user(client, "task-list-outsider@example.com")
+
+    assert client.get("/api/v1/tasks", headers=outsider).json() == []
+    assert client.get(f"/api/v1/tasks/{task['id']}", headers=outsider).status_code == 404
+
+
 def test_failed_task_retry_clears_completion_and_error(
     client: TestClient,
     workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],

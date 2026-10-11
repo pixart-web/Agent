@@ -192,7 +192,14 @@ export type WorkflowTask = {
   updated_at: string;
   started_at: string | null;
   completed_at: string | null;
+  due_at: string | null;
   error_message: string | null;
+};
+
+export type WorkspaceTask = WorkflowTask & {
+  command_id: string;
+  command_input: string;
+  plan_title: string;
 };
 
 export type TaskStatusHistory = {
@@ -205,7 +212,7 @@ export type TaskStatusHistory = {
   created_at: string;
 };
 
-export type TaskDetail = WorkflowTask & {
+export type TaskDetail = WorkspaceTask & {
   history: TaskStatusHistory[];
 };
 

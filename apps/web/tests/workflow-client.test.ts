@@ -7,6 +7,7 @@ import {
   generateSupervisorPlan,
   listCommands,
   listPlans,
+  listWorkspaceTasks,
   regenerateSupervisorPlan,
   transitionTask,
   WorkflowApiError,
@@ -68,6 +69,23 @@ describe('workflow client', () => {
           reason: 'Waiting for copy approval',
         }),
       },
+    );
+  });
+
+  it('lists workspace tasks with operational filters', async () => {
+    mockedAuthFetch.mockResolvedValue(jsonResponse([]));
+
+    await listWorkspaceTasks({
+      search: 'launch',
+      status: 'blocked',
+      priority: 'urgent',
+      agentId: 'development',
+      limit: 50,
+    });
+
+    expect(mockedAuthFetch).toHaveBeenCalledWith(
+      '/api/v1/tasks?status=blocked&priority=urgent&agent_id=development&search=launch&limit=50',
+      {},
     );
   });
 

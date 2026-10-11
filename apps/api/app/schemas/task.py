@@ -14,6 +14,7 @@ class TaskCreate(BaseModel):
     priority: TaskPriority = TaskPriority.NORMAL
     risk_level: RiskLevel = RiskLevel.GREEN
     sequence: int = Field(default=1, ge=1, le=10_000)
+    due_at: datetime | None = None
 
     @field_validator("title", "instructions")
     @classmethod
@@ -33,6 +34,7 @@ class TaskUpdate(BaseModel):
     priority: TaskPriority | None = None
     risk_level: RiskLevel | None = None
     sequence: int | None = Field(default=None, ge=1, le=10_000)
+    due_at: datetime | None = None
 
     @field_validator("title", "instructions")
     @classmethod
@@ -91,8 +93,15 @@ class TaskRead(BaseModel):
     updated_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    due_at: datetime | None
     error_message: str | None
 
 
-class TaskDetail(TaskRead):
+class TaskWorkspaceRead(TaskRead):
+    command_id: UUID
+    command_input: str
+    plan_title: str
+
+
+class TaskDetail(TaskWorkspaceRead):
     history: list[TaskStatusHistoryRead]
