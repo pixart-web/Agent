@@ -343,6 +343,17 @@ h1 {
   border-bottom: 1px solid var(--line);
 }
 
+.dashboard-nav > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+}
+
+.dashboard-nav > button {
+  white-space: nowrap;
+}
+
 .brand-mark {
   margin-right: 16px;
   font-size: 1.25rem;
@@ -403,6 +414,129 @@ h1 {
 .workflow-panel {
   margin-bottom: 24px;
   padding: clamp(24px, 4vw, 38px);
+}
+
+.kiko-hero {
+  margin-bottom: 32px;
+}
+
+.kiko-hero .subtitle {
+  max-width: 760px;
+  margin: 18px 0 28px;
+  line-height: 1.6;
+}
+
+.kiko-composer {
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgba(30, 48, 58, 0.08);
+}
+
+.kiko-composer label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 750;
+}
+
+.kiko-composer textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.kiko-composer__actions,
+.conversation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.kiko-composer__actions {
+  margin-top: 16px;
+}
+
+.kiko-composer__actions span,
+.conversation-list span,
+.empty-copy {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.conversation-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.conversation-title {
+  max-width: 850px;
+  font-size: clamp(2rem, 5vw, 4rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.secondary-link {
+  color: var(--accent);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.conversation-thread {
+  display: grid;
+  gap: 16px;
+  margin: 36px 0;
+}
+
+.conversation-message {
+  width: min(82%, 760px);
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.conversation-message--user {
+  justify-self: end;
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.conversation-message > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.conversation-message p {
+  margin-bottom: 10px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.conversation-message a {
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.kiko-composer--compact {
+  margin-top: 24px;
 }
 
 .settings-sessions,
@@ -831,6 +965,17 @@ h1 {
 
   .dashboard-nav {
     align-items: flex-start;
+  }
+
+  .kiko-composer__actions,
+  .conversation-header,
+  .conversation-list a {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .conversation-message {
+    width: 94%;
   }
 
   .nav-user {

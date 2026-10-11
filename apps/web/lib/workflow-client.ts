@@ -31,6 +31,9 @@ import type {
   AgentId,
   Command,
   CommandStatus,
+  Conversation,
+  ConversationDetail,
+  ConversationTurn,
   Plan,
   RiskLevel,
   SupervisorPlanResponse,
@@ -94,6 +97,30 @@ function jsonRequest(method: string, body: unknown): RequestInit {
 
 export function createCommand(input: string): Promise<Command> {
   return request('/api/v1/commands', jsonRequest('POST', { input }));
+}
+
+export function createConversation(message: string): Promise<ConversationTurn> {
+  return request('/api/v1/conversations', jsonRequest('POST', { message }));
+}
+
+export function listConversations(): Promise<Conversation[]> {
+  return request('/api/v1/conversations?limit=100');
+}
+
+export function getConversation(
+  conversationId: string,
+): Promise<ConversationDetail> {
+  return request(`/api/v1/conversations/${conversationId}?limit=200`);
+}
+
+export function sendConversationMessage(
+  conversationId: string,
+  message: string,
+): Promise<ConversationTurn> {
+  return request(
+    `/api/v1/conversations/${conversationId}/messages`,
+    jsonRequest('POST', { message }),
+  );
 }
 
 export function listCommands(

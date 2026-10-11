@@ -9,7 +9,9 @@ import { SupervisorPlanReview } from '../components/supervisor-plan-review';
 
 const command: Command = {
   id: 'command-1',
+  workspace_id: 'workspace-1',
   user_id: 'user-1',
+  conversation_id: null,
   input: 'Prepare the product launch',
   status: 'planning',
   created_at: '2026-08-14T10:00:00Z',

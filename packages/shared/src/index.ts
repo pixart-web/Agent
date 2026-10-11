@@ -72,12 +72,45 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 
 export type Command = {
   id: string;
+  workspace_id: string;
   user_id: string;
+  conversation_id: string | null;
   input: string;
   status: CommandStatus;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+};
+
+export type Conversation = {
+  id: string;
+  workspace_id: string;
+  created_by_user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+};
+
+export type ConversationMessage = {
+  id: string;
+  conversation_id: string;
+  author_user_id: string | null;
+  command_id: string | null;
+  role: 'user' | 'kiko' | 'system';
+  content: string;
+  created_at: string;
+};
+
+export type ConversationTurn = {
+  conversation: Conversation;
+  messages: ConversationMessage[];
+  command: Command;
+};
+
+export type ConversationDetail = {
+  conversation: Conversation;
+  messages: ConversationMessage[];
 };
 
 export type Plan = {

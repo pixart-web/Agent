@@ -20,6 +20,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="brand-mark" href="/dashboard">
           Kiko
         </Link>
+        <Link className="nav-link" href="/dashboard/kiko">
+          Kiko AI
+        </Link>
         <Link className="nav-link" href="/dashboard/commands">
           Commands
         </Link>

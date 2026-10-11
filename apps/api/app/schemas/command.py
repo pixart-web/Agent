@@ -23,6 +23,7 @@ class CommandRead(BaseModel):
 
     id: UUID
     workspace_id: UUID
+    conversation_id: UUID | None
     user_id: UUID
     input: str
     status: CommandStatus

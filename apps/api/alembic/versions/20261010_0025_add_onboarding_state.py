@@ -22,9 +22,7 @@ def upgrade() -> None:
         "users", sa.Column("onboarding_step", sa.Integer(), server_default="0", nullable=False)
     )
     op.add_column("users", sa.Column("onboarding_completed_at", sa.DateTime(timezone=True)))
-    op.execute(
-        "UPDATE users SET onboarding_step = 8, onboarding_completed_at = CURRENT_TIMESTAMP"
-    )
+    op.execute("UPDATE users SET onboarding_step = 8, onboarding_completed_at = CURRENT_TIMESTAMP")
     op.add_column(
         "workspaces",
         sa.Column(
