@@ -35,12 +35,16 @@ def list_commands(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
     command_status: Annotated[CommandStatus | None, Query(alias="status")] = None,
+    search: Annotated[str | None, Query(min_length=1, max_length=200, pattern=r".*\S.*")] = None,
+    include_archived: bool = False,
 ) -> list[CommandRead]:
     commands = CommandService(db).list_owned(
         user.id,
         limit,
         offset,
         command_status,
+        search.strip() if search else None,
+        include_archived,
     )
     return [CommandRead.model_validate(command) for command in commands]
 
@@ -66,6 +70,47 @@ def cancel_command(
 ) -> CommandRead:
     try:
         command = CommandService(db).cancel(command_id, user.id)
+    except (WorkflowNotFoundError, WorkflowConflictError) as error:
+        raise_workflow_http_error(error)
+    return CommandRead.model_validate(command)
+
+
+@router.post("/{command_id}/archive", response_model=CommandRead)
+def archive_command(
+    command_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CommandRead:
+    try:
+        command = CommandService(db).archive(command_id, user.id)
+    except (WorkflowNotFoundError, WorkflowConflictError) as error:
+        raise_workflow_http_error(error)
+    return CommandRead.model_validate(command)
+
+
+@router.post("/{command_id}/restore", response_model=CommandRead)
+def restore_command(
+    command_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CommandRead:
+    try:
+        command = CommandService(db).restore(command_id, user.id)
+    except WorkflowNotFoundError as error:
+        raise_workflow_http_error(error)
+    return CommandRead.model_validate(command)
+
+
+@router.post(
+    "/{command_id}/duplicate", response_model=CommandRead, status_code=status.HTTP_201_CREATED
+)
+def duplicate_command(
+    command_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CommandRead:
+    try:
+        command = CommandService(db).duplicate(command_id, user.id)
     except (WorkflowNotFoundError, WorkflowConflictError) as error:
         raise_workflow_http_error(error)
     return CommandRead.model_validate(command)

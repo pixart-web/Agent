@@ -438,6 +438,51 @@ def test_command_filters_and_pagination(client: TestClient) -> None:
     assert invalid_limit.status_code == 422
 
 
+def test_command_search_archive_restore_and_duplicate(client: TestClient) -> None:
+    headers = register_user(client, "command-lifecycle@example.com")
+    command = create_command(client, headers, "Launch the Alpine partner campaign")
+    create_command(client, headers, "Review support operations")
+
+    search = client.get("/api/v1/commands?search=ALPINE", headers=headers)
+    invalid_archive = client.post(f"/api/v1/commands/{command['id']}/archive", headers=headers)
+    client.post(f"/api/v1/commands/{command['id']}/cancel", headers=headers)
+    archived = client.post(f"/api/v1/commands/{command['id']}/archive", headers=headers)
+    active = client.get("/api/v1/commands?limit=100", headers=headers)
+    with_archive = client.get("/api/v1/commands?include_archived=true&limit=100", headers=headers)
+    restored = client.post(f"/api/v1/commands/{command['id']}/restore", headers=headers)
+    duplicate = client.post(f"/api/v1/commands/{command['id']}/duplicate", headers=headers)
+
+    assert search.status_code == 200
+    assert [item["id"] for item in search.json()] == [command["id"]]
+    assert invalid_archive.status_code == 409
+    assert archived.status_code == 200
+    assert archived.json()["archived_at"] is not None
+    assert command["id"] not in {item["id"] for item in active.json()}
+    assert command["id"] in {item["id"] for item in with_archive.json()}
+    assert restored.status_code == 200
+    assert restored.json()["archived_at"] is None
+    assert duplicate.status_code == 201
+    assert duplicate.json()["status"] == "pending"
+    assert duplicate.json()["input"] == command["input"]
+    assert duplicate.json()["duplicated_from_id"] == command["id"]
+    assert duplicate.json()["conversation_id"] is None
+
+
+def test_command_lifecycle_is_workspace_isolated(client: TestClient) -> None:
+    owner = register_user(client, "command-owner@example.com")
+    outsider = register_user(client, "command-outsider@example.com")
+    command = create_command(client, owner, "Private command")
+
+    assert (
+        client.post(f"/api/v1/commands/{command['id']}/duplicate", headers=outsider).status_code
+        == 404
+    )
+    assert (
+        client.post(f"/api/v1/commands/{command['id']}/archive", headers=outsider).status_code
+        == 404
+    )
+
+
 @pytest.mark.parametrize(
     "terminal_status",
     [CommandStatus.COMPLETED, CommandStatus.FAILED, CommandStatus.CANCELLED],

@@ -128,12 +128,16 @@ export function listCommands(
     limit?: number;
     offset?: number;
     status?: CommandStatus;
+    search?: string;
+    includeArchived?: boolean;
   } = {},
 ): Promise<Command[]> {
   const query = new URLSearchParams();
   if (options.limit !== undefined) query.set('limit', String(options.limit));
   if (options.offset !== undefined) query.set('offset', String(options.offset));
   if (options.status !== undefined) query.set('status', options.status);
+  if (options.search !== undefined) query.set('search', options.search);
+  if (options.includeArchived) query.set('include_archived', 'true');
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
   return request(`/api/v1/commands${suffix}`);
 }
@@ -144,6 +148,18 @@ export function getCommand(commandId: string): Promise<Command> {
 
 export function cancelCommand(commandId: string): Promise<Command> {
   return request(`/api/v1/commands/${commandId}/cancel`, { method: 'POST' });
+}
+
+export function archiveCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/archive`, { method: 'POST' });
+}
+
+export function restoreCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/restore`, { method: 'POST' });
+}
+
+export function duplicateCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/duplicate`, { method: 'POST' });
 }
 
 export function createPlan(

@@ -39,6 +39,8 @@ class CommandRepository:
         limit: int,
         offset: int,
         command_status: CommandStatus | None,
+        search: str | None,
+        include_archived: bool,
     ) -> list[Command]:
         statement = (
             select(Command)
@@ -49,4 +51,8 @@ class CommandRepository:
         )
         if command_status is not None:
             statement = statement.where(Command.status == command_status)
+        if search is not None:
+            statement = statement.where(Command.input.icontains(search, autoescape=True))
+        if not include_archived:
+            statement = statement.where(Command.archived_at.is_(None))
         return list(self.session.scalars(statement))

@@ -57,7 +57,7 @@ This is a build/deployment configuration defect, not evidence that PostgreSQL, R
 | Invitations and ownership transfer   | API lifecycle implemented            |            API tests |               No | HIGH — administration UI and E2E pending                          |
 | Onboarding                           | Missing                              |                   No |               No | HIGH                                                              |
 | Kiko conversational workspace        | Persistent threads + live operations |  API + browser smoke |          Partial | HIGH — detailed evidence remains in linked command views          |
-| Commands and plans                   | Operational graph tenant-scoped      |  API/component tests |               No | HIGH — lifecycle/search/archive/duplicate gaps remain             |
+| Commands and plans                   | Tenant-scoped lifecycle + search      |  API/component tests |          Partial | HIGH — richer task/project views remain                           |
 | Tasks                                | Partial                              |  API/component tests |               No | HIGH — no full assignment/project/filtered product UX             |
 | Projects                             | Partial CRM projects                 |                   No |               No | HIGH — not a general project-management product                   |
 | Specialized agents                   | Implemented foundation               |  Fake-provider tests |               No | HIGH — configuration/status/performance incomplete                |
@@ -220,6 +220,7 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 
 - [x] Persist conversations/messages and route each operational turn through the existing command/Supervisor/Execution Engine graph.
 - [x] Project command, Supervisor, plan, task, approval, failure, and completion states into Kiko conversations without duplicating workflow truth.
+- [x] Add command search, reversible archive/restore, and provenance-safe duplication.
 - [ ] Complete command/task/project lifecycle and views.
 - [ ] Complete Agent Center configuration and operational status.
 - [ ] Complete approval comments/history/expiry and separation-of-duty policy.

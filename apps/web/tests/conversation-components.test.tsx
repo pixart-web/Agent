@@ -11,11 +11,13 @@ const operation: ConversationOperation = {
     workspace_id: 'workspace-1',
     user_id: 'user-1',
     conversation_id: 'conversation-1',
+    duplicated_from_id: null,
     input: 'Prepare a campaign',
     status: 'in_progress',
     created_at: '2026-10-11T09:00:00Z',
     updated_at: '2026-10-11T09:01:00Z',
     completed_at: null,
+    archived_at: null,
   },
   plan: {
     id: 'plan-1',

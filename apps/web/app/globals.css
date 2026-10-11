@@ -677,6 +677,18 @@ h1 {
   font-weight: 750;
 }
 
+.command-row__link {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ink);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.command-row__link:hover {
+  color: var(--accent);
+}
+
 .command-row span,
 .task-control span {
   color: var(--muted);
@@ -688,6 +700,62 @@ h1 {
   flex: 0 0 auto;
   justify-items: end;
   gap: 8px;
+}
+
+.command-row__actions,
+.command-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.command-row__actions button {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--accent);
+  background: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.command-row__actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.command-filters {
+  margin-bottom: 24px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.command-filters > label:first-child {
+  display: grid;
+  flex: 1 1 360px;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.command-filters input[type='search'] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font: inherit;
+}
+
+.command-filters__check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.86rem;
 }
 
 .empty-state {

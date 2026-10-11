@@ -38,8 +38,12 @@ class CommandService:
         limit: int,
         offset: int,
         command_status: CommandStatus | None,
+        search: str | None,
+        include_archived: bool,
     ) -> list[Command]:
-        return self.commands.list_owned(user_id, limit, offset, command_status)
+        return self.commands.list_owned(
+            user_id, limit, offset, command_status, search, include_archived
+        )
 
     def get_owned(self, command_id: UUID, user_id: UUID) -> Command:
         command = self.commands.get_owned(command_id, user_id)
@@ -62,4 +66,48 @@ class CommandService:
             self.session.rollback()
             raise
         self.session.refresh(command)
+        return command
+
+    def archive(self, command_id: UUID, user_id: UUID) -> Command:
+        command = self._locked(command_id, user_id)
+        if command.status not in {
+            CommandStatus.COMPLETED,
+            CommandStatus.FAILED,
+            CommandStatus.CANCELLED,
+        }:
+            self.session.rollback()
+            raise WorkflowConflictError("Only terminal commands can be archived")
+        command.archived_at = command.archived_at or utc_now()
+        self.session.commit()
+        self.session.refresh(command)
+        return command
+
+    def restore(self, command_id: UUID, user_id: UUID) -> Command:
+        command = self._locked(command_id, user_id)
+        command.archived_at = None
+        self.session.commit()
+        self.session.refresh(command)
+        return command
+
+    def duplicate(self, command_id: UUID, user_id: UUID) -> Command:
+        source = self.get_owned(command_id, user_id)
+        user = self.session.get(User, user_id)
+        if user is None or user.active_workspace_id is None:
+            raise WorkflowConflictError("An active workspace is required")
+        duplicate = Command(
+            user_id=user.id,
+            workspace_id=user.active_workspace_id,
+            input=source.input,
+            duplicated_from_id=source.id,
+        )
+        self.commands.add(duplicate)
+        self.session.commit()
+        self.session.refresh(duplicate)
+        return duplicate
+
+    def _locked(self, command_id: UUID, user_id: UUID) -> Command:
+        command = self.commands.get_owned_for_update(command_id, user_id)
+        if command is None:
+            self.session.rollback()
+            raise WorkflowNotFoundError("Command not found")
         return command

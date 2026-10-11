@@ -75,11 +75,13 @@ export type Command = {
   workspace_id: string;
   user_id: string;
   conversation_id: string | null;
+  duplicated_from_id: string | null;
   input: string;
   status: CommandStatus;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  archived_at: string | null;
 };
 
 export type Conversation = {

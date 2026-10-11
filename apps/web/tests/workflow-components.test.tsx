@@ -12,11 +12,13 @@ const command: Command = {
   workspace_id: 'workspace-1',
   user_id: 'user-1',
   conversation_id: null,
+  duplicated_from_id: null,
   input: 'Prepare the product launch',
   status: 'planning',
   created_at: '2026-08-14T10:00:00Z',
   updated_at: '2026-08-14T10:00:00Z',
   completed_at: null,
+  archived_at: null,
 };
 
 const plan: Plan = {
@@ -118,6 +120,27 @@ describe('workflow components', () => {
     const markup = renderToStaticMarkup(<CommandList commands={[]} />);
 
     expect(markup).toContain('No commands yet');
+  });
+
+  it('renders command lifecycle actions for terminal and archived commands', () => {
+    const terminal = { ...command, status: 'cancelled' as const };
+    const archived = {
+      ...terminal,
+      id: 'command-archived',
+      archived_at: '2026-10-11T10:00:00Z',
+    };
+    const markup = renderToStaticMarkup(
+      <CommandList
+        commands={[terminal, archived]}
+        onArchive={() => undefined}
+        onRestore={() => undefined}
+        onDuplicate={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain('Duplicate');
+    expect(markup).toContain('Archive');
+    expect(markup).toContain('Restore');
   });
 
   it('renders the generate button and its loading state', () => {
