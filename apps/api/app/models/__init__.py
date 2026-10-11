@@ -53,6 +53,14 @@ from app.models.marketing import (
 )
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
+from app.models.project import (
+    Project,
+    ProjectActivity,
+    ProjectCommand,
+    ProjectMember,
+    ProjectMilestone,
+    ProjectTask,
+)
 from app.models.refresh_token import RefreshToken
 from app.models.supervisor_run import SupervisorRun
 from app.models.task import Task
@@ -99,6 +107,12 @@ __all__ = [
     "AutomationRun",
     "CodexRun",
     "Plan",
+    "Project",
+    "ProjectActivity",
+    "ProjectCommand",
+    "ProjectMember",
+    "ProjectMilestone",
+    "ProjectTask",
     "RefreshToken",
     "MarketingAsset",
     "MarketingCampaign",

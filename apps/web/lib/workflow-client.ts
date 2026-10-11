@@ -35,6 +35,10 @@ import type {
   ConversationDetail,
   ConversationTurn,
   Plan,
+  Project,
+  ProjectDetail,
+  ProjectMilestone,
+  ProjectStatus,
   RiskLevel,
   SupervisorPlanResponse,
   SupervisorRun,
@@ -272,6 +276,71 @@ export function listWorkspaceTasks(
   if (options.offset !== undefined) query.set('offset', String(options.offset));
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
   return request(`/api/v1/tasks${suffix}`);
+}
+
+export function listProjects(
+  options: { status?: ProjectStatus; search?: string } = {},
+): Promise<Project[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.search) query.set('search', options.search);
+  const suffix = query.size ? `?${query.toString()}` : '';
+  return request(`/api/v1/projects${suffix}`);
+}
+
+export function createProject(data: {
+  name: string;
+  description?: string;
+  status?: ProjectStatus;
+  starts_on?: string;
+  due_on?: string;
+}): Promise<Project> {
+  return request('/api/v1/projects', jsonRequest('POST', data));
+}
+
+export function getProject(projectId: string): Promise<ProjectDetail> {
+  return request(`/api/v1/projects/${projectId}`);
+}
+
+export function updateProject(
+  projectId: string,
+  data: Partial<
+    Pick<Project, 'name' | 'description' | 'status' | 'starts_on' | 'due_on'>
+  >,
+): Promise<Project> {
+  return request(`/api/v1/projects/${projectId}`, jsonRequest('PATCH', data));
+}
+
+export function addProjectMilestone(
+  projectId: string,
+  data: { title: string; due_on?: string },
+): Promise<ProjectMilestone> {
+  return request(
+    `/api/v1/projects/${projectId}/milestones`,
+    jsonRequest('POST', data),
+  );
+}
+
+export function updateProjectMilestone(
+  projectId: string,
+  milestoneId: string,
+  data: { status: 'pending' | 'completed' },
+): Promise<ProjectMilestone> {
+  return request(
+    `/api/v1/projects/${projectId}/milestones/${milestoneId}`,
+    jsonRequest('PATCH', data),
+  );
+}
+
+export function linkProjectResource(
+  projectId: string,
+  kind: 'tasks' | 'commands',
+  resourceId: string,
+): Promise<void> {
+  return requestEmpty(
+    `/api/v1/projects/${projectId}/${kind}`,
+    jsonRequest('POST', { resource_id: resourceId }),
+  );
 }
 
 export function getTask(taskId: string): Promise<TaskDetail> {

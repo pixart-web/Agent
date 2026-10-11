@@ -4,10 +4,12 @@ import { authFetch } from '../lib/auth-client';
 import {
   approvePlan,
   createTaskDependency,
+  createProject,
   deleteTaskDependency,
   createCommand,
   generateSupervisorPlan,
   listCommands,
+  listProjects,
   listPlans,
   listWorkspaceTasks,
   scheduleTask,
@@ -88,6 +90,24 @@ describe('workflow client', () => {
 
     expect(mockedAuthFetch).toHaveBeenCalledWith(
       '/api/v1/tasks?status=blocked&priority=urgent&agent_id=development&search=launch&limit=50',
+      {},
+    );
+  });
+
+  it('creates and filters workspace projects', async () => {
+    mockedAuthFetch.mockImplementation(async () => jsonResponse([], 201));
+
+    await createProject({ name: 'Launch', status: 'active' });
+    await listProjects({ status: 'blocked', search: 'retail' });
+
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(1, '/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Launch', status: 'active' }),
+    });
+    expect(mockedAuthFetch).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/projects?status=blocked&search=retail',
       {},
     );
   });

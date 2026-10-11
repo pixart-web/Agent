@@ -202,6 +202,60 @@ export type WorkspaceTask = WorkflowTask & {
   plan_title: string;
 };
 
+export const PROJECT_STATUSES = [
+  'planned',
+  'active',
+  'blocked',
+  'completed',
+  'cancelled',
+] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+export type Project = {
+  id: string;
+  workspace_id: string;
+  owner_user_id: string;
+  client_id: string | null;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  starts_on: string | null;
+  due_on: string | null;
+  task_count: number;
+  completed_task_count: number;
+  progress_percentage: number;
+  created_at: string;
+  updated_at: string;
+};
+export type ProjectMember = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+};
+export type ProjectMilestone = {
+  id: string;
+  title: string;
+  due_on: string | null;
+  status: 'pending' | 'completed';
+  created_at: string;
+};
+export type ProjectActivity = {
+  id: string;
+  actor_user_id: string | null;
+  event_type: string;
+  description: string;
+  created_at: string;
+};
+export type ProjectDetail = Project & {
+  members: ProjectMember[];
+  milestones: ProjectMilestone[];
+  tasks: Pick<WorkflowTask, 'id' | 'title' | 'status' | 'agent_id'>[];
+  commands: Pick<Command, 'id' | 'input' | 'status'>[];
+  activity: ProjectActivity[];
+};
+
 export type TaskStatusHistory = {
   id: string;
   task_id: string;

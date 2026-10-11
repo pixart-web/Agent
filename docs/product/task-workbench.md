@@ -23,4 +23,4 @@ The workspace task workbench exposes the governed task graph outside an individu
 
 ## Remaining scope
 
-A general project aggregate and richer board operations remain subsequent roadmap increments. The board intentionally does not implement drag-and-drop because arbitrary column moves would bypass the governed transition state machine.
+A general project aggregate is now available and can link tasks without duplicating their workflow truth. The board intentionally does not implement drag-and-drop because arbitrary column moves would bypass the governed transition state machine.

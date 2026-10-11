@@ -18,6 +18,7 @@ from app.api.routes import (
     marketing,
     metrics,
     plans,
+    projects,
     specialized_agents,
     supervisor,
     tasks,
@@ -37,6 +38,7 @@ api_router.include_router(calendar.router, prefix="/api/v1")
 api_router.include_router(codex.router, prefix="/api/v1")
 api_router.include_router(email.router, prefix="/api/v1")
 api_router.include_router(plans.router, prefix="/api/v1")
+api_router.include_router(projects.router, prefix="/api/v1")
 api_router.include_router(supervisor.router, prefix="/api/v1")
 api_router.include_router(tasks.router, prefix="/api/v1")
 api_router.include_router(execution.router, prefix="/api/v1")
