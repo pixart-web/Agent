@@ -111,6 +111,42 @@ def test_workspace_invitation_lifecycle_and_authorization(client, db_session) ->
     assert client.get(f"/api/v1/plans/{plan.json()['id']}", headers=outsider).status_code == 404
 
 
+def test_onboarding_persists_company_profile_and_completion(client) -> None:
+    body, _ = register(client, email="onboarding-owner@example.com")
+    headers = bearer(body["access_token"])
+
+    initial = client.get("/api/v1/workspaces/onboarding", headers=headers)
+    assert initial.status_code == 200
+    assert initial.json()["step"] == 0
+    assert initial.json()["completed_at"] is None
+
+    incomplete = client.patch(
+        "/api/v1/workspaces/onboarding",
+        headers=headers,
+        json={"step": 8, "company_name": "Kiko Test Company", "complete": True},
+    )
+    assert incomplete.status_code == 409
+
+    completed = client.patch(
+        "/api/v1/workspaces/onboarding",
+        headers=headers,
+        json={
+            "step": 8,
+            "company_name": "Kiko Test Company",
+            "company_description": "A synthetic company used for automated product validation.",
+            "primary_objectives": ["Organize business tasks", "Plan meetings and follow-ups"],
+            "complete": True,
+        },
+    )
+    assert completed.status_code == 200
+    assert completed.json()["company_name"] == "Kiko Test Company"
+    assert completed.json()["step"] == 8
+    assert completed.json()["completed_at"] is not None
+    me = client.get("/api/v1/auth/me", headers=headers).json()
+    assert me["onboarding_step"] == 8
+    assert me["onboarding_completed_at"] == completed.json()["completed_at"]
+
+
 def test_workspace_invitation_can_be_revoked(client) -> None:
     body, _ = register(client, email="workspace-owner@example.com")
     headers = bearer(body["access_token"])

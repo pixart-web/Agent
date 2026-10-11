@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { getCurrentUser } from './auth-client';
 import type { User } from './auth-types';
 
-export function useAuthenticatedUser(): {
+export function useAuthenticatedUser(requireOnboarding = true): {
   user: User | null;
   loading: boolean;
 } {
@@ -22,6 +22,10 @@ export function useAuthenticatedUser(): {
           router.replace('/login');
           return;
         }
+        if (requireOnboarding && !currentUser.onboarding_completed_at) {
+          router.replace('/onboarding');
+          return;
+        }
         if (active) {
           setUser(currentUser);
           setLoading(false);
@@ -31,7 +35,7 @@ export function useAuthenticatedUser(): {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [requireOnboarding, router]);
 
   return { user, loading };
 }

@@ -107,3 +107,5 @@ class UserPublic(BaseModel):
     last_login_at: datetime | None
     email_verified_at: datetime | None
     active_workspace_id: UUID | None
+    onboarding_step: int
+    onboarding_completed_at: datetime | None

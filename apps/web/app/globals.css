@@ -1056,3 +1056,48 @@ h1 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.onboarding-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+  background: var(--surface-muted);
+}
+
+.onboarding-card {
+  width: min(760px, 100%);
+  padding: clamp(28px, 5vw, 56px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+}
+
+.onboarding-card h1 {
+  max-width: 620px;
+  margin-bottom: 14px;
+}
+
+.onboarding-objectives {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.onboarding-objectives label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.onboarding-objectives input {
+  width: auto;
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

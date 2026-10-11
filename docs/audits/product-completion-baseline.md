@@ -23,7 +23,7 @@ Passing unit tests demonstrate useful internal correctness, not commercial readi
 
 - Backend: Ruff passed; formatting passed; policy suite passed 6/6; Pytest passed 209 tests, skipped 5 integration tests.
 - Frontend: ESLint, TypeScript, and production build passed; Vitest passed 42 tests across 17 files.
-- Database: one Alembic head, `20261010_0024`; offline upgrade and new revision downgrades are valid.
+- Database: one Alembic head, `20261010_0025`; offline upgrade and new revision downgrades are valid.
 - Production public checks: `/health` and `/ready` returned HTTP 200; database and Redis reported healthy.
 - Production CORS preflight for `POST /api/v1/auth/register` returned HTTP 200 and allowed `https://kiko.pixart.pt`.
 - Production registration API route exists (`GET` returns the expected HTTP 405 with `Allow: POST`).
@@ -210,10 +210,10 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 - [x] Extend user/account schema for verified email and versioned legal acceptance.
 - [x] Implement one-shot hashed verification and password-reset tokens with throttled resend.
 - [x] Implement session inventory/revocation and reset-driven session invalidation.
-- [ ] Complete profile, status, platform role, and authenticated password-change flows.
-- [ ] Complete workspace profile/lifecycle, roles, invitations, switching, and ownership transfer.
+- [x] Complete profile and authenticated password-change flows; account status and platform-role administration remain R4 work.
+- [x] Complete workspace profile, roles, invitations, switching, and ownership transfer; suspension/closure remains R4 work.
 - [ ] Tenant-scope all business roots with staged backfill and server-side membership enforcement.
-- [ ] Add onboarding persistence and first-success journey.
+- [x] Add onboarding persistence and route first success through the real command composer.
 - [ ] Add PostgreSQL cross-tenant adversarial tests and browser Journey A/B/H.
 
 ### R2 — Core Kiko experience

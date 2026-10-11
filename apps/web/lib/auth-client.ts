@@ -1,4 +1,4 @@
-import type { AccessTokenResponse, User } from './auth-types';
+import type { AccessTokenResponse, OnboardingState, User } from './auth-types';
 import { apiBaseUrl } from './api-url';
 
 let accessToken: string | null = null;
@@ -179,6 +179,26 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
   return (await response.json()) as User;
+}
+
+export async function getOnboarding(): Promise<OnboardingState> {
+  const response = await authFetch('/api/v1/workspaces/onboarding');
+  return expectJson<OnboardingState>(response);
+}
+
+export async function updateOnboarding(value: {
+  step: number;
+  company_name?: string;
+  company_description?: string;
+  primary_objectives?: string[];
+  complete?: boolean;
+}): Promise<OnboardingState> {
+  const response = await authFetch('/api/v1/workspaces/onboarding', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value),
+  });
+  return expectJson<OnboardingState>(response);
 }
 
 export async function updateProfile(fullName: string): Promise<User> {

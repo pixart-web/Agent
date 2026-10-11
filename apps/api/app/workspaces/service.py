@@ -28,6 +28,8 @@ from app.workspaces.schemas import (
     InvitationRead,
     MemberRoleUpdate,
     MembershipRead,
+    OnboardingRead,
+    OnboardingUpdate,
     OwnershipTransfer,
     WorkspaceSwitch,
 )
@@ -223,6 +225,47 @@ class WorkspaceService:
         user.active_workspace_id = workspace.id
         self.session.commit()
 
+    def onboarding(self, user: User) -> OnboardingRead:
+        workspace = self._active_workspace(user)
+        return self._onboarding_read(user, workspace)
+
+    def update_onboarding(self, user: User, value: OnboardingUpdate) -> OnboardingRead:
+        workspace = self._active_workspace(user)
+        membership = self._membership(workspace.id, user.id)
+        if membership.role not in MANAGE_ROLES and (
+            value.company_name is not None
+            or value.company_description is not None
+            or value.primary_objectives is not None
+        ):
+            raise WorkspacePermissionError("Insufficient workspace permission")
+        if value.company_name is not None:
+            workspace.name = value.company_name
+        if value.company_description is not None:
+            workspace.description = value.company_description
+        if value.primary_objectives is not None:
+            workspace.primary_objectives = value.primary_objectives
+        user.onboarding_step = max(user.onboarding_step, value.step)
+        if value.complete:
+            if not workspace.description or not workspace.primary_objectives:
+                raise WorkspaceConflictError(
+                    "Company description and at least one objective are required"
+                )
+            user.onboarding_step = 8
+            user.onboarding_completed_at = user.onboarding_completed_at or utc_now()
+        self.session.commit()
+        self.session.refresh(user)
+        self.session.refresh(workspace)
+        return self._onboarding_read(user, workspace)
+
+    def _active_workspace(self, user: User) -> Workspace:
+        if user.active_workspace_id is None:
+            raise WorkspaceNotFoundError
+        self._membership(user.active_workspace_id, user.id)
+        workspace = self.session.get(Workspace, user.active_workspace_id)
+        if workspace is None or workspace.status != "active":
+            raise WorkspaceNotFoundError
+        return workspace
+
     def _membership(self, workspace_id: UUID, user_id: UUID) -> WorkspaceMember:
         member = self.session.scalar(
             select(WorkspaceMember).where(
@@ -250,3 +293,14 @@ class WorkspaceService:
     @staticmethod
     def _read_invitation(item: WorkspaceInvitation) -> InvitationRead:
         return InvitationRead.model_validate(item, from_attributes=True)
+
+    @staticmethod
+    def _onboarding_read(user: User, workspace: Workspace) -> OnboardingRead:
+        return OnboardingRead(
+            step=user.onboarding_step,
+            completed_at=user.onboarding_completed_at,
+            workspace_id=workspace.id,
+            company_name=workspace.name,
+            company_description=workspace.description,
+            primary_objectives=workspace.primary_objectives,
+        )

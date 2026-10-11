@@ -9,6 +9,17 @@ export type User = {
   last_login_at: string | null;
   email_verified_at: string | null;
   active_workspace_id: string | null;
+  onboarding_step: number;
+  onboarding_completed_at: string | null;
+};
+
+export type OnboardingState = {
+  step: number;
+  completed_at: string | null;
+  workspace_id: string;
+  company_name: string;
+  company_description: string | null;
+  primary_objectives: string[];
 };
 
 export type AuthResponse = {

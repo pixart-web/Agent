@@ -21,6 +21,8 @@ from app.workspaces.schemas import (
     InvitationRead,
     MemberRoleUpdate,
     MembershipRead,
+    OnboardingRead,
+    OnboardingUpdate,
     OwnershipTransfer,
     WorkspaceSwitch,
 )
@@ -39,6 +41,33 @@ def _raise(error: Exception) -> None:
     if isinstance(error, WorkspaceInvitationError):
         raise HTTPException(status_code=400, detail=str(error)) from error
     raise error
+
+
+@router.get("/onboarding", response_model=OnboardingRead)
+def onboarding(
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> OnboardingRead:
+    try:
+        return WorkspaceService(db).onboarding(user)
+    except WorkspaceNotFoundError as error:
+        _raise(error)
+
+
+@router.patch(
+    "/onboarding",
+    response_model=OnboardingRead,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def update_onboarding(
+    value: OnboardingUpdate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> OnboardingRead:
+    try:
+        return WorkspaceService(db).update_onboarding(user, value)
+    except (WorkspaceNotFoundError, WorkspacePermissionError, WorkspaceConflictError) as error:
+        _raise(error)
 
 
 @router.post(
