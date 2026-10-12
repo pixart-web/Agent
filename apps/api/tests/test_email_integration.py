@@ -5,7 +5,7 @@ import httpx
 import pytest
 from cryptography.fernet import Fernet
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.execution.exceptions import ToolPermissionError
 from app.execution.tools.registry import build_tool_registry
 from app.integrations.email.credentials import FernetSecretStore
@@ -25,6 +25,7 @@ from app.integrations.email.schemas import (
     EmailMessage,
 )
 from app.integrations.email.service import EmailService
+from app.main import app
 from app.models.workflow_enums import RiskLevel
 
 
@@ -391,7 +392,7 @@ def test_email_worker_write_is_fingerprinted_idempotent_and_never_blindly_retrie
     from tests.test_specialized_agents import ready_task
 
     email = f"email-worker-{str(ambiguous).lower()}@example.com"
-    _headers, _command, task = ready_task(client, db_session, "sales", email=email)
+    headers, _command, task = ready_task(client, db_session, "sales", email=email)
     user = db_session.scalar(select(User).where(User.email == email))
     settings = email_settings(email_send_enabled=True)
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())
@@ -450,6 +451,13 @@ def test_email_worker_write_is_fingerprinted_idempotent_and_never_blindly_retrie
     assert record.payload_fingerprint == action.action_fingerprint
     assert len(fake.sent) == sent_count
     assert len(db_session.query(EmailSendRecord).all()) == 1
+    app.dependency_overrides[get_settings] = lambda: settings
+    integration = client.get("/api/v1/integrations/email/status", headers=headers)
+    assert integration.status_code == 200
+    assert integration.json()["unresolved_writes"] == int(ambiguous)
+    assert integration.json()["operational_state"] == (
+        "reconciliation_required" if ambiguous else "connected"
+    )
     assert (
         ExecutionWorker(
             factory,

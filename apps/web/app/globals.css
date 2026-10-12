@@ -1636,6 +1636,12 @@ h1 {
 .import-summary span {
   margin-left: 16px;
 }
+.integration-health {
+  border-left: 4px solid var(--text);
+}
+.integration-health h2 {
+  text-transform: capitalize;
+}
 .crm-pipeline {
   display: grid;
   grid-auto-flow: column;

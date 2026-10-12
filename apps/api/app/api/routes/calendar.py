@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
@@ -37,6 +38,7 @@ from app.integrations.calendar.schemas import (
 from app.integrations.calendar.service import CalendarService
 from app.integrations.credentials import EnvironmentCredentialProvider
 from app.integrations.email.credentials import FernetSecretStore
+from app.models.calendar_write_record import CalendarWriteRecord
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
 from app.models.user import User
@@ -87,12 +89,45 @@ def calendar_status(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> CalendarIntegrationStatus:
     accounts = IntegrationAccountRepository(db).list_owned(user.id, OAUTH_PROVIDER)
+    account_ids = [account.id for account in accounts]
+    counts = (
+        dict(
+            db.execute(
+                select(CalendarWriteRecord.status, func.count(CalendarWriteRecord.id))
+                .where(CalendarWriteRecord.account_id.in_(account_ids))
+                .group_by(CalendarWriteRecord.status)
+            ).all()
+        )
+        if account_ids
+        else {}
+    )
+    connected = sum(account.status == IntegrationAccountStatus.CONNECTED for account in accounts)
+    unresolved = counts.get("delivery_unknown", 0)
+    failed = counts.get("failed", 0)
+    pending = counts.get("pending", 0)
+    operational_state = (
+        "disabled"
+        if not settings.calendar_integration_enabled
+        else "reconciliation_required"
+        if unresolved or pending
+        else "degraded"
+        if failed
+        or any(account.status != IntegrationAccountStatus.CONNECTED for account in accounts)
+        else "connected"
+        if connected
+        else "not_connected"
+    )
     return CalendarIntegrationStatus(
         enabled=settings.calendar_integration_enabled,
         provider=settings.calendar_provider,
         write_enabled=settings.calendar_write_enabled,
-        connected_accounts=sum(
-            account.status == IntegrationAccountStatus.CONNECTED for account in accounts
+        connected_accounts=connected,
+        operational_state=operational_state,
+        unresolved_writes=unresolved,
+        pending_writes=pending,
+        failed_writes=failed,
+        last_sync_at=max(
+            (account.last_sync_at for account in accounts if account.last_sync_at), default=None
         ),
     )
 

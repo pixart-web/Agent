@@ -576,6 +576,16 @@ export type EmailIntegrationStatus = {
   send_enabled: boolean;
   mark_read_enabled: boolean;
   connected_accounts: number;
+  operational_state:
+    | 'disabled'
+    | 'not_connected'
+    | 'connected'
+    | 'degraded'
+    | 'reconciliation_required';
+  unresolved_writes: number;
+  pending_writes: number;
+  failed_writes: number;
+  last_sync_at: string | null;
 };
 
 export type CalendarAccount = EmailAccount;
@@ -584,6 +594,11 @@ export type CalendarIntegrationStatus = {
   provider: string;
   write_enabled: boolean;
   connected_accounts: number;
+  operational_state: EmailIntegrationStatus['operational_state'];
+  unresolved_writes: number;
+  pending_writes: number;
+  failed_writes: number;
+  last_sync_at: string | null;
 };
 export type CalendarEventTime = {
   date_time: string | null;
