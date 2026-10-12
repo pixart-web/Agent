@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
@@ -17,9 +18,11 @@ from app.automations.schemas import (
     AutomationRunList,
     AutomationRunRead,
     AutomationTrigger,
+    AutomationUpdate,
 )
 from app.automations.service import AutomationService
 from app.db.session import get_db
+from app.models.knowledge import WorkspaceMember
 from app.models.user import User
 
 router = APIRouter(prefix="/automations", tags=["automations"])
@@ -37,12 +40,24 @@ def _raise(error: Exception) -> None:
     raise HTTPException(status_code=422, detail=str(error)) from error
 
 
+def _require_editor(db: Session, user: User) -> None:
+    membership = db.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == user.active_workspace_id,
+            WorkspaceMember.user_id == user.id,
+        )
+    )
+    if membership is None or membership.role == "viewer":
+        raise HTTPException(status_code=403, detail="Workspace edit permission is required")
+
+
 @router.post("", response_model=AutomationRead, status_code=status.HTTP_201_CREATED)
 def create_automation(
     value: AutomationCreate,
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRead:
+    _require_editor(db, user)
     try:
         return _service(db).create(user.id, value)
     except (AutomationConflictError, AutomationValidationError) as error:
@@ -97,6 +112,7 @@ def recover_run(
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRunRead:
+    _require_editor(db, user)
     try:
         return _service(db).recover_failed_run(user.id, run_id)
     except (AutomationNotFoundError, AutomationConflictError, AutomationValidationError) as error:
@@ -115,12 +131,27 @@ def get_automation(
         _raise(error)
 
 
+@router.patch("/{automation_id}", response_model=AutomationRead)
+def update_automation(
+    automation_id: UUID,
+    value: AutomationUpdate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> AutomationRead:
+    _require_editor(db, user)
+    try:
+        return _service(db).update(user.id, automation_id, value)
+    except (AutomationNotFoundError, AutomationConflictError, AutomationValidationError) as error:
+        _raise(error)
+
+
 @router.post("/{automation_id}/pause", response_model=AutomationRead)
 def pause_automation(
     automation_id: UUID,
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRead:
+    _require_editor(db, user)
     try:
         return _service(db).set_enabled(user.id, automation_id, False)
     except AutomationNotFoundError as error:
@@ -133,6 +164,7 @@ def resume_automation(
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRead:
+    _require_editor(db, user)
     try:
         return _service(db).set_enabled(user.id, automation_id, True)
     except AutomationNotFoundError as error:
@@ -146,6 +178,7 @@ def trigger_automation(
     user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRunRead:
+    _require_editor(db, user)
     try:
         return _service(db).trigger_owned(user.id, automation_id, value)
     except (AutomationNotFoundError, AutomationConflictError, AutomationValidationError) as error:

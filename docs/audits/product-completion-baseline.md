@@ -230,7 +230,7 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 
 - [x] Complete CRM UI CRUD, pipeline, duplicate handling, import/export, and Client 360.
 - [ ] Validate Gmail and Calendar with authorized test accounts and reconciliation states.
-- [ ] Complete Marketing and Automation builders/lifecycles.
+- [x] Complete Marketing and Automation builders/lifecycles.
 - [ ] Add safe document ingestion and grounded retrieval.
 
 ### R4 — Enterprise experience

@@ -45,6 +45,13 @@ def test_manual_trigger_is_deduplicated_and_external_payload_is_not_a_command(
     created = client.post("/api/v1/automations", headers=headers, json=manual_payload())
     assert created.status_code == 201
     automation = created.json()
+    updated = client.patch(
+        f"/api/v1/automations/{automation['id']}",
+        headers=headers,
+        json={"command_template": "Prepare the governed Sporting Demo matchday plan."},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["command_template"].startswith("Prepare the governed")
     trigger = {
         "event_key": "sporting-demo-match-1",
         "payload": {

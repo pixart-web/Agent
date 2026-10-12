@@ -142,6 +142,22 @@ class AutomationRead(StrictAutomationModel):
     updated_at: datetime
 
 
+class AutomationUpdate(StrictAutomationModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5_000)
+    command_template: str | None = Field(default=None, min_length=1, max_length=20_000)
+    max_depth: int | None = Field(default=None, ge=0, le=10)
+    max_runs_per_window: int | None = Field(default=None, ge=1, le=1_000)
+    window_seconds: int | None = Field(default=None, ge=60, le=86_400)
+    cooldown_seconds: int | None = Field(default=None, ge=0, le=86_400)
+
+    @model_validator(mode="after")
+    def require_change(self) -> "AutomationUpdate":
+        if not self.model_fields_set:
+            raise ValueError("At least one automation field must be updated")
+        return self
+
+
 class AutomationList(StrictAutomationModel):
     automations: list[AutomationRead]
     limit: int

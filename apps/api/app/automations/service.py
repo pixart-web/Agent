@@ -20,6 +20,7 @@ from app.automations.schemas import (
     AutomationRunList,
     AutomationRunRead,
     AutomationTrigger,
+    AutomationUpdate,
 )
 from app.core.time import utc_now
 from app.db.session import SessionLocal
@@ -137,6 +138,43 @@ class AutomationService:
                 metadata={},
             )
             session.commit()
+            return self._automation_output(automation)
+
+    def update(self, user_id: UUID, automation_id: UUID, value: AutomationUpdate) -> AutomationRead:
+        with self.session_factory() as session:
+            automation = self._automation(session, user_id, automation_id, lock=True)
+            for field in (
+                "name",
+                "description",
+                "command_template",
+                "max_depth",
+                "max_runs_per_window",
+                "window_seconds",
+                "cooldown_seconds",
+            ):
+                if field not in value.model_fields_set:
+                    continue
+                updated = getattr(value, field)
+                if field in {"name", "command_template"} and isinstance(updated, str):
+                    updated = self._display(updated) if field == "name" else updated.strip()
+                setattr(automation, field, updated)
+            self._audit(
+                session,
+                actor_type=ActorType.USER,
+                actor_id=user_id,
+                event_type="automation_updated",
+                resource_type="automation",
+                resource_id=automation.id,
+                correlation_id=uuid4(),
+                metadata={"fields": sorted(value.model_fields_set)},
+            )
+            try:
+                session.commit()
+            except IntegrityError as error:
+                session.rollback()
+                raise AutomationConflictError(
+                    "An automation with this name already exists"
+                ) from error
             return self._automation_output(automation)
 
     def trigger_owned(

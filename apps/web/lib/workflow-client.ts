@@ -903,6 +903,24 @@ export function getMarketingCampaign(
   );
 }
 
+export function createMarketingCampaign(data: {
+  name: string;
+  objective: string;
+  status?: string;
+}): Promise<MarketingCampaign> {
+  return request('/api/v1/marketing/campaigns', jsonRequest('POST', data));
+}
+
+export function updateMarketingCampaign(
+  campaignId: string,
+  data: { name?: string; objective?: string; status?: string },
+): Promise<MarketingCampaign> {
+  return request(
+    `/api/v1/marketing/campaigns/${encodeURIComponent(campaignId)}`,
+    jsonRequest('PATCH', { campaign_id: campaignId, ...data }),
+  );
+}
+
 export function listMarketingContent(
   campaignId: string,
 ): Promise<{ content: MarketingContent[] }> {
@@ -917,6 +935,44 @@ export function getMarketingContent(
   contentId: string,
 ): Promise<MarketingContentDetail> {
   return request('/api/v1/marketing/content/' + encodeURIComponent(contentId));
+}
+
+export function createMarketingContent(data: {
+  campaign_id: string;
+  content_type: string;
+  channel: string;
+  title: string;
+  body: string;
+}): Promise<MarketingContent> {
+  return request('/api/v1/marketing/content', jsonRequest('POST', data));
+}
+
+export function transitionMarketingContent(
+  contentId: string,
+  targetStatus: 'draft' | 'review' | 'approved' | 'archived',
+  reason?: string,
+): Promise<MarketingContent> {
+  return request(
+    `/api/v1/marketing/content/${encodeURIComponent(contentId)}/transition`,
+    jsonRequest('POST', {
+      content_id: contentId,
+      target_status: targetStatus,
+      reason,
+    }),
+  );
+}
+
+export function scheduleMarketingContent(
+  contentId: string,
+  scheduledFor: string,
+): Promise<MarketingContent> {
+  return request(
+    `/api/v1/marketing/content/${encodeURIComponent(contentId)}/schedule`,
+    jsonRequest('POST', {
+      content_id: contentId,
+      scheduled_for: scheduledFor,
+    }),
+  );
 }
 
 export function listMarketingContentCalendar(
@@ -934,10 +990,18 @@ export function listAutomations(): Promise<{ automations: Automation[] }> {
   return request('/api/v1/automations');
 }
 
-export function createManualAutomation(data: {
+export function createAutomation(data: {
   name: string;
   description?: string;
   command_template: string;
+  trigger_type: Automation['trigger_type'];
+  trigger_config: Record<string, unknown>;
+  conditions?: {
+    field: string;
+    operator: 'eq' | 'not_eq' | 'in' | 'exists';
+    value?: unknown;
+  }[];
+  next_run_at?: string;
   max_depth?: number;
   max_runs_per_window?: number;
   window_seconds?: number;
@@ -947,11 +1011,22 @@ export function createManualAutomation(data: {
     '/api/v1/automations',
     jsonRequest('POST', {
       ...data,
-      trigger_type: 'manual',
-      trigger_config: {},
-      conditions: [],
+      conditions: data.conditions ?? [],
     }),
   );
+}
+
+export function createManualAutomation(
+  data: Omit<
+    Parameters<typeof createAutomation>[0],
+    'trigger_type' | 'trigger_config'
+  >,
+): Promise<Automation> {
+  return createAutomation({
+    ...data,
+    trigger_type: 'manual',
+    trigger_config: {},
+  });
 }
 
 export function setAutomationEnabled(
@@ -961,6 +1036,24 @@ export function setAutomationEnabled(
   return request(
     `/api/v1/automations/${encodeURIComponent(automationId)}/${enabled ? 'resume' : 'pause'}`,
     { method: 'POST' },
+  );
+}
+
+export function updateAutomation(
+  automationId: string,
+  data: {
+    name?: string;
+    description?: string;
+    command_template?: string;
+    max_depth?: number;
+    max_runs_per_window?: number;
+    window_seconds?: number;
+    cooldown_seconds?: number;
+  },
+): Promise<Automation> {
+  return request(
+    `/api/v1/automations/${encodeURIComponent(automationId)}`,
+    jsonRequest('PATCH', data),
   );
 }
 

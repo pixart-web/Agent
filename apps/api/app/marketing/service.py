@@ -231,15 +231,20 @@ class MarketingService:
             )
 
     def create_campaign(
-        self, context: ExecutionContext, value: CampaignCreateInput
+        self, context: ExecutionContext, value: CampaignCreateInput, *, governed: bool = True
     ) -> CampaignOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(MarketingCampaign).where(
-                    MarketingCampaign.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(MarketingCampaign).where(
+                        MarketingCampaign.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._campaign_output(existing)
@@ -255,7 +260,7 @@ class MarketingService:
                 status=value.status,
                 starts_at=value.starts_at,
                 ends_at=value.ends_at,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(campaign)
             session.flush()
@@ -270,11 +275,12 @@ class MarketingService:
             return self._campaign_output(campaign)
 
     def update_campaign(
-        self, context: ExecutionContext, value: CampaignUpdateInput
+        self, context: ExecutionContext, value: CampaignUpdateInput, *, governed: bool = True
     ) -> CampaignOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             campaign = self._campaign(session, context.user_id, value.campaign_id, lock=True)
             if value.name is not None:
                 campaign.name = self._display(value.name)
@@ -298,14 +304,21 @@ class MarketingService:
             session.commit()
             return self._campaign_output(campaign)
 
-    def create_content(self, context: ExecutionContext, value: ContentCreateInput) -> ContentOutput:
+    def create_content(
+        self, context: ExecutionContext, value: ContentCreateInput, *, governed: bool = True
+    ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(MarketingContent).where(
-                    MarketingContent.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(MarketingContent).where(
+                        MarketingContent.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._content_output(existing)
@@ -321,7 +334,7 @@ class MarketingService:
                 title=self._display(value.title),
                 body=value.body,
                 lifecycle_status=value.lifecycle_status,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(content)
             session.flush()
@@ -343,10 +356,13 @@ class MarketingService:
             session.commit()
             return self._content_output(content)
 
-    def update_content(self, context: ExecutionContext, value: ContentUpdateInput) -> ContentOutput:
+    def update_content(
+        self, context: ExecutionContext, value: ContentUpdateInput, *, governed: bool = True
+    ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             if content.lifecycle_status not in {"idea", "draft"}:
                 raise MarketingConflictError("Content must return to draft before editing")
@@ -375,11 +391,12 @@ class MarketingService:
             return self._content_output(content)
 
     def transition_content(
-        self, context: ExecutionContext, value: ContentTransitionInput
+        self, context: ExecutionContext, value: ContentTransitionInput, *, governed: bool = True
     ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             previous = content.lifecycle_status
             self._require_transition(previous, value.target_status)
@@ -405,11 +422,12 @@ class MarketingService:
             return self._content_output(content)
 
     def schedule_content(
-        self, context: ExecutionContext, value: ContentScheduleInput
+        self, context: ExecutionContext, value: ContentScheduleInput, *, governed: bool = True
     ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             if value.scheduled_for <= utc_now():
                 raise MarketingValidationError("Scheduled content must be in the future")
@@ -689,7 +707,9 @@ class MarketingService:
                 from_status=previous,
                 to_status=target,
                 reason=reason,
-                actor_action_id=context.action_id,
+                actor_action_id=(
+                    context.action_id if session.get(TaskAction, context.action_id) else None
+                ),
             )
         )
 
@@ -791,7 +811,9 @@ class MarketingService:
         resource_id: UUID,
     ) -> None:
         AuditService(session).record(
-            actor_type=ActorType.WORKER,
+            actor_type=(
+                ActorType.WORKER if session.get(TaskAction, context.action_id) else ActorType.USER
+            ),
             actor_id=context.user_id,
             event_type=event_type,
             resource_type=resource_type,

@@ -5,7 +5,11 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../../../components/dashboard-nav';
-import { getMarketingContent } from '../../../../../lib/workflow-client';
+import {
+  getMarketingContent,
+  scheduleMarketingContent,
+  transitionMarketingContent,
+} from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 
 export default function MarketingContentPage() {
@@ -13,6 +17,22 @@ export default function MarketingContentPage() {
   const { content_id: contentId } = useParams<{ content_id: string }>();
   const [detail, setDetail] = useState<MarketingContentDetail | null>(null);
   const [error, setError] = useState('');
+  const [scheduledFor, setScheduledFor] = useState('');
+
+  async function transition(
+    target: 'draft' | 'review' | 'approved' | 'archived',
+  ) {
+    try {
+      await transitionMarketingContent(
+        contentId,
+        target,
+        'Operator lifecycle update',
+      );
+      setDetail(await getMarketingContent(contentId));
+    } catch {
+      setError('This lifecycle transition is not allowed.');
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -46,6 +66,64 @@ export default function MarketingContentPage() {
             <h2>Draft copy</h2>
             <p className="eyebrow">Untrusted draft · never auto-published</p>
             <p>{detail.content.body}</p>
+            <div className="button-row">
+              {['idea', 'review', 'approved'].includes(
+                detail.content.lifecycle_status,
+              ) && (
+                <button
+                  className="secondary-button"
+                  onClick={() => void transition('draft')}
+                >
+                  Return to draft
+                </button>
+              )}
+              {detail.content.lifecycle_status === 'draft' && (
+                <button onClick={() => void transition('review')}>
+                  Submit for review
+                </button>
+              )}
+              {detail.content.lifecycle_status === 'review' && (
+                <button onClick={() => void transition('approved')}>
+                  Approve content
+                </button>
+              )}
+              {detail.content.lifecycle_status !== 'archived' && (
+                <button
+                  className="text-button"
+                  onClick={() => void transition('archived')}
+                >
+                  Archive
+                </button>
+              )}
+            </div>
+            {detail.content.lifecycle_status === 'approved' && (
+              <form
+                className="workflow-form"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  try {
+                    await scheduleMarketingContent(
+                      contentId,
+                      new Date(scheduledFor).toISOString(),
+                    );
+                    setDetail(await getMarketingContent(contentId));
+                  } catch {
+                    setError('Unable to schedule this approved content.');
+                  }
+                }}
+              >
+                <label>
+                  Schedule for
+                  <input
+                    required
+                    type="datetime-local"
+                    value={scheduledFor}
+                    onChange={(event) => setScheduledFor(event.target.value)}
+                  />
+                </label>
+                <button>Schedule</button>
+              </form>
+            )}
           </section>
           <section className="workflow-panel">
             <h2>Lifecycle history</h2>
