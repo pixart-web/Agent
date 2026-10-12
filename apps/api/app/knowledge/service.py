@@ -110,6 +110,17 @@ class KnowledgeService:
             membership = self._membership(session, workspace_id, user_id)
             self._require_role(membership, EDIT_ROLES)
             self._validate_scopes(session, user_id, workspace_id, value.client_id, value.project_id)
+            if value.source_type == "document_upload" and value.source_reference:
+                duplicate = session.scalar(
+                    select(KnowledgeItem.id).where(
+                        KnowledgeItem.workspace_id == workspace_id,
+                        KnowledgeItem.source_type == "document_upload",
+                        KnowledgeItem.source_reference == value.source_reference,
+                        KnowledgeItem.status != "archived",
+                    )
+                )
+                if duplicate is not None:
+                    raise KnowledgeConflictError("This document is already ingested")
             item = KnowledgeItem(
                 workspace_id=workspace_id,
                 created_by_user_id=user_id,
@@ -160,6 +171,17 @@ class KnowledgeService:
             self._revision(session, item, user_id)
             session.flush()
             return self._item_read(item)
+
+    def archive_item(self, user_id: UUID, workspace_id: UUID, item_id: UUID) -> None:
+        with self.session_factory() as session, session.begin():
+            membership = self._membership(session, workspace_id, user_id)
+            self._require_role(membership, MANAGE_ROLES)
+            item = self._item(session, workspace_id, item_id)
+            if item.status == "archived":
+                return
+            item.status = "archived"
+            item.updated_at = utc_now()
+            self._revision(session, item, user_id)
 
     def list_items(
         self,
