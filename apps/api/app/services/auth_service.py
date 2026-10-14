@@ -344,8 +344,10 @@ class AuthService:
         self.refresh_tokens.revoke_all_for_user(user.id, utc_now())
         self.session.commit()
 
-    def update_profile(self, user: User, full_name: str) -> User:
+    def update_profile(self, user: User, full_name: str, language: str, timezone: str) -> User:
         user.full_name = full_name
+        user.language = language
+        user.timezone = timezone
         self.session.commit()
         self.session.refresh(user)
         return user

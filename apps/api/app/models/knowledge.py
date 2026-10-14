@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -32,6 +33,14 @@ class Workspace(Base):
     slug: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     primary_objectives: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    sector: Mapped[str | None] = mapped_column(String(120))
+    country: Mapped[str | None] = mapped_column(String(2))
+    website: Mapped[str | None] = mapped_column(String(2048))
+    branding: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    retention_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=365, server_default="365"
+    )
+    ai_monthly_token_limit: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     created_by_user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True

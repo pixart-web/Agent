@@ -88,3 +88,38 @@ class MembershipRead(StrictWorkspaceModel):
     user_id: UUID
     role: WorkspaceRole
     created_at: datetime
+
+
+class WorkspaceMemberDetail(StrictWorkspaceModel):
+    id: UUID
+    user_id: UUID
+    email: EmailStr
+    full_name: str
+    role: WorkspaceRole
+    created_at: datetime
+
+
+class WorkspaceSettingsRead(StrictWorkspaceModel):
+    id: UUID
+    name: str
+    slug: str
+    description: str | None
+    sector: str | None
+    country: str | None
+    website: str | None
+    branding: dict[str, object]
+    retention_days: int
+    ai_monthly_token_limit: int | None
+    role: WorkspaceRole
+    members: list[WorkspaceMemberDetail]
+
+
+class WorkspaceSettingsUpdate(StrictWorkspaceModel):
+    name: str = Field(min_length=2, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    sector: str | None = Field(default=None, max_length=120)
+    country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    website: str | None = Field(default=None, max_length=2048, pattern=r"^https?://")
+    branding: dict[str, object] = Field(default_factory=dict)
+    retention_days: int = Field(ge=30, le=3650)
+    ai_monthly_token_limit: int | None = Field(default=None, ge=1000, le=1_000_000_000)

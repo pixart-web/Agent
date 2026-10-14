@@ -31,6 +31,9 @@ from app.workspaces.schemas import (
     OnboardingRead,
     OnboardingUpdate,
     OwnershipTransfer,
+    WorkspaceMemberDetail,
+    WorkspaceSettingsRead,
+    WorkspaceSettingsUpdate,
     WorkspaceSwitch,
 )
 
@@ -228,6 +231,56 @@ class WorkspaceService:
     def onboarding(self, user: User) -> OnboardingRead:
         workspace = self._active_workspace(user)
         return self._onboarding_read(user, workspace)
+
+    def get_workspace_settings(self, user: User) -> WorkspaceSettingsRead:
+        workspace = self._active_workspace(user)
+        membership = self._membership(workspace.id, user.id)
+        rows = self.session.execute(
+            select(WorkspaceMember, User)
+            .join(User, User.id == WorkspaceMember.user_id)
+            .where(WorkspaceMember.workspace_id == workspace.id)
+            .order_by(WorkspaceMember.created_at, WorkspaceMember.id)
+        ).all()
+        return WorkspaceSettingsRead(
+            id=workspace.id,
+            name=workspace.name,
+            slug=workspace.slug,
+            description=workspace.description,
+            sector=workspace.sector,
+            country=workspace.country,
+            website=workspace.website,
+            branding=workspace.branding,
+            retention_days=workspace.retention_days,
+            ai_monthly_token_limit=workspace.ai_monthly_token_limit,
+            role=membership.role,
+            members=[
+                WorkspaceMemberDetail(
+                    id=member.id,
+                    user_id=member.user_id,
+                    email=member_user.email,
+                    full_name=member_user.full_name,
+                    role=member.role,
+                    created_at=member.created_at,
+                )
+                for member, member_user in rows
+            ],
+        )
+
+    def update_settings(self, user: User, value: WorkspaceSettingsUpdate) -> WorkspaceSettingsRead:
+        workspace = self._active_workspace(user)
+        membership = self._membership(workspace.id, user.id)
+        if membership.role not in MANAGE_ROLES:
+            raise WorkspacePermissionError("Insufficient workspace permission")
+        workspace.name = value.name
+        workspace.description = value.description
+        workspace.sector = value.sector
+        workspace.country = value.country
+        workspace.website = value.website
+        workspace.branding = value.branding
+        workspace.retention_days = value.retention_days
+        workspace.ai_monthly_token_limit = value.ai_monthly_token_limit
+        self.session.commit()
+        return self.get_workspace_settings(user)
 
     def update_onboarding(self, user: User, value: OnboardingUpdate) -> OnboardingRead:
         workspace = self._active_workspace(user)

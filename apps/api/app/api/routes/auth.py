@@ -255,7 +255,7 @@ def update_me(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserPublic:
-    updated = AuthService(db).update_profile(user, data.full_name)
+    updated = AuthService(db).update_profile(user, data.full_name, data.language, data.timezone)
     return UserPublic.model_validate(updated)
 
 

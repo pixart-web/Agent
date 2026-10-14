@@ -24,6 +24,8 @@ from app.workspaces.schemas import (
     OnboardingRead,
     OnboardingUpdate,
     OwnershipTransfer,
+    WorkspaceSettingsRead,
+    WorkspaceSettingsUpdate,
     WorkspaceSwitch,
 )
 from app.workspaces.service import WorkspaceService
@@ -51,6 +53,33 @@ def onboarding(
     try:
         return WorkspaceService(db).onboarding(user)
     except WorkspaceNotFoundError as error:
+        _raise(error)
+
+
+@router.get("/settings", response_model=WorkspaceSettingsRead)
+def workspace_settings(
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> WorkspaceSettingsRead:
+    try:
+        return WorkspaceService(db).get_workspace_settings(user)
+    except WorkspaceNotFoundError as error:
+        _raise(error)
+
+
+@router.put(
+    "/settings",
+    response_model=WorkspaceSettingsRead,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def update_workspace_settings(
+    value: WorkspaceSettingsUpdate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> WorkspaceSettingsRead:
+    try:
+        return WorkspaceService(db).update_settings(user, value)
+    except (WorkspaceNotFoundError, WorkspacePermissionError) as error:
         _raise(error)
 
 

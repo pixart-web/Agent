@@ -84,6 +84,8 @@ class PasswordChange(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: str = Field(min_length=2, max_length=200)
+    language: str = Field(default="en", pattern=r"^[a-z]{2}(?:-[A-Z]{2})?$")
+    timezone: str = Field(default="UTC", min_length=1, max_length=64)
 
     @field_validator("full_name")
     @classmethod
@@ -100,6 +102,8 @@ class UserPublic(BaseModel):
     id: UUID
     email: EmailStr
     full_name: str
+    language: str
+    timezone: str
     is_active: bool
     is_superuser: bool
     created_at: datetime

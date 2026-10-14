@@ -16,6 +16,12 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    language: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="en", server_default="en"
+    )
+    timezone: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="UTC", server_default="UTC"
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

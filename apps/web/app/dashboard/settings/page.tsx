@@ -18,27 +18,40 @@ import {
   type NotificationPreferences,
 } from '../../../lib/notification-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import {
+  getWorkspaceSettings,
+  updateWorkspaceSettings,
+  type WorkspaceSettings,
+} from '../../../lib/workspace-settings-client';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, loading } = useAuthenticatedUser();
   const [fullName, setFullName] = useState('');
+  const [language, setLanguage] = useState('en');
+  const [timezone, setTimezone] = useState('UTC');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
   const [notifications, setNotifications] =
     useState<NotificationPreferences | null>(null);
+  const [workspace, setWorkspace] = useState<WorkspaceSettings | null>(null);
 
   useEffect(() => {
     if (!user) return;
     setFullName(user.full_name);
+    setLanguage(user.language);
+    setTimezone(user.timezone);
     void listSessions()
       .then(setSessions)
       .catch(() => setMessage('Unable to load sessions.'));
     void getNotificationPreferences()
       .then(setNotifications)
       .catch(() => setMessage('Unable to load notification preferences.'));
+    void getWorkspaceSettings()
+      .then(setWorkspace)
+      .catch(() => setMessage('Unable to load workspace settings.'));
   }, [user]);
 
   if (loading || !user)
@@ -47,7 +60,7 @@ export default function SettingsPage() {
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
     try {
-      await updateProfile(fullName.trim());
+      await updateProfile(fullName.trim(), language, timezone);
       setMessage('Profile updated.');
     } catch (error) {
       setMessage(
@@ -102,6 +115,23 @@ export default function SettingsPage() {
             Email
             <input value={user.email} disabled />
           </label>
+          <label>
+            Language
+            <select
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="pt-PT">Português (Portugal)</option>
+            </select>
+          </label>
+          <label>
+            Timezone
+            <input
+              value={timezone}
+              onChange={(event) => setTimezone(event.target.value)}
+            />
+          </label>
           <button className="primary-button" type="submit">
             Save profile
           </button>
@@ -133,6 +163,133 @@ export default function SettingsPage() {
           </button>
         </form>
       </section>
+      {workspace && (
+        <form
+          className="workflow-panel auth-form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setWorkspace(await updateWorkspaceSettings(workspace));
+            setMessage('Workspace settings updated.');
+          }}
+        >
+          <div className="workflow-panel__heading">
+            <h2>Workspace</h2>
+          </div>
+          <label>
+            Name
+            <input
+              value={workspace.name}
+              onChange={(event) =>
+                setWorkspace({ ...workspace, name: event.target.value })
+              }
+            />
+          </label>
+          <label>
+            Description
+            <textarea
+              value={workspace.description ?? ''}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  description: event.target.value || null,
+                })
+              }
+            />
+          </label>
+          <label>
+            Sector
+            <input
+              value={workspace.sector ?? ''}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  sector: event.target.value || null,
+                })
+              }
+            />
+          </label>
+          <label>
+            Country code
+            <input
+              maxLength={2}
+              value={workspace.country ?? ''}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  country: event.target.value.toUpperCase() || null,
+                })
+              }
+            />
+          </label>
+          <label>
+            Website
+            <input
+              type="url"
+              value={workspace.website ?? ''}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  website: event.target.value || null,
+                })
+              }
+            />
+          </label>
+          <label>
+            Data retention (days)
+            <input
+              type="number"
+              min={30}
+              max={3650}
+              value={workspace.retention_days}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  retention_days: Number(event.target.value),
+                })
+              }
+            />
+          </label>
+          <label>
+            Monthly AI token limit
+            <input
+              type="number"
+              min={1000}
+              value={workspace.ai_monthly_token_limit ?? ''}
+              onChange={(event) =>
+                setWorkspace({
+                  ...workspace,
+                  ai_monthly_token_limit: event.target.value
+                    ? Number(event.target.value)
+                    : null,
+                })
+              }
+            />
+          </label>
+          <button
+            className="primary-button"
+            disabled={!['owner', 'admin'].includes(workspace.role)}
+          >
+            Save workspace
+          </button>
+        </form>
+      )}
+      {workspace && (
+        <section className="workflow-panel">
+          <div className="workflow-panel__heading">
+            <h2>Team and roles</h2>
+          </div>
+          <div className="activity-list">
+            {workspace.members.map((member) => (
+              <article className="activity-item" key={member.id}>
+                <strong>{member.full_name}</strong>
+                <p>
+                  {member.email} · {member.role}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="workflow-panel settings-sessions">
         <div className="workflow-panel__heading">
           <h2>Active sessions</h2>

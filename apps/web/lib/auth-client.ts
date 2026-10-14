@@ -201,11 +201,15 @@ export async function updateOnboarding(value: {
   return expectJson<OnboardingState>(response);
 }
 
-export async function updateProfile(fullName: string): Promise<User> {
+export async function updateProfile(
+  fullName: string,
+  language = 'en',
+  timezone = 'UTC',
+): Promise<User> {
   const response = await authFetch('/api/v1/auth/me', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ full_name: fullName }),
+    body: JSON.stringify({ full_name: fullName, language, timezone }),
   });
   return expectJson<User>(response);
 }
@@ -228,7 +232,9 @@ export async function changePassword(
   clearAuthState();
 }
 
-export async function listSessions(): Promise<import('./auth-types').Session[]> {
+export async function listSessions(): Promise<
+  import('./auth-types').Session[]
+> {
   const response = await authFetch('/api/v1/auth/sessions');
   return expectJson<import('./auth-types').Session[]>(response);
 }
