@@ -5,6 +5,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.commercial.service import provision_trial
 from app.core.time import utc_now
 from app.db.session import SessionLocal
 from app.knowledge.errors import (
@@ -50,6 +51,7 @@ class KnowledgeService:
                 created_by_user_id=user_id,
             )
             session.add(member)
+            provision_trial(session, workspace.id)
             try:
                 session.flush()
             except IntegrityError as error:

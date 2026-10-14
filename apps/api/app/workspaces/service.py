@@ -5,6 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.commercial.service import CommercialService
 from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models.knowledge import Workspace, WorkspaceInvitation, WorkspaceMember
@@ -49,6 +50,9 @@ class WorkspaceService:
         actor = self._membership(workspace_id, actor_id)
         if actor.role not in MANAGE_ROLES:
             raise WorkspacePermissionError("Insufficient workspace permission")
+        seat_decision = CommercialService(self.session).entitlement(workspace_id, "seats")
+        if not seat_decision.allowed:
+            raise WorkspaceConflictError(seat_decision.reason or "Seat limit reached")
         email = normalize_email(str(value.email))
         existing_user = self.session.scalar(select(User).where(User.email == email))
         if existing_user and self.session.scalar(

@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.commercial.service import provision_trial
 from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models.account_token import AccountToken
@@ -165,6 +166,7 @@ class AuthService:
                     created_by_user_id=user.id,
                 )
             )
+            provision_trial(self.session, workspace.id)
             user.active_workspace_id = workspace.id
             if self.settings.auth_require_email_verification:
                 self._queue_account_token(user, "email_verification")

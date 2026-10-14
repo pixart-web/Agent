@@ -71,6 +71,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/settings">
           Settings
         </Link>
+        <Link className="nav-link" href="/dashboard/subscription">
+          Subscription
+        </Link>
         {user.is_superuser && (
           <Link className="nav-link" href="/dashboard/platform-admin">
             Platform admin

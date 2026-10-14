@@ -8,6 +8,7 @@ from app.api.routes import (
     client_management,
     codex,
     commands,
+    commercial,
     conversations,
     crm,
     email,
@@ -39,6 +40,7 @@ api_router.include_router(client_management.router, prefix="/api/v1")
 api_router.include_router(crm.router, prefix="/api/v1")
 api_router.include_router(calendar.router, prefix="/api/v1")
 api_router.include_router(codex.router, prefix="/api/v1")
+api_router.include_router(commercial.router, prefix="/api/v1")
 api_router.include_router(email.router, prefix="/api/v1")
 api_router.include_router(plans.router, prefix="/api/v1")
 api_router.include_router(projects.router, prefix="/api/v1")

@@ -21,6 +21,7 @@ from app.models.client_management import (
 )
 from app.models.codex_run import CodexRun
 from app.models.command import Command
+from app.models.commercial import CommercialPlan, WorkspaceSubscription, WorkspaceUsagePeriod
 from app.models.conversation import Conversation, ConversationMessage
 from app.models.crm import (
     CrmActivity,
@@ -82,6 +83,9 @@ __all__ = [
     "CalendarReference",
     "CalendarWriteRecord",
     "Command",
+    "CommercialPlan",
+    "WorkspaceSubscription",
+    "WorkspaceUsagePeriod",
     "Conversation",
     "ConversationMessage",
     "CrmActivity",

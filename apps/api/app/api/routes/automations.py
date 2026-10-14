@@ -21,6 +21,7 @@ from app.automations.schemas import (
     AutomationUpdate,
 )
 from app.automations.service import AutomationService
+from app.commercial.service import CommercialService
 from app.db.session import get_db
 from app.models.knowledge import WorkspaceMember
 from app.models.user import User
@@ -58,6 +59,9 @@ def create_automation(
     db: Annotated[Session, Depends(get_db)],
 ) -> AutomationRead:
     _require_editor(db, user)
+    decision = CommercialService(db).entitlement(user.active_workspace_id, "automations")
+    if not decision.allowed:
+        raise HTTPException(status_code=402, detail=decision.reason)
     try:
         return _service(db).create(user.id, value)
     except (AutomationConflictError, AutomationValidationError) as error:
