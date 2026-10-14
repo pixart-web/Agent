@@ -50,3 +50,23 @@ export function updateWorkspaceSettings(
     }),
   }).then(json);
 }
+
+export async function downloadWorkspaceExport(
+  resource: 'all' | 'organizations' | 'contacts' | 'projects' | 'tasks' | 'activities' = 'all',
+  format: 'json' | 'csv' = 'json',
+): Promise<void> {
+  const response = await authFetch(
+    `/api/v1/data-portability/export?resource=${resource}&format=${format}`,
+  );
+  if (!response.ok)
+    throw new Error(`Workspace export failed (${response.status})`);
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const filename = disposition.match(/filename="([^"]+)"/)?.[1] ??
+    `kiko-workspace-export.${format}`;
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}

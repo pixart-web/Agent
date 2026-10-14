@@ -11,6 +11,7 @@ from app.api.routes import (
     commercial,
     conversations,
     crm,
+    data_portability,
     email,
     execution,
     health,
@@ -38,6 +39,7 @@ api_router.include_router(commands.router, prefix="/api/v1")
 api_router.include_router(conversations.router, prefix="/api/v1")
 api_router.include_router(client_management.router, prefix="/api/v1")
 api_router.include_router(crm.router, prefix="/api/v1")
+api_router.include_router(data_portability.router, prefix="/api/v1")
 api_router.include_router(calendar.router, prefix="/api/v1")
 api_router.include_router(codex.router, prefix="/api/v1")
 api_router.include_router(commercial.router, prefix="/api/v1")

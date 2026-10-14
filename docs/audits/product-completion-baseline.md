@@ -235,13 +235,13 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 
 ### R4 — Enterprise experience
 
-- [ ] Add notifications, activity, analytics, settings, team administration, and platform administration.
-- [ ] Add governed integration configuration and data portability/retention workflows.
+- [x] Add notifications, activity, analytics, settings, team administration, and platform administration.
+- [x] Add governed integration configuration and data portability/retention workflows.
 
 ### R5 — Commercial layer
 
-- [ ] Add plan, entitlement, trial, subscription, and provider-abstracted billing records.
-- [ ] Build the public product site without unverifiable claims.
+- [x] Add plan, entitlement, trial, subscription, and provider-abstracted billing records.
+- [x] Build the public product site without unverifiable claims.
 
 ### R6 — Product polish
 

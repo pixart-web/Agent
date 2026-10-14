@@ -19,6 +19,7 @@ import {
 } from '../../../lib/notification-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import {
+  downloadWorkspaceExport,
   getWorkspaceSettings,
   updateWorkspaceSettings,
   type WorkspaceSettings,
@@ -287,6 +288,45 @@ export default function SettingsPage() {
                 </p>
               </article>
             ))}
+          </div>
+        </section>
+      )}
+      {workspace && ['owner', 'admin'].includes(workspace.role) && (
+        <section className="workflow-panel">
+          <div className="workflow-panel__heading">
+            <div>
+              <p className="eyebrow">Data portability</p>
+              <h2>Workspace export</h2>
+            </div>
+          </div>
+          <p className="empty-state">
+            Download the workspace profile, CRM records, projects, tasks and
+            activities. Authentication secrets and integration credentials are
+            excluded. Every export is recorded in the audit log.
+          </p>
+          <div className="button-row">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() =>
+                void downloadWorkspaceExport().catch(() =>
+                  setMessage('Unable to export workspace data.'),
+                )
+              }
+            >
+              Download JSON archive
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() =>
+                void downloadWorkspaceExport('contacts', 'csv').catch(() =>
+                  setMessage('Unable to export contacts.'),
+                )
+              }
+            >
+              Download contacts CSV
+            </button>
           </div>
         </section>
       )}
