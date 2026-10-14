@@ -35,6 +35,9 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/executions">
           Executions
         </Link>
+        <Link className="nav-link" href="/dashboard/analytics">
+          Analytics
+        </Link>
         <Link className="nav-link" href="/dashboard/agents">
           Agents
         </Link>
@@ -46,6 +49,9 @@ export function DashboardNav({ user }: { user: User }) {
         </Link>
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals
+        </Link>
+        <Link className="nav-link" href="/dashboard/notifications">
+          Notifications
         </Link>
         <Link className="nav-link" href="/dashboard/codex">
           Codex
@@ -65,6 +71,11 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/settings">
           Settings
         </Link>
+        {user.is_superuser && (
+          <Link className="nav-link" href="/dashboard/platform-admin">
+            Platform admin
+          </Link>
+        )}
         <span className="nav-user">
           {user.full_name} · {user.email}
         </span>

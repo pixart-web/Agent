@@ -53,6 +53,7 @@ from app.models.marketing import (
     MarketingPerformanceMetric,
     MarketingPublication,
 )
+from app.models.notification import Notification, NotificationPreference
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
 from app.models.project import (
@@ -125,6 +126,8 @@ __all__ = [
     "MarketingPerformanceMetric",
     "MarketingPublication",
     "OutboxEvent",
+    "Notification",
+    "NotificationPreference",
     "KnowledgeItem",
     "KnowledgeRevision",
     "Workspace",

@@ -12,6 +12,11 @@ import {
   updateProfile,
 } from '../../../lib/auth-client';
 import type { Session } from '../../../lib/auth-types';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  type NotificationPreferences,
+} from '../../../lib/notification-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 
 export default function SettingsPage() {
@@ -22,14 +27,22 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [notifications, setNotifications] =
+    useState<NotificationPreferences | null>(null);
 
   useEffect(() => {
     if (!user) return;
     setFullName(user.full_name);
-    void listSessions().then(setSessions).catch(() => setMessage('Unable to load sessions.'));
+    void listSessions()
+      .then(setSessions)
+      .catch(() => setMessage('Unable to load sessions.'));
+    void getNotificationPreferences()
+      .then(setNotifications)
+      .catch(() => setMessage('Unable to load notification preferences.'));
   }, [user]);
 
-  if (loading || !user) return <main className="loading-page">Loading settings…</main>;
+  if (loading || !user)
+    return <main className="loading-page">Loading settings…</main>;
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -37,7 +50,11 @@ export default function SettingsPage() {
       await updateProfile(fullName.trim());
       setMessage('Profile updated.');
     } catch (error) {
-      setMessage(error instanceof AuthClientError ? error.message : 'Unable to update profile.');
+      setMessage(
+        error instanceof AuthClientError
+          ? error.message
+          : 'Unable to update profile.',
+      );
     }
   }
 
@@ -47,7 +64,11 @@ export default function SettingsPage() {
       await changePassword(currentPassword, newPassword);
       router.replace('/login');
     } catch (error) {
-      setMessage(error instanceof AuthClientError ? error.message : 'Unable to change password.');
+      setMessage(
+        error instanceof AuthClientError
+          ? error.message
+          : 'Unable to change password.',
+      );
     }
   }
 
@@ -60,32 +81,137 @@ export default function SettingsPage() {
     <main>
       <DashboardNav user={user} />
       <section className="hero compact-hero">
-        <div><p className="eyebrow">Account</p><h1>Settings</h1></div>
+        <div>
+          <p className="eyebrow">Account</p>
+          <h1>Settings</h1>
+        </div>
       </section>
       <section className="workflow-grid">
         <form className="workflow-panel auth-form" onSubmit={saveProfile}>
-          <div className="workflow-panel__heading"><h2>Profile</h2></div>
-          <label>Full name<input value={fullName} onChange={(event) => setFullName(event.target.value)} /></label>
-          <label>Email<input value={user.email} disabled /></label>
-          <button className="primary-button" type="submit">Save profile</button>
+          <div className="workflow-panel__heading">
+            <h2>Profile</h2>
+          </div>
+          <label>
+            Full name
+            <input
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+            />
+          </label>
+          <label>
+            Email
+            <input value={user.email} disabled />
+          </label>
+          <button className="primary-button" type="submit">
+            Save profile
+          </button>
         </form>
         <form className="workflow-panel auth-form" onSubmit={savePassword}>
-          <div className="workflow-panel__heading"><h2>Change password</h2></div>
-          <label>Current password<input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
-          <label>New password<input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
-          <button className="primary-button" type="submit">Change password</button>
+          <div className="workflow-panel__heading">
+            <h2>Change password</h2>
+          </div>
+          <label>
+            Current password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+            />
+          </label>
+          <label>
+            New password
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </label>
+          <button className="primary-button" type="submit">
+            Change password
+          </button>
         </form>
       </section>
       <section className="workflow-panel settings-sessions">
-        <div className="workflow-panel__heading"><h2>Active sessions</h2></div>
-        {sessions.length === 0 ? <p className="empty-state">No active sessions.</p> : sessions.map((session) => (
-          <article className="settings-session" key={session.id}>
-            <div><strong>{session.current ? 'Current session' : 'Signed-in session'}</strong><p>{session.user_agent ?? 'Unknown device'} · {session.ip_address ?? 'Unknown IP'}</p></div>
-            {!session.current && <button className="secondary-button" type="button" onClick={() => void removeSession(session.id)}>Revoke</button>}
-          </article>
-        ))}
+        <div className="workflow-panel__heading">
+          <h2>Active sessions</h2>
+        </div>
+        {sessions.length === 0 ? (
+          <p className="empty-state">No active sessions.</p>
+        ) : (
+          sessions.map((session) => (
+            <article className="settings-session" key={session.id}>
+              <div>
+                <strong>
+                  {session.current ? 'Current session' : 'Signed-in session'}
+                </strong>
+                <p>
+                  {session.user_agent ?? 'Unknown device'} ·{' '}
+                  {session.ip_address ?? 'Unknown IP'}
+                </p>
+              </div>
+              {!session.current && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void removeSession(session.id)}
+                >
+                  Revoke
+                </button>
+              )}
+            </article>
+          ))
+        )}
       </section>
-      {message && <p className="form-message settings-message" role="status">{message}</p>}
+      {notifications && (
+        <form
+          className="workflow-panel auth-form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setNotifications(
+              await updateNotificationPreferences(notifications),
+            );
+            setMessage('Notification preferences updated.');
+          }}
+        >
+          <div className="workflow-panel__heading">
+            <h2>Notifications</h2>
+          </div>
+          <label>
+            <input
+              type="checkbox"
+              checked={notifications.in_app_enabled}
+              onChange={(event) =>
+                setNotifications({
+                  ...notifications,
+                  in_app_enabled: event.target.checked,
+                })
+              }
+            />
+            In-app operational notifications
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={notifications.email_enabled}
+              onChange={(event) =>
+                setNotifications({
+                  ...notifications,
+                  email_enabled: event.target.checked,
+                })
+              }
+            />
+            Email notifications (requires configured transactional provider)
+          </label>
+          <button className="primary-button">Save preferences</button>
+        </form>
+      )}
+      {message && (
+        <p className="form-message settings-message" role="status">
+          {message}
+        </p>
+      )}
     </main>
   );
 }
