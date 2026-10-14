@@ -15,4 +15,3 @@ the already workspace-scoped execution graph.
 
 An adversarial test proves that a second member can inspect run history in the shared
 workspace while a user whose active workspace is isolated receives an empty result.
-

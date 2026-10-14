@@ -18,4 +18,3 @@ Workspace owners and administrators may edit company fields. Other members can k
 their personal onboarding progress but cannot change shared company configuration.
 Existing users are marked complete by migration `20261010_0025` to avoid disrupting
 established accounts; users created after the migration start at step zero.
-

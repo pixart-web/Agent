@@ -27,4 +27,3 @@ column without deleting campaign data.
 
 The nullable ORM field and `workspace_or_legacy_owner` branch support only unmigrated
 test/legacy rows. Production schema revision `20261010_0023` disallows null tenants.
-

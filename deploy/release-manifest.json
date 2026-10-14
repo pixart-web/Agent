@@ -1,6 +1,6 @@
 {
   "candidate": "kiko-commercial-rc-2026-10-14",
-  "source_revision": "PIN_AFTER_RELEASE_COMMIT",
+  "source_revision": "000466eec9f6cc6b4f2afd6ad18a97a7ed9045e9",
   "migration_head": "20261014_0035",
   "deployment_authorized": false,
   "local_build_evidence": {
