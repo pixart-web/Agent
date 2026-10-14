@@ -70,7 +70,11 @@ export default function Home() {
           alt="Abstract network of structured operational flows converging on one orchestration layer"
         />
       </section>
-      <section className="landing-proof" aria-label="Available product areas">
+      <section
+        className="landing-proof"
+        aria-label="Available product areas"
+        tabIndex={0}
+      >
         {[
           'Commands',
           'Approvals',

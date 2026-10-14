@@ -110,6 +110,7 @@ class WorkspaceSettingsRead(StrictWorkspaceModel):
     branding: dict[str, object]
     retention_days: int
     ai_monthly_token_limit: int | None
+    is_synthetic_demo: bool
     role: WorkspaceRole
     members: list[WorkspaceMemberDetail]
 

@@ -13,6 +13,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.automations.schemas import AutomationCreate, AutomationTrigger
 from app.automations.service import AutomationService
 from app.core.time import utc_now
+from app.crm.schemas import CrmOrganizationCreateInput, CrmOrganizationsInput
+from app.crm.service import CrmService
+from app.execution.context import ExecutionContext
+from app.integrations.credentials import EnvironmentCredentialProvider
 from app.models.agent import Agent
 from app.models.automation import Automation, AutomationRun
 from app.models.calendar_write_record import CalendarWriteRecord
@@ -47,6 +51,49 @@ def integration_url() -> str:
     if not url:
         pytest.skip("INTEGRATION_DATABASE_URL is not configured")
     return url
+
+
+def create_workspace_owner(session: Session, *, label: str) -> tuple[UUID, UUID]:
+    user_id = uuid4()
+    user = User(
+        id=user_id,
+        email=f"{label}-{user_id}@example.com",
+        password_hash="not-used",
+        full_name=f"{label.title()} Owner",
+    )
+    session.add(user)
+    session.flush()
+    workspace = Workspace(
+        name=f"{label.title()} Workspace",
+        slug=f"{label}-{user_id}",
+        created_by_user_id=user_id,
+    )
+    session.add(workspace)
+    session.flush()
+    session.add(
+        WorkspaceMember(
+            workspace_id=workspace.id,
+            user_id=user_id,
+            role="owner",
+            created_by_user_id=user_id,
+        )
+    )
+    user.active_workspace_id = workspace.id
+    session.flush()
+    return user_id, workspace.id
+
+
+def execution_context(user_id: UUID) -> ExecutionContext:
+    identifiers = [uuid4() for _ in range(5)]
+    return ExecutionContext(
+        user_id=user_id,
+        command_id=identifiers[0],
+        task_id=identifiers[1],
+        action_id=identifiers[2],
+        execution_id=identifiers[3],
+        correlation_id=identifiers[4],
+        credentials=EnvironmentCredentialProvider(),
+    )
 
 
 def test_postgres_row_lock_and_outbox_claim(integration_url: str) -> None:
@@ -100,24 +147,45 @@ def test_redis_transport_is_reachable() -> None:
     assert client.ping() is True
 
 
+def test_postgres_crm_queries_cannot_cross_workspace_boundary(integration_url: str) -> None:
+    engine = create_engine(integration_url)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with Session(engine) as session:
+        first_user_id, _ = create_workspace_owner(session, label="tenant-a")
+        second_user_id, _ = create_workspace_owner(session, label="tenant-b")
+        session.commit()
+    service = CrmService(factory)
+    first = service.create_organization(
+        execution_context(first_user_id),
+        CrmOrganizationCreateInput(name="Tenant A private organization"),
+        governed=False,
+    )
+    second = service.create_organization(
+        execution_context(second_user_id),
+        CrmOrganizationCreateInput(name="Tenant B private organization"),
+        governed=False,
+    )
+    first_visible = service.list_organizations(
+        execution_context(first_user_id), CrmOrganizationsInput(limit=100, offset=0)
+    )
+    second_visible = service.list_organizations(
+        execution_context(second_user_id), CrmOrganizationsInput(limit=100, offset=0)
+    )
+    assert [item.id for item in first_visible.organizations] == [first.id]
+    assert [item.id for item in second_visible.organizations] == [second.id]
+    engine.dispose()
+
+
 def test_postgres_oauth_state_atomic_consume_allows_one_winner(integration_url: str) -> None:
     engine = create_engine(integration_url)
-    user_id = uuid4()
     state_id = uuid4()
     with Session(engine) as session:
-        session.add(
-            User(
-                id=user_id,
-                email=f"oauth-lock-{user_id}@example.com",
-                password_hash="not-used",
-                full_name="OAuth Lock",
-            )
-        )
-        session.flush()
+        user_id, workspace_id = create_workspace_owner(session, label="oauth-lock")
         session.add(
             IntegrationOAuthState(
                 id=state_id,
                 user_id=user_id,
+                workspace_id=workspace_id,
                 provider="gmail",
                 purpose="email_oauth",
                 expires_at=utc_now() + timedelta(minutes=5),
@@ -134,7 +202,7 @@ def test_postgres_oauth_state_atomic_consume_allows_one_winner(integration_url: 
                 state_id, user_id, "gmail", "email_oauth", utc_now()
             )
             session.commit()
-            return consumed
+            return consumed is not None
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(lambda _value: consume(), range(2)))
@@ -212,6 +280,7 @@ def test_postgres_calendar_write_reservation_allows_one_winner(integration_url: 
         )
         account = IntegrationAccount(
             user_id=user_id,
+            workspace_id=workspace.id,
             provider="google_calendar",
             account_type=IntegrationAccountType.PERSONAL,
             external_account_id=f"calendar-{user_id}@example.com",
@@ -269,16 +338,8 @@ def test_postgres_calendar_write_reservation_allows_one_winner(integration_url: 
 def test_postgres_automation_deduplication_allows_one_command(integration_url: str) -> None:
     engine = create_engine(integration_url)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
-    user_id = uuid4()
     with Session(engine) as session:
-        session.add(
-            User(
-                id=user_id,
-                email=f"automation-lock-{user_id}@example.com",
-                password_hash="not-used",
-                full_name="Automation Lock",
-            )
-        )
+        user_id, _workspace_id = create_workspace_owner(session, label="automation-lock")
         session.commit()
     service = AutomationService(factory)
     automation = service.create(

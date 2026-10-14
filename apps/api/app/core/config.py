@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     transactional_email_batch_size: int = Field(default=25, ge=1, le=200)
     transactional_email_max_attempts: int = Field(default=5, ge=1, le=20)
     ai_provider: Literal["openai", "fake"] = "openai"
-    openai_api_key: str | None = None
+    openai_api_key: SecretStr | None = None
     openai_model: str = Field(default="gpt-5.4-mini", min_length=1)
     ai_request_timeout_seconds: float = Field(default=60, gt=0)
     ai_max_retries: int = Field(default=2, ge=0, le=5)

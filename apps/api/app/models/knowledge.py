@@ -41,6 +41,9 @@ class Workspace(Base):
         Integer, nullable=False, default=365, server_default="365"
     )
     ai_monthly_token_limit: Mapped[int | None] = mapped_column(Integer)
+    is_synthetic_demo: Mapped[bool] = mapped_column(
+        nullable=False, default=False, server_default="false", index=True
+    )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     created_by_user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True

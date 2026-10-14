@@ -58,9 +58,19 @@ class DataPortabilityService:
         return _row(
             item,
             (
-                "id", "name", "slug", "description", "primary_objectives", "sector",
-                "country", "website", "branding", "retention_days", "status",
-                "created_at", "updated_at",
+                "id",
+                "name",
+                "slug",
+                "description",
+                "primary_objectives",
+                "sector",
+                "country",
+                "website",
+                "branding",
+                "retention_days",
+                "status",
+                "created_at",
+                "updated_at",
             ),
         )
 
@@ -83,8 +93,15 @@ class DataPortabilityService:
             .order_by(CrmContact.created_at)
         )
         fields = (
-            "id", "organization_id", "full_name", "job_title", "website", "status",
-            "source", "created_at", "updated_at",
+            "id",
+            "organization_id",
+            "full_name",
+            "job_title",
+            "website",
+            "status",
+            "source",
+            "created_at",
+            "updated_at",
         )
         return [_row(item, fields) for item in items]
 
@@ -95,8 +112,16 @@ class DataPortabilityService:
             .order_by(Project.created_at)
         )
         fields = (
-            "id", "owner_user_id", "client_id", "name", "description", "status",
-            "starts_on", "due_on", "created_at", "updated_at",
+            "id",
+            "owner_user_id",
+            "client_id",
+            "name",
+            "description",
+            "status",
+            "starts_on",
+            "due_on",
+            "created_at",
+            "updated_at",
         )
         return [_row(item, fields) for item in items]
 
@@ -109,9 +134,21 @@ class DataPortabilityService:
             .order_by(Task.created_at)
         )
         fields = (
-            "id", "plan_id", "agent_id", "title", "instructions", "status", "priority",
-            "risk_level", "sequence", "created_at", "updated_at", "started_at",
-            "completed_at", "due_at", "error_message",
+            "id",
+            "plan_id",
+            "agent_id",
+            "title",
+            "instructions",
+            "status",
+            "priority",
+            "risk_level",
+            "sequence",
+            "created_at",
+            "updated_at",
+            "started_at",
+            "completed_at",
+            "due_at",
+            "error_message",
         )
         return [_row(item, fields) for item in items]
 
@@ -131,8 +168,15 @@ class DataPortabilityService:
             .order_by(CrmActivity.created_at)
         )
         crm_fields = (
-            "id", "contact_id", "organization_id", "activity_type", "subject", "details",
-            "source", "occurred_at", "created_at",
+            "id",
+            "contact_id",
+            "organization_id",
+            "activity_type",
+            "subject",
+            "details",
+            "source",
+            "occurred_at",
+            "created_at",
         )
         rows = [dict(_row(item, crm_fields), activity_scope="crm") for item in crm_items]
         project_items = self._limited(
@@ -142,10 +186,14 @@ class DataPortabilityService:
             .order_by(ProjectActivity.created_at)
         )
         project_fields = (
-            "id", "project_id", "actor_user_id", "event_type", "description", "created_at",
+            "id",
+            "project_id",
+            "actor_user_id",
+            "event_type",
+            "description",
+            "created_at",
         )
         rows.extend(
-            dict(_row(item, project_fields), activity_scope="project")
-            for item in project_items
+            dict(_row(item, project_fields), activity_scope="project") for item in project_items
         )
         return rows

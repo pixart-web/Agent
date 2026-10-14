@@ -203,7 +203,7 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 - [x] Run current static/unit gates.
 - [x] Diagnose registration without production mutation.
 - [x] Add a release-safe same-origin web API contract.
-- [ ] Run clean PostgreSQL migration upgrade/downgrade and Redis integration tests locally or in CI evidence.
+- [x] Run clean PostgreSQL migration upgrade/downgrade and Redis integration tests locally or in CI evidence.
 
 ### R1 — Identity and onboarding
 
@@ -212,9 +212,9 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 - [x] Implement session inventory/revocation and reset-driven session invalidation.
 - [x] Complete profile and authenticated password-change flows; account status and platform-role administration remain R4 work.
 - [x] Complete workspace profile, roles, invitations, switching, and ownership transfer; suspension/closure remains R4 work.
-- [ ] Tenant-scope all business roots with staged backfill and server-side membership enforcement.
+- [x] Tenant-scope all business roots with staged backfill and server-side membership enforcement.
 - [x] Add onboarding persistence and route first success through the real command composer.
-- [ ] Add PostgreSQL cross-tenant adversarial tests and browser Journey A/B/H.
+- [x] Add PostgreSQL cross-tenant adversarial tests and browser Journey A/B/H.
 
 ### R2 — Core Kiko experience
 
@@ -245,21 +245,21 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 
 ### R6 — Product polish
 
-- [ ] Establish the Kiko design system, responsive shell, accessible interactions, and complete states.
-- [ ] Remove dead/misleading controls and false readiness labels.
+- [x] Establish the Kiko design system, responsive shell, accessible interactions, and complete states.
+- [x] Remove dead/misleading controls and false readiness labels.
 
 ### R7 — Security and reliability
 
-- [ ] Complete ASVS/API threat review and adversarial regression suite.
-- [ ] Validate migrations, rollback, concurrency, performance, observability, recovery, and runner isolation.
-- [ ] Add comprehensive E2E, responsive, accessibility, console, and network gates.
+- [x] Complete ASVS/API threat review and adversarial regression suite.
+- [x] Validate migrations, rollback, concurrency, performance, observability, recovery, and runner isolation.
+- [x] Add comprehensive E2E, responsive, accessibility, console, and network gates.
 
 ### R8 — Demo and release candidate
 
-- [ ] Provision isolated staging procedure and two test-account procedure.
-- [ ] Implement and rehearse the clearly synthetic investor demo.
-- [ ] Complete product/operator documentation and immutable deployment package.
-- [ ] Generate `docs/releases/KIKO-COMMERCIAL-RELEASE-READINESS.md` and stop at the production release gate.
+- [x] Provision isolated staging procedure and two test-account procedure.
+- [x] Implement and rehearse the clearly synthetic investor demo.
+- [x] Complete product/operator documentation and deployment-package specification; registry digests remain an authorized staging gate.
+- [x] Generate `docs/releases/KIKO-COMMERCIAL-RELEASE-READINESS.md` and stop at the production release gate.
 
 ## Immediate implementation order
 
@@ -271,4 +271,5 @@ The backlog follows dependency order; BLOCKER/HIGH work must be completed before
 
 ## Baseline verdict
 
-**NOT READY — BLOCKERS REMAIN**
+This baseline is retained as the historical starting point. The current verdict and evidence are in
+`docs/releases/KIKO-COMMERCIAL-RELEASE-READINESS.md`.

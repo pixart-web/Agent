@@ -98,6 +98,12 @@ export default function SettingsPage() {
         <div>
           <p className="eyebrow">Account</p>
           <h1>Settings</h1>
+          {workspace?.is_synthetic_demo ? (
+            <p className="status-pill warning">
+              Synthetic demo workspace — no real customer data or external
+              delivery.
+            </p>
+          ) : null}
         </div>
       </section>
       <section className="workflow-grid">

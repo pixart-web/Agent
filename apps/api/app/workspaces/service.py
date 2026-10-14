@@ -256,6 +256,7 @@ class WorkspaceService:
             branding=workspace.branding,
             retention_days=workspace.retention_days,
             ai_monthly_token_limit=workspace.ai_monthly_token_limit,
+            is_synthetic_demo=workspace.is_synthetic_demo,
             role=membership.role,
             members=[
                 WorkspaceMemberDetail(

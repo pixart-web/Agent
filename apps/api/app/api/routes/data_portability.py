@@ -57,20 +57,26 @@ def _retention_preview(db: Session, workspace_id: UUID) -> dict[str, object]:
     if workspace is None:  # pragma: no cover - active membership guarantees it
         raise HTTPException(status_code=404, detail="Workspace not found")
     cutoff = datetime.now(UTC) - timedelta(days=workspace.retention_days)
-    read_notifications = db.scalar(
-        select(func.count(Notification.id)).where(
-            Notification.workspace_id == workspace.id,
-            Notification.read_at.is_not(None),
-            Notification.created_at < cutoff,
+    read_notifications = (
+        db.scalar(
+            select(func.count(Notification.id)).where(
+                Notification.workspace_id == workspace.id,
+                Notification.read_at.is_not(None),
+                Notification.created_at < cutoff,
+            )
         )
-    ) or 0
-    closed_invitations = db.scalar(
-        select(func.count(WorkspaceInvitation.id)).where(
-            WorkspaceInvitation.workspace_id == workspace.id,
-            WorkspaceInvitation.status.in_(("expired", "revoked")),
-            WorkspaceInvitation.created_at < cutoff,
+        or 0
+    )
+    closed_invitations = (
+        db.scalar(
+            select(func.count(WorkspaceInvitation.id)).where(
+                WorkspaceInvitation.workspace_id == workspace.id,
+                WorkspaceInvitation.status.in_(("expired", "revoked")),
+                WorkspaceInvitation.created_at < cutoff,
+            )
         )
-    ) or 0
+        or 0
+    )
     return {
         "retention_days": workspace.retention_days,
         "cutoff": cutoff.isoformat(),

@@ -11,6 +11,7 @@ export type WorkspaceSettings = {
   branding: Record<string, unknown>;
   retention_days: number;
   ai_monthly_token_limit: number | null;
+  is_synthetic_demo: boolean;
   role: 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
   members: Array<{
     id: string;
@@ -52,7 +53,13 @@ export function updateWorkspaceSettings(
 }
 
 export async function downloadWorkspaceExport(
-  resource: 'all' | 'organizations' | 'contacts' | 'projects' | 'tasks' | 'activities' = 'all',
+  resource:
+    | 'all'
+    | 'organizations'
+    | 'contacts'
+    | 'projects'
+    | 'tasks'
+    | 'activities' = 'all',
   format: 'json' | 'csv' = 'json',
 ): Promise<void> {
   const response = await authFetch(
@@ -61,7 +68,8 @@ export async function downloadWorkspaceExport(
   if (!response.ok)
     throw new Error(`Workspace export failed (${response.status})`);
   const disposition = response.headers.get('content-disposition') ?? '';
-  const filename = disposition.match(/filename="([^"]+)"/)?.[1] ??
+  const filename =
+    disposition.match(/filename="([^"]+)"/)?.[1] ??
     `kiko-workspace-export.${format}`;
   const url = URL.createObjectURL(await response.blob());
   const anchor = document.createElement('a');

@@ -1,0 +1,24 @@
+{
+  "candidate": "kiko-commercial-rc-2026-10-14",
+  "source_revision": "PIN_AFTER_RELEASE_COMMIT",
+  "migration_head": "20261014_0035",
+  "deployment_authorized": false,
+  "local_build_evidence": {
+    "api_image_id": "sha256:5fbd2e8bd3a7cc527631c6a5bfd1743f8059ff94095be461bf6f5b6f0b4a7b72",
+    "web_image_id": "sha256:ee3017320906e2b921023f1ce7ead47dd8b211ff5d9f767b0969eb63a3214ee8"
+  },
+  "authorized_staging_gate": {
+    "api_registry_digest": "REQUIRED",
+    "web_registry_digest": "REQUIRED",
+    "image_scan_evidence": "REQUIRED",
+    "staging_evidence_bundle": "REQUIRED"
+  },
+  "artifacts": [
+    "deploy/compose.production.yml",
+    "apps/api/Dockerfile",
+    "apps/web/Dockerfile.production",
+    "docs/production-readiness.md",
+    "docs/operations/staging-and-test-accounts.md",
+    "docs/releases/KIKO-COMMERCIAL-RELEASE-READINESS.md"
+  ]
+}
