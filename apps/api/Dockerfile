@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ARG CODEX_CLI_VERSION=0.149.0
 ARG PNPM_VERSION=11.9.0
