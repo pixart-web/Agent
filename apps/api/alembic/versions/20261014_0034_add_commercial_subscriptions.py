@@ -4,6 +4,7 @@ Revision ID: 20261014_0034
 Revises: 20261013_0033
 """
 
+import json
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -16,8 +17,51 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+_PLANS: list[dict[str, object]] = [
+    {
+        "code": "trial",
+        "name": "Trial",
+        "description": "Time-limited evaluation",
+        "seat_limit": 3,
+        "monthly_token_limit": 100000,
+        "automation_limit": 5,
+        "storage_limit_mb": 250,
+        "retention_days": 30,
+        "integrations": ["github"],
+        "support_level": "self_service",
+        "is_public": True,
+    },
+    {
+        "code": "business",
+        "name": "Business",
+        "description": "Operational teams",
+        "seat_limit": 25,
+        "monthly_token_limit": 2000000,
+        "automation_limit": 100,
+        "storage_limit_mb": 10240,
+        "retention_days": 365,
+        "integrations": ["github", "gmail", "google_calendar", "codex"],
+        "support_level": "business",
+        "is_public": True,
+    },
+    {
+        "code": "enterprise",
+        "name": "Enterprise",
+        "description": "Configurable enterprise controls",
+        "seat_limit": 1000,
+        "monthly_token_limit": 100000000,
+        "automation_limit": 10000,
+        "storage_limit_mb": 102400,
+        "retention_days": 3650,
+        "integrations": ["github", "gmail", "google_calendar", "codex"],
+        "support_level": "enterprise",
+        "is_public": True,
+    },
+]
+
+
 def upgrade() -> None:
-    plans = op.create_table(
+    op.create_table(
         "commercial_plans",
         sa.Column("code", sa.String(32), primary_key=True),
         sa.Column("name", sa.String(100), nullable=False),
@@ -34,50 +78,17 @@ def upgrade() -> None:
             "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
         ),
     )
-    op.bulk_insert(
-        plans,
-        [
-            {
-                "code": "trial",
-                "name": "Trial",
-                "description": "Time-limited evaluation",
-                "seat_limit": 3,
-                "monthly_token_limit": 100000,
-                "automation_limit": 5,
-                "storage_limit_mb": 250,
-                "retention_days": 30,
-                "integrations": ["github"],
-                "support_level": "self_service",
-                "is_public": True,
-            },
-            {
-                "code": "business",
-                "name": "Business",
-                "description": "Operational teams",
-                "seat_limit": 25,
-                "monthly_token_limit": 2000000,
-                "automation_limit": 100,
-                "storage_limit_mb": 10240,
-                "retention_days": 365,
-                "integrations": ["github", "gmail", "google_calendar", "codex"],
-                "support_level": "business",
-                "is_public": True,
-            },
-            {
-                "code": "enterprise",
-                "name": "Enterprise",
-                "description": "Configurable enterprise controls",
-                "seat_limit": 1000,
-                "monthly_token_limit": 100000000,
-                "automation_limit": 10000,
-                "storage_limit_mb": 102400,
-                "retention_days": 3650,
-                "integrations": ["github", "gmail", "google_calendar", "codex"],
-                "support_level": "enterprise",
-                "is_public": True,
-            },
-        ],
-    )
+    # Rendered as plain SQL so `alembic --sql` (offline mode) can emit the JSON column values.
+    for plan in _PLANS:
+        op.execute(
+            sa.text(
+                "INSERT INTO commercial_plans (code, name, description, seat_limit, "
+                "monthly_token_limit, automation_limit, storage_limit_mb, retention_days, "
+                "integrations, support_level, is_public) VALUES (:code, :name, :description, "
+                ":seat_limit, :monthly_token_limit, :automation_limit, :storage_limit_mb, "
+                ":retention_days, CAST(:integrations AS JSON), :support_level, :is_public)"
+            ).bindparams(**{**plan, "integrations": json.dumps(plan["integrations"])})
+        )
     op.create_table(
         "workspace_subscriptions",
         sa.Column("id", sa.Uuid(), primary_key=True),

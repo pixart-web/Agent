@@ -44,23 +44,52 @@ function InviteContent() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="invite-title">
         <p className="eyebrow">Workspace invitation</p>
-        <h1 id="invite-title" className="auth-title">Join your team on Kiko</h1>
+        <h1 id="invite-title" className="auth-title">
+          Join your team on Kiko
+        </h1>
         {!token ? (
-          <p className="form-message" role="alert">This invitation link is incomplete.</p>
+          <p className="form-message" role="alert">
+            This invitation link is incomplete.
+          </p>
         ) : checking ? (
           <p className="auth-intro">Checking your secure session…</p>
         ) : user ? (
           <>
             <p className="auth-intro">Signed in as {user.email}.</p>
-            {!accepted && <button className="primary-button" type="button" onClick={() => void accept()}>Accept invitation</button>}
-            {message && <p className="form-message" role="status">{message}</p>}
-            {accepted && <p className="auth-switch"><Link href="/dashboard/knowledge">Open workspace</Link></p>}
+            {!accepted && (
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => void accept()}
+              >
+                Accept invitation
+              </button>
+            )}
+            {message && (
+              <p className="form-message" role="status">
+                {message}
+              </p>
+            )}
+            {accepted && (
+              <p className="auth-switch">
+                <Link href="/dashboard/knowledge">Open workspace</Link>
+              </p>
+            )}
           </>
         ) : (
           <>
-            <p className="auth-intro">Sign in with the invited email address, or create and verify that account first.</p>
-            <p className="auth-switch"><Link href={`/login?next=${encodeURIComponent(returnPath)}`}>Sign in to accept</Link></p>
-            <p className="auth-switch"><Link href="/register">Create an account</Link></p>
+            <p className="auth-intro">
+              Sign in with the invited email address, or create and verify that
+              account first.
+            </p>
+            <p className="auth-switch">
+              <Link href={`/login?next=${encodeURIComponent(returnPath)}`}>
+                Sign in to accept
+              </Link>
+            </p>
+            <p className="auth-switch">
+              <Link href="/register">Create an account</Link>
+            </p>
           </>
         )}
       </section>
@@ -69,5 +98,11 @@ function InviteContent() {
 }
 
 export default function InvitePage() {
-  return <Suspense fallback={<main className="loading-page">Loading invitation…</main>}><InviteContent /></Suspense>;
+  return (
+    <Suspense
+      fallback={<main className="loading-page">Loading invitation…</main>}
+    >
+      <InviteContent />
+    </Suspense>
+  );
 }

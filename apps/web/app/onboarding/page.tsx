@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { AuthClientError, getOnboarding, updateOnboarding } from '../../lib/auth-client';
+import {
+  AuthClientError,
+  getOnboarding,
+  updateOnboarding,
+} from '../../lib/auth-client';
 import type { OnboardingState } from '../../lib/auth-types';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
@@ -39,13 +43,19 @@ export default function OnboardingPage() {
         setObjectives(value.primary_objectives);
       })
       .catch((error) =>
-        setMessage(error instanceof AuthClientError ? error.message : 'Unable to load onboarding.'),
+        setMessage(
+          error instanceof AuthClientError
+            ? error.message
+            : 'Unable to load onboarding.',
+        ),
       );
   }, [router, user]);
 
   function toggleObjective(value: string) {
     setObjectives((current) =>
-      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
     );
   }
 
@@ -63,7 +73,11 @@ export default function OnboardingPage() {
       });
       router.replace('/dashboard/commands/new');
     } catch (error) {
-      setMessage(error instanceof AuthClientError ? error.message : 'Unable to save onboarding.');
+      setMessage(
+        error instanceof AuthClientError
+          ? error.message
+          : 'Unable to save onboarding.',
+      );
     } finally {
       setSaving(false);
     }
@@ -79,36 +93,63 @@ export default function OnboardingPage() {
         <p className="eyebrow">Welcome to Kiko</p>
         <h1>Set up your company workspace</h1>
         <p className="lede">
-          Tell Kiko what your company does and what you want to achieve. You can connect optional
-          integrations after this setup.
+          Tell Kiko what your company does and what you want to achieve. You can
+          connect optional integrations after this setup.
         </p>
         <form className="auth-form" onSubmit={complete}>
           <label>
             Company name
-            <input required minLength={2} value={name} onChange={(event) => setName(event.target.value)} />
+            <input
+              required
+              minLength={2}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </label>
           <label>
             What does your company do?
-            <textarea required maxLength={2000} rows={5} value={description} onChange={(event) => setDescription(event.target.value)} />
+            <textarea
+              required
+              maxLength={2000}
+              rows={5}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
           </label>
           <fieldset className="onboarding-objectives">
             <legend>Primary objectives</legend>
             {objectiveOptions.map((objective) => (
               <label key={objective}>
-                <input type="checkbox" checked={objectives.includes(objective)} onChange={() => toggleObjective(objective)} />
+                <input
+                  type="checkbox"
+                  checked={objectives.includes(objective)}
+                  onChange={() => toggleObjective(objective)}
+                />
                 <span>{objective}</span>
               </label>
             ))}
           </fieldset>
           <div className="onboarding-actions">
-            <button className="primary-button" disabled={saving || objectives.length === 0} type="submit">
+            <button
+              className="primary-button"
+              disabled={saving || objectives.length === 0}
+              type="submit"
+            >
               {saving ? 'Saving…' : 'Finish and create my first command'}
             </button>
-            <span className="form-note">Optional integrations can be connected after setup.</span>
+            <span className="form-note">
+              Optional integrations can be connected after setup.
+            </span>
           </div>
         </form>
-        {message && <p className="form-message" role="status">{message}</p>}
-        <p className="form-note">No external action is performed during setup.</p>
+        {message && (
+          <p className="form-message" role="status">
+            {message}
+          </p>
+        )}
+        <p className="form-note">
+          No external action is performed during setup.
+        </p>
       </section>
     </main>
   );
