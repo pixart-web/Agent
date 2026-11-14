@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - main
+  # Manual runs for stacked branches (e.g. the desktop branch before it targets main).
+  workflow_dispatch:
 
 permissions:
   contents: read
