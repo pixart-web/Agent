@@ -32,3 +32,8 @@ Thumbs.db
 # Local data
 postgres_data/
 redis_data/
+
+# Desktop (Tauri)
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/

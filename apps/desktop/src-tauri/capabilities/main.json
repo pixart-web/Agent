@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Least privilege for the main window: event listening only. File dialogs, notifications, external links and keychain access are reached through validated Rust commands, never directly from JavaScript. Window dragging is allowed for the custom title-bar region.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging"
+  ]
+}

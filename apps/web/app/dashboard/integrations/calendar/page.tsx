@@ -10,6 +10,8 @@ import {
   getCalendarIntegrationStatus,
   listCalendarAccounts,
 } from '../../../../lib/workflow-client';
+import { confirmAction } from '../../../../lib/confirm';
+import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
 export default function CalendarIntegrationPage() {
@@ -35,14 +37,14 @@ export default function CalendarIntegrationPage() {
   async function handleConnect() {
     try {
       const value = await connectCalendar();
-      window.location.assign(value.authorization_url);
+      await startExternalAuthorization(value.authorization_url);
     } catch {
       setError('Unable to start Google Calendar authorization.');
     }
   }
 
   async function handleDisconnect(accountId: string) {
-    if (!window.confirm('Disconnect this Calendar account?')) return;
+    if (!(await confirmAction('Disconnect this Calendar account?'))) return;
     await disconnectCalendar(accountId);
     await refresh();
   }

@@ -2260,3 +2260,178 @@ h1 {
     flex-direction: column;
   }
 }
+
+/* ── Desktop (macOS) shell ─────────────────────────────────────────────────────
+   Applies only to the Tauri build (`<html data-platform="desktop">`). The web layout
+   is unchanged. */
+
+html[data-platform='desktop'] {
+  --desktop-sidebar: 232px;
+  --desktop-titlebar: 38px;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+html[data-platform='desktop']
+  :is(
+    input,
+    textarea,
+    [contenteditable],
+    pre,
+    code,
+    td,
+    p,
+    li,
+    dd,
+    .selectable
+  ) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+html[data-platform='desktop'] main {
+  padding-top: calc(var(--desktop-titlebar) + 24px);
+}
+
+html[data-platform='desktop'] main:has(> .dashboard-nav) {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: calc(var(--desktop-titlebar) + 12px) 40px 56px
+    calc(var(--desktop-sidebar) + 40px);
+}
+
+html[data-platform='desktop'] .dashboard-nav {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: var(--desktop-sidebar);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: calc(var(--desktop-titlebar) + 6px) 12px 16px;
+  overflow-y: auto;
+  border-bottom: 0;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--background) 82%, white);
+  backdrop-filter: saturate(160%) blur(18px);
+}
+
+html[data-platform='desktop'] .dashboard-nav > div {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  row-gap: 2px;
+}
+
+html[data-platform='desktop'] .dashboard-nav .brand-mark {
+  margin: 0 0 12px;
+  padding: 0 10px;
+}
+
+html[data-platform='desktop'] .dashboard-nav .nav-link {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 7px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+html[data-platform='desktop'] .dashboard-nav .nav-link:hover {
+  background: rgba(23, 32, 38, 0.06);
+}
+
+html[data-platform='desktop'] .dashboard-nav .nav-link[aria-current='page'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+html[data-platform='desktop'] .dashboard-nav .nav-user {
+  margin-top: 14px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.desktop-titlebar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 30;
+  height: var(--desktop-titlebar, 38px);
+}
+
+.desktop-offline {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--offline) 35%, transparent);
+  border-radius: 12px;
+  color: var(--ink);
+  background: white;
+  box-shadow: 0 12px 32px rgba(23, 32, 38, 0.16);
+  font-size: 0.9rem;
+}
+
+.desktop-palette__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding-top: 14vh;
+  background: rgba(23, 32, 38, 0.18);
+}
+
+.desktop-palette {
+  width: min(560px, calc(100% - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 24px 64px rgba(23, 32, 38, 0.24);
+}
+
+.desktop-palette__input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  font: inherit;
+  font-size: 1.05rem;
+  outline: none;
+}
+
+.desktop-palette__results {
+  max-height: 360px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.desktop-palette__results li {
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.desktop-palette__results li.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.desktop-palette__empty {
+  color: var(--muted);
+  cursor: default;
+}

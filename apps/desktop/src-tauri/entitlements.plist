@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Outbound HTTPS to the configured Kiko server only. No inbound network, camera,
+       microphone, location, contacts or arbitrary file access is requested. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+</dict>
+</plist>

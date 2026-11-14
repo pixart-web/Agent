@@ -10,6 +10,8 @@ import {
   getEmailIntegrationStatus,
   listEmailAccounts,
 } from '../../../../lib/workflow-client';
+import { confirmAction } from '../../../../lib/confirm';
+import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
 export default function EmailIntegrationPage() {
@@ -36,14 +38,14 @@ export default function EmailIntegrationPage() {
   async function handleConnect() {
     try {
       const value = await connectEmail();
-      window.location.assign(value.authorization_url);
+      await startExternalAuthorization(value.authorization_url);
     } catch {
       setError('Unable to start Google authorization.');
     }
   }
 
   async function handleDisconnect(accountId: string) {
-    if (!window.confirm('Disconnect this email account?')) return;
+    if (!(await confirmAction('Disconnect this email account?'))) return;
     await disconnectEmail(accountId);
     await refresh();
   }
