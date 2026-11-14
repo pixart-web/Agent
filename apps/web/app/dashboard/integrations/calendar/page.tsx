@@ -10,6 +10,7 @@ import {
   getCalendarIntegrationStatus,
   listCalendarAccounts,
 } from '../../../../lib/workflow-client';
+import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
 export default function CalendarIntegrationPage() {
@@ -35,7 +36,7 @@ export default function CalendarIntegrationPage() {
   async function handleConnect() {
     try {
       const value = await connectCalendar();
-      window.location.assign(value.authorization_url);
+      await startExternalAuthorization(value.authorization_url);
     } catch {
       setError('Unable to start Google Calendar authorization.');
     }

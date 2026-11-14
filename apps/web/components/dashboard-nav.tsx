@@ -1,13 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { logout } from '../lib/auth-client';
 import type { User } from '../lib/auth-types';
 
 export function DashboardNav({ user }: { user: User }) {
   const router = useRouter();
+  const pathname = usePathname() ?? '';
+  const current = (href: string): 'page' | undefined => {
+    const active =
+      href === '/dashboard'
+        ? pathname === '/dashboard' || pathname === '/dashboard/'
+        : pathname === href || pathname.startsWith(`${href}/`);
+    return active ? 'page' : undefined;
+  };
 
   async function handleLogout() {
     await logout();
@@ -20,62 +28,138 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="brand-mark" href="/dashboard">
           Kiko
         </Link>
-        <Link className="nav-link" href="/dashboard/kiko">
+        <Link
+          className="nav-link"
+          href="/dashboard/kiko"
+          aria-current={current('/dashboard/kiko')}
+        >
           Kiko AI
         </Link>
-        <Link className="nav-link" href="/dashboard/commands">
+        <Link
+          className="nav-link"
+          href="/dashboard/commands"
+          aria-current={current('/dashboard/commands')}
+        >
           Commands
         </Link>
-        <Link className="nav-link" href="/dashboard/tasks">
+        <Link
+          className="nav-link"
+          href="/dashboard/tasks"
+          aria-current={current('/dashboard/tasks')}
+        >
           Tasks
         </Link>
-        <Link className="nav-link" href="/dashboard/projects">
+        <Link
+          className="nav-link"
+          href="/dashboard/projects"
+          aria-current={current('/dashboard/projects')}
+        >
           Projects
         </Link>
-        <Link className="nav-link" href="/dashboard/executions">
+        <Link
+          className="nav-link"
+          href="/dashboard/executions"
+          aria-current={current('/dashboard/executions')}
+        >
           Executions
         </Link>
-        <Link className="nav-link" href="/dashboard/analytics">
+        <Link
+          className="nav-link"
+          href="/dashboard/analytics"
+          aria-current={current('/dashboard/analytics')}
+        >
           Analytics
         </Link>
-        <Link className="nav-link" href="/dashboard/agents">
+        <Link
+          className="nav-link"
+          href="/dashboard/agents"
+          aria-current={current('/dashboard/agents')}
+        >
           Agents
         </Link>
-        <Link className="nav-link" href="/dashboard/automations">
+        <Link
+          className="nav-link"
+          href="/dashboard/automations"
+          aria-current={current('/dashboard/automations')}
+        >
           Automations
         </Link>
-        <Link className="nav-link" href="/dashboard/knowledge">
+        <Link
+          className="nav-link"
+          href="/dashboard/knowledge"
+          aria-current={current('/dashboard/knowledge')}
+        >
           Knowledge
         </Link>
-        <Link className="nav-link" href="/dashboard/approvals">
+        <Link
+          className="nav-link"
+          href="/dashboard/approvals"
+          aria-current={current('/dashboard/approvals')}
+        >
           Approvals
         </Link>
-        <Link className="nav-link" href="/dashboard/notifications">
+        <Link
+          className="nav-link"
+          href="/dashboard/notifications"
+          aria-current={current('/dashboard/notifications')}
+        >
           Notifications
         </Link>
-        <Link className="nav-link" href="/dashboard/codex">
+        <Link
+          className="nav-link"
+          href="/dashboard/codex"
+          aria-current={current('/dashboard/codex')}
+        >
           Codex
         </Link>
-        <Link className="nav-link" href="/dashboard/email">
+        <Link
+          className="nav-link"
+          href="/dashboard/email"
+          aria-current={current('/dashboard/email')}
+        >
           Email
         </Link>
-        <Link className="nav-link" href="/dashboard/crm">
+        <Link
+          className="nav-link"
+          href="/dashboard/crm"
+          aria-current={current('/dashboard/crm')}
+        >
           Clients
         </Link>
-        <Link className="nav-link" href="/dashboard/marketing">
+        <Link
+          className="nav-link"
+          href="/dashboard/marketing"
+          aria-current={current('/dashboard/marketing')}
+        >
           Marketing
         </Link>
-        <Link className="nav-link" href="/dashboard/integrations">
+        <Link
+          className="nav-link"
+          href="/dashboard/integrations"
+          aria-current={current('/dashboard/integrations')}
+        >
           Integrations
         </Link>
-        <Link className="nav-link" href="/dashboard/settings">
+        <Link
+          className="nav-link"
+          href="/dashboard/settings"
+          aria-current={current('/dashboard/settings')}
+        >
           Settings
         </Link>
-        <Link className="nav-link" href="/dashboard/subscription">
+        <Link
+          className="nav-link"
+          href="/dashboard/subscription"
+          aria-current={current('/dashboard/subscription')}
+        >
           Subscription
         </Link>
         {user.is_superuser && (
-          <Link className="nav-link" href="/dashboard/platform-admin">
+          <Link
+            className="nav-link"
+            href="/dashboard/platform-admin"
+            aria-current={current('/dashboard/platform-admin')}
+          >
             Platform admin
           </Link>
         )}

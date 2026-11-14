@@ -54,6 +54,7 @@ import type {
 } from '@agent/shared';
 
 import { authFetch } from './auth-client';
+import { saveDownload } from './downloads';
 import type {
   ApprovalRequest,
   ApprovalDetail,
@@ -860,12 +861,7 @@ export async function downloadCrmExport(
   if (!response.ok) {
     throw new WorkflowApiError('CRM export failed.', response.status);
   }
-  const url = URL.createObjectURL(await response.blob());
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `crm-${resource}.csv`;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  await saveDownload(await response.blob(), `crm-${resource}.csv`);
 }
 
 export function listCrmOpportunities(

@@ -4,7 +4,7 @@ import { AGENT_CATALOG, type AgentId, type AgentOverview } from '@agent/shared';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../components/dashboard-nav';
-import { apiBaseUrl } from '../../lib/api-url';
+import { apiFetch } from '../../lib/auth-client';
 import { getAgentOverview } from '../../lib/workflow-client';
 import {
   getOperationsOverview,
@@ -55,7 +55,7 @@ export default function DashboardPage() {
 
     async function checkApi() {
       try {
-        const response = await fetch(`${apiBaseUrl}/health`);
+        const response = await apiFetch('/health');
         if (active) setApiState(response.ok ? 'online' : 'offline');
       } catch {
         if (active) setApiState('offline');

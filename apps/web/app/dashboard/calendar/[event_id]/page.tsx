@@ -1,59 +1,19 @@
-'use client';
+import { staticRouteParams } from '../../../../lib/static-route-params';
+import { Suspense } from 'react';
 
-import type { CalendarEvent } from '@agent/shared';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import ClientPage from './page-client';
 
-import { DashboardNav } from '../../../../components/dashboard-nav';
-import { getCalendarEvent } from '../../../../lib/workflow-client';
-import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+// Server wrapper so the desktop static export can pre-render a placeholder page
+// (see lib/static-route-params.ts). It must render the client page rather than
+// re-export it, or Next.js ignores generateStaticParams.
+export function generateStaticParams() {
+  return staticRouteParams('event_id');
+}
 
-export default function CalendarEventPage() {
-  const { user, loading } = useAuthenticatedUser();
-  const params = useParams<{ event_id: string }>();
-  const search = useSearchParams();
-  const [event, setEvent] = useState<CalendarEvent | null>(null);
-  const [error, setError] = useState('');
-  const accountId = search.get('account') ?? '';
-  const calendarId = search.get('calendar') ?? '';
-
-  useEffect(() => {
-    if (!user || !accountId || !calendarId) return;
-    void getCalendarEvent(accountId, calendarId, params.event_id)
-      .then((value) => setEvent(value.event))
-      .catch(() => setError('Unable to read this event.'));
-  }, [accountId, calendarId, params.event_id, user]);
-
-  if (loading || !user)
-    return <main className="loading-page">Loading event…</main>;
-
+export default function Page() {
   return (
-    <main>
-      <DashboardNav user={user} />
-      <section className="section-heading">
-        <div>
-          <p className="eyebrow">Untrusted external content</p>
-          <h1>{event?.title ?? 'Calendar event'}</h1>
-          <p>Status: {event?.status ?? 'Loading'}</p>
-        </div>
-      </section>
-      {error && <p className="workflow-alert">{error}</p>}
-      {event && (
-        <section className="workflow-panel">
-          <p>Start: {event.start.date_time ?? event.start.date}</p>
-          <p>End: {event.end.date_time ?? event.end.date}</p>
-          <p>Time zone: {event.start.time_zone ?? 'All day'}</p>
-          <p>Location: {event.location || 'Not set'}</p>
-          <p>Description: {event.description || 'Not set'}</p>
-          <h2>Attendees</h2>
-          {event.attendees.map((attendee) => (
-            <p key={attendee.email}>
-              {attendee.display_name || attendee.email} ·{' '}
-              {attendee.response_status || 'No response'}
-            </p>
-          ))}
-        </section>
-      )}
-    </main>
+    <Suspense fallback={<main className="loading-page">Loading…</main>}>
+      <ClientPage />
+    </Suspense>
   );
 }

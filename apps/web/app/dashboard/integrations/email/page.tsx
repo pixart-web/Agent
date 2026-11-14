@@ -10,6 +10,7 @@ import {
   getEmailIntegrationStatus,
   listEmailAccounts,
 } from '../../../../lib/workflow-client';
+import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
 export default function EmailIntegrationPage() {
@@ -36,7 +37,7 @@ export default function EmailIntegrationPage() {
   async function handleConnect() {
     try {
       const value = await connectEmail();
-      window.location.assign(value.authorization_url);
+      await startExternalAuthorization(value.authorization_url);
     } catch {
       setError('Unable to start Google authorization.');
     }

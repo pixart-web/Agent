@@ -19,41 +19,54 @@ function scriptSources(): string {
     : "'self' 'unsafe-inline' 'unsafe-eval'";
 }
 
+// `export` produces the static UI bundled into the Kiko desktop app (apps/desktop).
+// Response headers do not apply to static exports; the desktop shell sets its own CSP.
+const isStaticExport = process.env.NEXT_OUTPUT_MODE === 'export';
+
 const nextConfig: NextConfig = {
-  output:
-    process.env.NEXT_OUTPUT_MODE === 'standalone' ? 'standalone' : undefined,
+  output: isStaticExport
+    ? 'export'
+    : process.env.NEXT_OUTPUT_MODE === 'standalone'
+      ? 'standalone'
+      : undefined,
+  trailingSlash: isStaticExport,
+  images: isStaticExport ? { unoptimized: true } : undefined,
   transpilePackages: ['@agent/shared'],
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=()',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "object-src 'none'",
-              "img-src 'self' data: blob:",
-              "font-src 'self'",
-              "style-src 'self' 'unsafe-inline'",
-              `script-src ${scriptSources()}`,
-              `connect-src ${connectSources()}`,
-            ].join('; '),
-          },
-        ],
-      },
-    ];
-  },
+  // Inlined at build time so route modules can decide what to pre-render.
+  env: { KIKO_STATIC_EXPORT: isStaticExport ? 'true' : 'false' },
+  headers: isStaticExport ? undefined : securityHeaders,
 };
+
+async function securityHeaders() {
+  return [
+    {
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        {
+          key: 'Permissions-Policy',
+          value: 'camera=(), microphone=(), geolocation=(), payment=()',
+        },
+        {
+          key: 'Content-Security-Policy',
+          value: [
+            "default-src 'self'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "object-src 'none'",
+            "img-src 'self' data: blob:",
+            "font-src 'self'",
+            "style-src 'self' 'unsafe-inline'",
+            `script-src ${scriptSources()}`,
+            `connect-src ${connectSources()}`,
+          ].join('; '),
+        },
+      ],
+    },
+  ];
+}
 
 export default nextConfig;

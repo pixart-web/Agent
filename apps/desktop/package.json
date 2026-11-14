@@ -1,0 +1,15 @@
+{
+  "name": "@agent/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:ui": "node scripts/build-ui.mjs",
+    "tauri": "tauri",
+    "dev": "pnpm run build:ui && tauri build --debug --no-bundle",
+    "build": "tauri build",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

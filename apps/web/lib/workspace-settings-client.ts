@@ -1,3 +1,4 @@
+import { saveDownload } from './downloads';
 import { authFetch } from './auth-client';
 
 export type WorkspaceSettings = {
@@ -71,10 +72,5 @@ export async function downloadWorkspaceExport(
   const filename =
     disposition.match(/filename="([^"]+)"/)?.[1] ??
     `kiko-workspace-export.${format}`;
-  const url = URL.createObjectURL(await response.blob());
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  await saveDownload(await response.blob(), filename);
 }
