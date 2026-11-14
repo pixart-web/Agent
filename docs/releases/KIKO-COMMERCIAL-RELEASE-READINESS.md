@@ -1,7 +1,7 @@
 # Kiko commercial release readiness
 
 **Assessment date:** 2026-10-14  
-**Release source revision:** `000466eec9f6cc6b4f2afd6ad18a97a7ed9045e9`  
+**Release source revision:** `d6a68086e3faf00723ccce689493c8ea41e66009` (assessed at `000466e`; see addendum)  
 **Migration head:** `20261014_0035`  
 **Safety boundary:** local repository and isolated local PostgreSQL/Redis only; no staging or
 production mutation and no real external-provider write.
@@ -172,8 +172,22 @@ does not claim those external decisions have occurred.
 
 ## 23. Final recommendation
 
-Deploy revision `000466eec9f6cc6b4f2afd6ad18a97a7ed9045e9` only to a newly isolated, authorized staging
+Deploy revision `d6a68086e3faf00723ccce689493c8ea41e66009` (or its merge into `main`) only to a newly isolated, authorized staging
 environment. Complete every manifest gate, archive evidence, and conduct a separate owner review
 before considering production. No production action was performed by this roadmap run.
 
 **READY FOR AUTHORIZED STAGING DEPLOYMENT**
+
+## Addendum — 2026-11-14 integration into `main`
+
+After the original assessment two commits landed on `codex/commercial-release`:
+
+- `41dee30` — documentation only.
+- `d6a6808` — migration `20261014_0034` now seeds `commercial_plans` with explicit
+  `INSERT ... CAST(... AS JSON)` statements so `alembic --sql` (offline) can render it. Table
+  schema and seeded rows are unchanged; a clean PostgreSQL upgrade/downgrade of 0034 was re-run and
+  `integrations` was verified as a JSON array. Two web pages were reformatted with Prettier.
+
+CI run `43590618786` passed all four jobs on `d6a6808`. The local image IDs in section 15 were built
+from `000466e` and must be rebuilt from the current revision before staging. The readiness
+assessment is otherwise unchanged.
