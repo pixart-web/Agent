@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-Role = Literal["owner", "admin", "member", "viewer"]
+Role = Literal["owner", "admin", "manager", "member", "viewer"]
 Category = Literal[
     "company_profile",
     "service",
@@ -42,7 +42,7 @@ class WorkspaceList(StrictKnowledgeModel):
 
 class MemberAdd(StrictKnowledgeModel):
     user_id: UUID
-    role: Literal["admin", "member", "viewer"]
+    role: Literal["admin", "manager", "member", "viewer"]
 
 
 class MemberRead(StrictKnowledgeModel):

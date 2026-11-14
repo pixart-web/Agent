@@ -22,9 +22,13 @@ class CommandRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    workspace_id: UUID
+    conversation_id: UUID | None
+    duplicated_from_id: UUID | None
     user_id: UUID
     input: str
     status: CommandStatus
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
+    archived_at: datetime | None

@@ -325,13 +325,20 @@ def _ready_development_task(
         ]
     )
     db_session.commit()
-    auth = client.post(
+    registration = client.post(
         "/api/v1/auth/register",
         json={
             "email": "github-approval@example.com",
             "password": PASSWORD,
             "full_name": "GitHub Owner",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
+    )
+    assert registration.status_code == 202
+    auth = client.post(
+        "/api/v1/auth/login",
+        json={"email": "github-approval@example.com", "password": PASSWORD},
     ).json()
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     command = client.post(

@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -28,6 +29,7 @@ from app.services.codex_run_service import CodexRunService
 from app.services.dependency_service import DependencyService
 from app.services.execution_queue_service import ExecutionQueueService
 from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFoundError
+from app.workspaces.scope import active_workspace_id
 
 
 @dataclass(frozen=True)
@@ -345,6 +347,7 @@ class ExecutionService:
             status=ApprovalStatus.PENDING,
             action_fingerprint=action.action_fingerprint,
             correlation_id=action.correlation_id,
+            expires_at=utc_now() + timedelta(hours=get_settings().approval_expire_hours),
         )
         self.executions.add_approval(approval)
         action.status = TaskActionStatus.WAITING_APPROVAL
@@ -376,7 +379,7 @@ class ExecutionService:
             select(Command)
             .join(Plan, Plan.command_id == Command.id)
             .join(Task, Task.plan_id == Plan.id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
             .with_for_update(of=Command)
         )
         if command is None:

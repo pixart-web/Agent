@@ -53,6 +53,25 @@ class CrmOrganizationCreateInput(StrictModel):
     tags: list[str] = Field(default_factory=list, max_length=50)
 
 
+class CrmOrganizationUpdateInput(StrictModel):
+    organization_id: UUID
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    website: AnyHttpUrl | None = None
+    clear_website: bool = False
+    status: Literal["active", "inactive", "archived"] | None = None
+    tags: list[str] | None = Field(default=None, max_length=50)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> "CrmOrganizationUpdateInput":
+        if self.clear_website and self.website is not None:
+            raise ValueError("Cannot set and clear website together")
+        if not (
+            self.name or self.website or self.clear_website or self.status or self.tags is not None
+        ):
+            raise ValueError("At least one organization field must be updated")
+        return self
+
+
 class CrmContactCreateInput(StrictModel):
     full_name: str = Field(min_length=1, max_length=255)
     organization_id: UUID | None = None

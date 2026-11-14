@@ -5,6 +5,7 @@ import type {
 } from '@agent/shared';
 import type {
   AgentOverview,
+  AgentConfiguration,
   Automation,
   AutomationRun,
   AgentRun,
@@ -18,6 +19,8 @@ import type {
   CrmClient360,
   CrmContact,
   CrmOrganization,
+  CrmPipeline,
+  CrmOpportunity,
   EmailAccount,
   EmailIntegrationStatus,
   EmailMessage,
@@ -31,19 +34,30 @@ import type {
   AgentId,
   Command,
   CommandStatus,
+  Conversation,
+  ConversationDetail,
+  ConversationTurn,
   Plan,
+  Project,
+  ProjectDetail,
+  ProjectMilestone,
+  ProjectStatus,
   RiskLevel,
   SupervisorPlanResponse,
   SupervisorRun,
   TaskDetail,
+  TaskDependency,
   TaskPriority,
   TaskStatus,
   WorkflowTask,
+  WorkspaceTask,
 } from '@agent/shared';
 
 import { authFetch } from './auth-client';
 import type {
   ApprovalRequest,
+  ApprovalDetail,
+  ApprovalComment,
   ApprovalStatus,
   AuditLog,
   DispatchResponse,
@@ -59,6 +73,16 @@ export type Agent = {
   description: string;
   status: string;
 };
+
+export function updateAgentConfiguration(
+  agentId: string,
+  data: Partial<AgentConfiguration>,
+): Promise<AgentConfiguration> {
+  return request(
+    `/api/v1/agents/${agentId}/configuration`,
+    jsonRequest('PATCH', data),
+  );
+}
 
 export class WorkflowApiError extends Error {
   constructor(
@@ -84,6 +108,20 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function requestEmpty(path: string, init: RequestInit): Promise<void> {
+  const response = await authFetch(path, init);
+  if (!response.ok) {
+    let message = 'Workflow request failed.';
+    try {
+      const body = (await response.json()) as { detail?: string };
+      message = body.detail ?? message;
+    } catch {
+      // Preserve the safe generic message for non-JSON failures.
+    }
+    throw new WorkflowApiError(message, response.status);
+  }
+}
+
 function jsonRequest(method: string, body: unknown): RequestInit {
   return {
     method,
@@ -96,17 +134,45 @@ export function createCommand(input: string): Promise<Command> {
   return request('/api/v1/commands', jsonRequest('POST', { input }));
 }
 
+export function createConversation(message: string): Promise<ConversationTurn> {
+  return request('/api/v1/conversations', jsonRequest('POST', { message }));
+}
+
+export function listConversations(): Promise<Conversation[]> {
+  return request('/api/v1/conversations?limit=100');
+}
+
+export function getConversation(
+  conversationId: string,
+): Promise<ConversationDetail> {
+  return request(`/api/v1/conversations/${conversationId}?limit=200`);
+}
+
+export function sendConversationMessage(
+  conversationId: string,
+  message: string,
+): Promise<ConversationTurn> {
+  return request(
+    `/api/v1/conversations/${conversationId}/messages`,
+    jsonRequest('POST', { message }),
+  );
+}
+
 export function listCommands(
   options: {
     limit?: number;
     offset?: number;
     status?: CommandStatus;
+    search?: string;
+    includeArchived?: boolean;
   } = {},
 ): Promise<Command[]> {
   const query = new URLSearchParams();
   if (options.limit !== undefined) query.set('limit', String(options.limit));
   if (options.offset !== undefined) query.set('offset', String(options.offset));
   if (options.status !== undefined) query.set('status', options.status);
+  if (options.search !== undefined) query.set('search', options.search);
+  if (options.includeArchived) query.set('include_archived', 'true');
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
   return request(`/api/v1/commands${suffix}`);
 }
@@ -117,6 +183,18 @@ export function getCommand(commandId: string): Promise<Command> {
 
 export function cancelCommand(commandId: string): Promise<Command> {
   return request(`/api/v1/commands/${commandId}/cancel`, { method: 'POST' });
+}
+
+export function archiveCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/archive`, { method: 'POST' });
+}
+
+export function restoreCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/restore`, { method: 'POST' });
+}
+
+export function duplicateCommand(commandId: string): Promise<Command> {
+  return request(`/api/v1/commands/${commandId}/duplicate`, { method: 'POST' });
 }
 
 export function createPlan(
@@ -194,6 +272,92 @@ export function listTasks(planId: string): Promise<WorkflowTask[]> {
   return request(`/api/v1/plans/${planId}/tasks`);
 }
 
+export function listWorkspaceTasks(
+  options: {
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    agentId?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<WorkspaceTask[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.priority) query.set('priority', options.priority);
+  if (options.agentId) query.set('agent_id', options.agentId);
+  if (options.search) query.set('search', options.search);
+  if (options.limit !== undefined) query.set('limit', String(options.limit));
+  if (options.offset !== undefined) query.set('offset', String(options.offset));
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+  return request(`/api/v1/tasks${suffix}`);
+}
+
+export function listProjects(
+  options: { status?: ProjectStatus; search?: string } = {},
+): Promise<Project[]> {
+  const query = new URLSearchParams();
+  if (options.status) query.set('status', options.status);
+  if (options.search) query.set('search', options.search);
+  const suffix = query.size ? `?${query.toString()}` : '';
+  return request(`/api/v1/projects${suffix}`);
+}
+
+export function createProject(data: {
+  name: string;
+  description?: string;
+  status?: ProjectStatus;
+  starts_on?: string;
+  due_on?: string;
+}): Promise<Project> {
+  return request('/api/v1/projects', jsonRequest('POST', data));
+}
+
+export function getProject(projectId: string): Promise<ProjectDetail> {
+  return request(`/api/v1/projects/${projectId}`);
+}
+
+export function updateProject(
+  projectId: string,
+  data: Partial<
+    Pick<Project, 'name' | 'description' | 'status' | 'starts_on' | 'due_on'>
+  >,
+): Promise<Project> {
+  return request(`/api/v1/projects/${projectId}`, jsonRequest('PATCH', data));
+}
+
+export function addProjectMilestone(
+  projectId: string,
+  data: { title: string; due_on?: string },
+): Promise<ProjectMilestone> {
+  return request(
+    `/api/v1/projects/${projectId}/milestones`,
+    jsonRequest('POST', data),
+  );
+}
+
+export function updateProjectMilestone(
+  projectId: string,
+  milestoneId: string,
+  data: { status: 'pending' | 'completed' },
+): Promise<ProjectMilestone> {
+  return request(
+    `/api/v1/projects/${projectId}/milestones/${milestoneId}`,
+    jsonRequest('PATCH', data),
+  );
+}
+
+export function linkProjectResource(
+  projectId: string,
+  kind: 'tasks' | 'commands',
+  resourceId: string,
+): Promise<void> {
+  return requestEmpty(
+    `/api/v1/projects/${projectId}/${kind}`,
+    jsonRequest('POST', { resource_id: resourceId }),
+  );
+}
+
 export function getTask(taskId: string): Promise<TaskDetail> {
   return request(`/api/v1/tasks/${taskId}`);
 }
@@ -209,6 +373,7 @@ export function updateTask(
       | 'priority'
       | 'risk_level'
       | 'sequence'
+      | 'due_at'
     >
   >,
 ): Promise<WorkflowTask> {
@@ -224,6 +389,35 @@ export function transitionTask(
     `/api/v1/tasks/${taskId}/transition`,
     jsonRequest('POST', { status, reason: reason || null }),
   );
+}
+
+export function listTaskDependencies(
+  taskId: string,
+): Promise<TaskDependency[]> {
+  return request(`/api/v1/tasks/${taskId}/dependencies`);
+}
+
+export function createTaskDependency(
+  taskId: string,
+  dependsOnTaskId: string,
+): Promise<TaskDependency> {
+  return request(
+    `/api/v1/tasks/${taskId}/dependencies`,
+    jsonRequest('POST', { depends_on_task_id: dependsOnTaskId }),
+  );
+}
+
+export function deleteTaskDependency(
+  taskId: string,
+  dependencyId: string,
+): Promise<void> {
+  return requestEmpty(`/api/v1/tasks/${taskId}/dependencies/${dependencyId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function scheduleTask(taskId: string): Promise<WorkflowTask> {
+  return request(`/api/v1/tasks/${taskId}/schedule`, { method: 'POST' });
 }
 export function createTaskAction(
   taskId: string,
@@ -278,6 +472,20 @@ export function listApprovals(
   if (options.risk_level) query.set('risk_level', options.risk_level);
   const suffix = query.size ? `?${query.toString()}` : '';
   return request(`/api/v1/approvals${suffix}`);
+}
+
+export function getApprovalDetail(approvalId: string): Promise<ApprovalDetail> {
+  return request(`/api/v1/approvals/${approvalId}/detail`);
+}
+
+export function addApprovalComment(
+  approvalId: string,
+  body: string,
+): Promise<ApprovalComment> {
+  return request(
+    `/api/v1/approvals/${approvalId}/comments`,
+    jsonRequest('POST', { body }),
+  );
 }
 
 export function approveAction(
@@ -531,6 +739,153 @@ export function getCrmClient360(clientId: string): Promise<CrmClient360> {
   );
 }
 
+export function createCrmOrganization(data: {
+  name: string;
+  website?: string;
+  tags?: string[];
+}): Promise<CrmOrganization> {
+  return request('/api/v1/crm/organizations', jsonRequest('POST', data));
+}
+
+export function updateCrmOrganization(
+  organizationId: string,
+  data: { name?: string; website?: string; status?: string; tags?: string[] },
+): Promise<CrmOrganization> {
+  return request(
+    `/api/v1/crm/organizations/${encodeURIComponent(organizationId)}`,
+    jsonRequest('PATCH', { organization_id: organizationId, ...data }),
+  );
+}
+
+export function createCrmContact(data: {
+  full_name: string;
+  organization_id?: string;
+  job_title?: string;
+  methods?: {
+    method_type: 'email' | 'phone';
+    value: string;
+    is_primary?: boolean;
+  }[];
+  tags?: string[];
+}): Promise<CrmContact> {
+  return request('/api/v1/crm/contacts', jsonRequest('POST', data));
+}
+
+export function updateCrmContact(
+  contactId: string,
+  data: {
+    full_name?: string;
+    job_title?: string;
+    status?: string;
+    tags?: string[];
+  },
+): Promise<CrmContact> {
+  return request(
+    `/api/v1/crm/contacts/${encodeURIComponent(contactId)}`,
+    jsonRequest('PATCH', { contact_id: contactId, ...data }),
+  );
+}
+
+export function createCrmClient(data: {
+  organization_id: string;
+  lifecycle_status?: string;
+  industry?: string;
+}): Promise<CrmClient> {
+  return request('/api/v1/crm/clients', jsonRequest('POST', data));
+}
+
+export function updateCrmClient(
+  clientId: string,
+  data: { lifecycle_status?: string; industry?: string; summary?: string },
+): Promise<CrmClient> {
+  return request(
+    `/api/v1/crm/clients/${encodeURIComponent(clientId)}`,
+    jsonRequest('PATCH', { client_id: clientId, ...data }),
+  );
+}
+
+export function listCrmPipelines(): Promise<{ pipelines: CrmPipeline[] }> {
+  return request('/api/v1/crm/pipelines');
+}
+
+export function createCrmPipeline(data: {
+  name: string;
+  description?: string;
+  is_default?: boolean;
+  stages: {
+    name: string;
+    position: number;
+    default_probability: number;
+    is_terminal?: boolean;
+  }[];
+}): Promise<CrmPipeline> {
+  return request('/api/v1/crm/pipelines', jsonRequest('POST', data));
+}
+
+export type CrmImportPreview = {
+  fingerprint: string;
+  rows: {
+    row: number;
+    record_type: string;
+    name: string;
+    valid: boolean;
+    errors: string[];
+  }[];
+  valid_rows: number;
+  invalid_rows: number;
+};
+
+export function previewCrmImport(file: File): Promise<CrmImportPreview> {
+  const form = new FormData();
+  form.set('upload', file);
+  return request('/api/v1/crm/import/preview', { method: 'POST', body: form });
+}
+
+export function confirmCrmImport(
+  file: File,
+  fingerprint: string,
+): Promise<{ created: number }> {
+  const form = new FormData();
+  form.set('upload', file);
+  form.set('fingerprint', fingerprint);
+  return request('/api/v1/crm/import/confirm', { method: 'POST', body: form });
+}
+
+export async function downloadCrmExport(
+  resource: 'organizations' | 'contacts',
+): Promise<void> {
+  const response = await authFetch(
+    `/api/v1/crm/export?resource=${resource}&format=csv`,
+  );
+  if (!response.ok) {
+    throw new WorkflowApiError('CRM export failed.', response.status);
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `crm-${resource}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export function listCrmOpportunities(
+  clientId: string,
+): Promise<{ opportunities: CrmOpportunity[] }> {
+  return request(
+    `/api/v1/crm/clients/${encodeURIComponent(clientId)}/opportunities`,
+  );
+}
+
+export function updateCrmOpportunity(
+  opportunityId: string,
+  data: Partial<CrmOpportunity>,
+): Promise<CrmOpportunity> {
+  return request(
+    `/api/v1/crm/opportunities/${encodeURIComponent(opportunityId)}`,
+    jsonRequest('PATCH', { opportunity_id: opportunityId, ...data }),
+  );
+}
+
 export function listMarketingCampaigns(
   query = '',
 ): Promise<{ campaigns: MarketingCampaign[] }> {
@@ -545,6 +900,24 @@ export function getMarketingCampaign(
 ): Promise<MarketingCampaign> {
   return request(
     '/api/v1/marketing/campaigns/' + encodeURIComponent(campaignId),
+  );
+}
+
+export function createMarketingCampaign(data: {
+  name: string;
+  objective: string;
+  status?: string;
+}): Promise<MarketingCampaign> {
+  return request('/api/v1/marketing/campaigns', jsonRequest('POST', data));
+}
+
+export function updateMarketingCampaign(
+  campaignId: string,
+  data: { name?: string; objective?: string; status?: string },
+): Promise<MarketingCampaign> {
+  return request(
+    `/api/v1/marketing/campaigns/${encodeURIComponent(campaignId)}`,
+    jsonRequest('PATCH', { campaign_id: campaignId, ...data }),
   );
 }
 
@@ -564,6 +937,44 @@ export function getMarketingContent(
   return request('/api/v1/marketing/content/' + encodeURIComponent(contentId));
 }
 
+export function createMarketingContent(data: {
+  campaign_id: string;
+  content_type: string;
+  channel: string;
+  title: string;
+  body: string;
+}): Promise<MarketingContent> {
+  return request('/api/v1/marketing/content', jsonRequest('POST', data));
+}
+
+export function transitionMarketingContent(
+  contentId: string,
+  targetStatus: 'draft' | 'review' | 'approved' | 'archived',
+  reason?: string,
+): Promise<MarketingContent> {
+  return request(
+    `/api/v1/marketing/content/${encodeURIComponent(contentId)}/transition`,
+    jsonRequest('POST', {
+      content_id: contentId,
+      target_status: targetStatus,
+      reason,
+    }),
+  );
+}
+
+export function scheduleMarketingContent(
+  contentId: string,
+  scheduledFor: string,
+): Promise<MarketingContent> {
+  return request(
+    `/api/v1/marketing/content/${encodeURIComponent(contentId)}/schedule`,
+    jsonRequest('POST', {
+      content_id: contentId,
+      scheduled_for: scheduledFor,
+    }),
+  );
+}
+
 export function listMarketingContentCalendar(
   startsAt: string,
   endsAt: string,
@@ -579,10 +990,18 @@ export function listAutomations(): Promise<{ automations: Automation[] }> {
   return request('/api/v1/automations');
 }
 
-export function createManualAutomation(data: {
+export function createAutomation(data: {
   name: string;
   description?: string;
   command_template: string;
+  trigger_type: Automation['trigger_type'];
+  trigger_config: Record<string, unknown>;
+  conditions?: {
+    field: string;
+    operator: 'eq' | 'not_eq' | 'in' | 'exists';
+    value?: unknown;
+  }[];
+  next_run_at?: string;
   max_depth?: number;
   max_runs_per_window?: number;
   window_seconds?: number;
@@ -592,11 +1011,22 @@ export function createManualAutomation(data: {
     '/api/v1/automations',
     jsonRequest('POST', {
       ...data,
-      trigger_type: 'manual',
-      trigger_config: {},
-      conditions: [],
+      conditions: data.conditions ?? [],
     }),
   );
+}
+
+export function createManualAutomation(
+  data: Omit<
+    Parameters<typeof createAutomation>[0],
+    'trigger_type' | 'trigger_config'
+  >,
+): Promise<Automation> {
+  return createAutomation({
+    ...data,
+    trigger_type: 'manual',
+    trigger_config: {},
+  });
 }
 
 export function setAutomationEnabled(
@@ -606,6 +1036,24 @@ export function setAutomationEnabled(
   return request(
     `/api/v1/automations/${encodeURIComponent(automationId)}/${enabled ? 'resume' : 'pause'}`,
     { method: 'POST' },
+  );
+}
+
+export function updateAutomation(
+  automationId: string,
+  data: {
+    name?: string;
+    description?: string;
+    command_template?: string;
+    max_depth?: number;
+    max_runs_per_window?: number;
+    window_seconds?: number;
+    cooldown_seconds?: number;
+  },
+): Promise<Automation> {
+  return request(
+    `/api/v1/automations/${encodeURIComponent(automationId)}`,
+    jsonRequest('PATCH', data),
   );
 }
 

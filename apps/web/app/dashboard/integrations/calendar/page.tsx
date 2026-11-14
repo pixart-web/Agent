@@ -72,6 +72,31 @@ export default function CalendarIntegrationPage() {
         </button>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
+      {integration && (
+        <section className="workflow-panel integration-health">
+          <div>
+            <p className="eyebrow">Operational state</p>
+            <h2>{integration.operational_state.replaceAll('_', ' ')}</h2>
+          </div>
+          <p>
+            {integration.unresolved_writes} delivery outcomes require
+            reconciliation · {integration.pending_writes} pending ·{' '}
+            {integration.failed_writes} failed
+          </p>
+          <p>
+            Last provider sync:{' '}
+            {integration.last_sync_at
+              ? new Date(integration.last_sync_at).toLocaleString()
+              : 'Never'}
+          </p>
+          {integration.unresolved_writes > 0 && (
+            <p className="workflow-alert">
+              Do not retry automatically. Confirm the event in Google Calendar
+              before a human initiates a new action.
+            </p>
+          )}
+        </section>
+      )}
       <section className="workflow-panel">
         <h2>Connected accounts</h2>
         <p>

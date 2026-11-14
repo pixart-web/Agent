@@ -20,6 +20,7 @@ from app.automations.schemas import (
     AutomationRunList,
     AutomationRunRead,
     AutomationTrigger,
+    AutomationUpdate,
 )
 from app.core.time import utc_now
 from app.db.session import SessionLocal
@@ -28,8 +29,10 @@ from app.models.automation import Automation, AutomationRun
 from app.models.command import Command
 from app.models.integration_account import IntegrationAccount
 from app.models.outbox_event import OutboxEvent
+from app.models.user import User
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
+from app.workspaces.scope import active_workspace_id, workspace_or_legacy_owner
 
 MAX_EVENT_BYTES = 32_768
 
@@ -44,8 +47,14 @@ class AutomationService:
             days=366
         ):
             raise AutomationValidationError("Scheduled automation start is too far in the past")
+        with self.session_factory() as lookup:
+            user = lookup.get(User, user_id)
+            if user is None or user.active_workspace_id is None:
+                raise AutomationConflictError("An active workspace is required")
+            workspace_id = user.active_workspace_id
         automation = Automation(
             user_id=user_id,
+            workspace_id=workspace_id,
             name=self._display(value.name),
             description=value.description,
             trigger_type=value.trigger_type,
@@ -95,7 +104,7 @@ class AutomationService:
         with self.session_factory() as session:
             query = (
                 select(Automation)
-                .where(Automation.user_id == user_id)
+                .where(Automation.workspace_id == active_workspace_id(user_id))
                 .order_by(Automation.updated_at.desc(), Automation.id)
                 .offset(offset)
                 .limit(limit)
@@ -129,6 +138,43 @@ class AutomationService:
                 metadata={},
             )
             session.commit()
+            return self._automation_output(automation)
+
+    def update(self, user_id: UUID, automation_id: UUID, value: AutomationUpdate) -> AutomationRead:
+        with self.session_factory() as session:
+            automation = self._automation(session, user_id, automation_id, lock=True)
+            for field in (
+                "name",
+                "description",
+                "command_template",
+                "max_depth",
+                "max_runs_per_window",
+                "window_seconds",
+                "cooldown_seconds",
+            ):
+                if field not in value.model_fields_set:
+                    continue
+                updated = getattr(value, field)
+                if field in {"name", "command_template"} and isinstance(updated, str):
+                    updated = self._display(updated) if field == "name" else updated.strip()
+                setattr(automation, field, updated)
+            self._audit(
+                session,
+                actor_type=ActorType.USER,
+                actor_id=user_id,
+                event_type="automation_updated",
+                resource_type="automation",
+                resource_id=automation.id,
+                correlation_id=uuid4(),
+                metadata={"fields": sorted(value.model_fields_set)},
+            )
+            try:
+                session.commit()
+            except IntegrityError as error:
+                session.rollback()
+                raise AutomationConflictError(
+                    "An automation with this name already exists"
+                ) from error
             return self._automation_output(automation)
 
     def trigger_owned(
@@ -166,7 +212,7 @@ class AutomationService:
                 session.scalars(
                     select(Automation.id)
                     .where(
-                        Automation.user_id == user_id,
+                        Automation.workspace_id == active_workspace_id(user_id),
                         Automation.trigger_type == trigger_type,
                         Automation.enabled.is_(True),
                     )
@@ -293,7 +339,8 @@ class AutomationService:
         with self.session_factory() as session:
             query = (
                 select(AutomationRun)
-                .where(AutomationRun.user_id == user_id)
+                .join(Automation, Automation.id == AutomationRun.automation_id)
+                .where(Automation.workspace_id == active_workspace_id(user_id))
                 .order_by(AutomationRun.created_at.desc(), AutomationRun.id)
                 .offset(offset)
                 .limit(limit)
@@ -373,8 +420,12 @@ class AutomationService:
                 session.add(run)
                 session.flush()
                 if skipped_reason is None:
+                    user = session.get(User, user_id)
+                    if user is None or user.active_workspace_id is None:
+                        raise AutomationConflictError("An active workspace is required")
                     command = Command(
                         user_id=user_id,
+                        workspace_id=user.active_workspace_id,
                         input=automation.command_template,
                         correlation_id=run.correlation_id,
                     )
@@ -432,7 +483,6 @@ class AutomationService:
                 select(AutomationRun).where(
                     AutomationRun.automation_id == automation_id,
                     AutomationRun.dedupe_key == dedupe_key,
-                    AutomationRun.user_id == user_id,
                 )
             )
             if existing is None:
@@ -508,7 +558,7 @@ class AutomationService:
         account = session.scalar(
             select(IntegrationAccount.id).where(
                 IntegrationAccount.id == UUID(str(account_id)),
-                IntegrationAccount.user_id == user_id,
+                workspace_or_legacy_owner(IntegrationAccount, user_id),
                 IntegrationAccount.provider == provider,
             )
         )
@@ -573,7 +623,7 @@ class AutomationService:
     ) -> Automation:
         query = select(Automation).where(
             Automation.id == automation_id,
-            Automation.user_id == user_id,
+            Automation.workspace_id == active_workspace_id(user_id),
         )
         if lock:
             query = query.with_for_update()
@@ -590,9 +640,13 @@ class AutomationService:
         *,
         lock: bool = False,
     ) -> AutomationRun:
-        query = select(AutomationRun).where(
-            AutomationRun.id == run_id,
-            AutomationRun.user_id == user_id,
+        query = (
+            select(AutomationRun)
+            .join(Automation, Automation.id == AutomationRun.automation_id)
+            .where(
+                AutomationRun.id == run_id,
+                Automation.workspace_id == active_workspace_id(user_id),
+            )
         )
         if lock:
             query = query.with_for_update()

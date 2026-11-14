@@ -20,11 +20,23 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="brand-mark" href="/dashboard">
           Kiko
         </Link>
+        <Link className="nav-link" href="/dashboard/kiko">
+          Kiko AI
+        </Link>
         <Link className="nav-link" href="/dashboard/commands">
           Commands
         </Link>
+        <Link className="nav-link" href="/dashboard/tasks">
+          Tasks
+        </Link>
+        <Link className="nav-link" href="/dashboard/projects">
+          Projects
+        </Link>
         <Link className="nav-link" href="/dashboard/executions">
           Executions
+        </Link>
+        <Link className="nav-link" href="/dashboard/analytics">
+          Analytics
         </Link>
         <Link className="nav-link" href="/dashboard/agents">
           Agents
@@ -37,6 +49,9 @@ export function DashboardNav({ user }: { user: User }) {
         </Link>
         <Link className="nav-link" href="/dashboard/approvals">
           Approvals
+        </Link>
+        <Link className="nav-link" href="/dashboard/notifications">
+          Notifications
         </Link>
         <Link className="nav-link" href="/dashboard/codex">
           Codex
@@ -53,6 +68,17 @@ export function DashboardNav({ user }: { user: User }) {
         <Link className="nav-link" href="/dashboard/integrations">
           Integrations
         </Link>
+        <Link className="nav-link" href="/dashboard/settings">
+          Settings
+        </Link>
+        <Link className="nav-link" href="/dashboard/subscription">
+          Subscription
+        </Link>
+        {user.is_superuser && (
+          <Link className="nav-link" href="/dashboard/platform-admin">
+            Platform admin
+          </Link>
+        )}
         <span className="nav-user">
           {user.full_name} · {user.email}
         </span>

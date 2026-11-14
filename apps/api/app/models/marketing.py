@@ -26,10 +26,13 @@ class MarketingCampaign(Base):
             "status IN ('idea', 'active', 'paused', 'completed', 'archived')",
             name="ck_marketing_campaign_status",
         ),
-        Index("ix_marketing_campaigns_owner_status", "user_id", "status"),
+        Index("ix_marketing_campaigns_workspace_status", "workspace_id", "status"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -68,12 +71,11 @@ class MarketingContent(Base):
             name="ck_marketing_content_lifecycle",
         ),
         Index(
-            "ix_marketing_content_owner_campaign_status",
-            "user_id",
+            "ix_marketing_content_campaign_status",
             "campaign_id",
             "lifecycle_status",
         ),
-        Index("ix_marketing_content_owner_schedule", "user_id", "scheduled_for"),
+        Index("ix_marketing_content_schedule_campaign", "scheduled_for", "campaign_id"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -176,8 +178,8 @@ class MarketingPerformanceMetric(Base):
             name="ck_marketing_metric_target",
         ),
         Index(
-            "ix_marketing_metrics_owner_name_measured",
-            "user_id",
+            "ix_marketing_metrics_campaign_name_measured",
+            "campaign_id",
             "metric_name",
             "measured_at",
         ),
@@ -212,8 +214,7 @@ class MarketingContentHistory(Base):
     __tablename__ = "marketing_content_history"
     __table_args__ = (
         Index(
-            "ix_marketing_content_history_owner_content",
-            "user_id",
+            "ix_marketing_content_history_content",
             "content_id",
             "created_at",
         ),

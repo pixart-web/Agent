@@ -6,8 +6,10 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { DashboardNav } from '../../../components/dashboard-nav';
 import {
   approveKnowledge,
+  archiveKnowledge,
   createKnowledge,
   createWorkspace,
+  ingestKnowledgeDocument,
   listKnowledge,
   listWorkspaces,
   searchKnowledge,
@@ -24,6 +26,9 @@ export default function KnowledgePage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [query, setQuery] = useState('');
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentCategory, setDocumentCategory] =
+    useState<KnowledgeItem['category']>('approved_knowledge');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -167,6 +172,66 @@ export default function KnowledgePage() {
             </form>
           </section>
           <section className="workflow-panel">
+            <h2>Ingest a document</h2>
+            <p>
+              TXT, Markdown, PDF, or DOCX up to 5 MB. Only extracted text and
+              provenance are retained; every document starts as an unapproved
+              draft.
+            </p>
+            <form
+              className="workflow-form"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!documentFile) return;
+                try {
+                  await ingestKnowledgeDocument(
+                    selected,
+                    documentFile,
+                    documentCategory,
+                    'internal',
+                  );
+                  setDocumentFile(null);
+                  setNotice('Document extracted safely and saved as a draft.');
+                  await refresh();
+                } catch {
+                  setError('Document could not be ingested safely.');
+                }
+              }}
+            >
+              <label>
+                Category
+                <select
+                  value={documentCategory}
+                  onChange={(event) =>
+                    setDocumentCategory(
+                      event.target.value as KnowledgeItem['category'],
+                    )
+                  }
+                >
+                  <option value="approved_knowledge">General knowledge</option>
+                  <option value="company_profile">Company profile</option>
+                  <option value="service">Service</option>
+                  <option value="product">Product</option>
+                  <option value="policy">Policy</option>
+                  <option value="brand_guideline">Brand guideline</option>
+                  <option value="procedure">Procedure</option>
+                </select>
+              </label>
+              <label>
+                Document
+                <input
+                  required
+                  type="file"
+                  accept=".txt,.md,.pdf,.docx,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={(event) =>
+                    setDocumentFile(event.target.files?.[0] ?? null)
+                  }
+                />
+              </label>
+              <button disabled={!documentFile}>Extract document</button>
+            </form>
+          </section>
+          <section className="workflow-panel">
             <h2>Search approved knowledge</h2>
             <form className="workflow-form" onSubmit={runSearch}>
               <label>
@@ -207,6 +272,18 @@ export default function KnowledgePage() {
                         Approve
                       </button>
                     )}
+                  {(selectedWorkspace?.role === 'owner' ||
+                    selectedWorkspace?.role === 'admin') && (
+                    <button
+                      className="text-button"
+                      type="button"
+                      onClick={() =>
+                        void archiveKnowledge(selected, entry.id).then(refresh)
+                      }
+                    >
+                      Archive
+                    </button>
+                  )}
                 </article>
               ))}
             </div>

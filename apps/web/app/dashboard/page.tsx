@@ -4,7 +4,12 @@ import { AGENT_CATALOG, type AgentId, type AgentOverview } from '@agent/shared';
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../components/dashboard-nav';
+import { apiBaseUrl } from '../../lib/api-url';
 import { getAgentOverview } from '../../lib/workflow-client';
+import {
+  getOperationsOverview,
+  type OperationsOverview,
+} from '../../lib/operations-client';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
 type ApiState = 'checking' | 'online' | 'offline';
@@ -40,18 +45,17 @@ function AgentMetrics({ agentId }: { agentId: AgentId }) {
     </dl>
   );
 }
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-
 export default function DashboardPage() {
   const { user, loading } = useAuthenticatedUser();
   const [apiState, setApiState] = useState<ApiState>('checking');
+  const [operations, setOperations] = useState<OperationsOverview | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function checkApi() {
       try {
-        const response = await fetch(`${apiUrl}/health`);
+        const response = await fetch(`${apiBaseUrl}/health`);
         if (active) setApiState(response.ok ? 'online' : 'offline');
       } catch {
         if (active) setApiState('offline');
@@ -63,6 +67,13 @@ export default function DashboardPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (user)
+      void getOperationsOverview()
+        .then(setOperations)
+        .catch(() => undefined);
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -92,6 +103,31 @@ export default function DashboardPage() {
             <span className="status-label">API status</span>
             <strong>{apiState}</strong>
           </div>
+        </div>
+      </section>
+
+      <section className="agents" aria-labelledby="operations-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Live workspace state</p>
+            <h2 id="operations-title">Operations</h2>
+          </div>
+        </div>
+        <div className="agent-grid">
+          {[
+            ['Active commands', operations?.active_commands ?? 0],
+            ['Pending tasks', operations?.pending_tasks ?? 0],
+            ['Pending approvals', operations?.pending_approvals ?? 0],
+            ['Active agent runs', operations?.active_agent_runs ?? 0],
+            ['Enabled automations', operations?.enabled_automations ?? 0],
+            ['Connected integrations', operations?.connected_integrations ?? 0],
+            ['Unread alerts', operations?.unread_alerts ?? 0],
+          ].map(([label, value]) => (
+            <article className="agent-card" key={label}>
+              <p className="eyebrow">{label}</p>
+              <h3>{value}</h3>
+            </article>
+          ))}
         </div>
       </section>
 

@@ -25,7 +25,9 @@ from app.db.base import Base
 class CrmClient(Base):
     __tablename__ = "crm_clients"
     __table_args__ = (
-        UniqueConstraint("user_id", "organization_id", name="uq_crm_client_owner_organization"),
+        UniqueConstraint(
+            "workspace_id", "organization_id", name="uq_crm_client_workspace_organization"
+        ),
         CheckConstraint(
             "lifecycle_status IN ('prospect', 'active', 'paused', 'former', 'archived')",
             name="ck_crm_client_lifecycle_status",
@@ -33,6 +35,9 @@ class CrmClient(Base):
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -104,9 +109,14 @@ class CrmProject(Base):
 
 class CrmPipeline(Base):
     __tablename__ = "crm_pipelines"
-    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_crm_pipeline_owner_name"),)
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "name", name="uq_crm_pipeline_workspace_name"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -242,8 +252,8 @@ class CrmRecordHistory(Base):
     __tablename__ = "crm_record_history"
     __table_args__ = (
         Index(
-            "ix_crm_record_history_owner_entity",
-            "user_id",
+            "ix_crm_record_history_workspace_entity",
+            "workspace_id",
             "entity_type",
             "entity_id",
             "created_at",
@@ -251,6 +261,9 @@ class CrmRecordHistory(Base):
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )

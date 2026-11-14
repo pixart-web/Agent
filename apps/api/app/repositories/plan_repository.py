@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.command import Command
 from app.models.plan import Plan
+from app.workspaces.scope import active_workspace_id
 
 
 class PlanRepository:
@@ -25,7 +26,7 @@ class PlanRepository:
             .where(
                 Plan.command_id == command_id,
                 Plan.is_current.is_(True),
-                Command.user_id == user_id,
+                Command.workspace_id == active_workspace_id(user_id),
             )
         )
         return self.session.scalar(statement)
@@ -34,7 +35,7 @@ class PlanRepository:
         statement = (
             select(Plan)
             .join(Command, Command.id == Plan.command_id)
-            .where(Plan.id == plan_id, Command.user_id == user_id)
+            .where(Plan.id == plan_id, Command.workspace_id == active_workspace_id(user_id))
         )
         return self.session.scalar(statement)
 
@@ -46,7 +47,7 @@ class PlanRepository:
         statement = (
             select(Plan, Command)
             .join(Command, Command.id == Plan.command_id)
-            .where(Plan.id == plan_id, Command.user_id == user_id)
+            .where(Plan.id == plan_id, Command.workspace_id == active_workspace_id(user_id))
             .with_for_update(of=(Plan, Command))
         )
         row = self.session.execute(statement).one_or_none()
@@ -65,7 +66,7 @@ class PlanRepository:
             .where(
                 Plan.command_id == command_id,
                 Plan.is_current.is_(True),
-                Command.user_id == user_id,
+                Command.workspace_id == active_workspace_id(user_id),
             )
             .with_for_update(of=Plan)
         )
@@ -75,7 +76,10 @@ class PlanRepository:
         statement = (
             select(Plan)
             .join(Command, Command.id == Plan.command_id)
-            .where(Plan.command_id == command_id, Command.user_id == user_id)
+            .where(
+                Plan.command_id == command_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
             .order_by(Plan.version.desc())
         )
         return list(self.session.scalars(statement))

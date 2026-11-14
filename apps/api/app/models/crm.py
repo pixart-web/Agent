@@ -21,9 +21,14 @@ from app.db.base import Base
 
 class CrmOrganization(Base):
     __tablename__ = "crm_organizations"
-    __table_args__ = (Index("ix_crm_organizations_owner_name", "user_id", "normalized_name"),)
+    __table_args__ = (
+        Index("ix_crm_organizations_workspace_name", "workspace_id", "normalized_name"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -49,9 +54,12 @@ class CrmOrganization(Base):
 
 class CrmContact(Base):
     __tablename__ = "crm_contacts"
-    __table_args__ = (Index("ix_crm_contacts_owner_name", "user_id", "normalized_name"),)
+    __table_args__ = (Index("ix_crm_contacts_workspace_name", "workspace_id", "normalized_name"),)
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -167,9 +175,14 @@ class CrmAddress(Base):
 
 class CrmTag(Base):
     __tablename__ = "crm_tags"
-    __table_args__ = (UniqueConstraint("user_id", "normalized_name", name="uq_crm_tag_owner_name"),)
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "normalized_name", name="uq_crm_tag_workspace_name"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
+    )
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )

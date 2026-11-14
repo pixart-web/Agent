@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.time import utc_now
@@ -11,12 +11,26 @@ from app.models.workflow_enums import CommandStatus
 
 class Command(Base):
     __tablename__ = "commands"
+    __table_args__ = (
+        Index(
+            "ix_commands_workspace_archived_created", "workspace_id", "archived_at", "created_at"
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    duplicated_from_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("commands.id", ondelete="SET NULL"), nullable=True, index=True
     )
     input: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[CommandStatus] = mapped_column(
@@ -50,6 +64,7 @@ class Command(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     correlation_id: Mapped[UUID | None] = mapped_column(
         nullable=True,
         default=uuid4,

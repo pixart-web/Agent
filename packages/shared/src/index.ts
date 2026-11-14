@@ -72,12 +72,63 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 
 export type Command = {
   id: string;
+  workspace_id: string;
   user_id: string;
+  conversation_id: string | null;
+  duplicated_from_id: string | null;
   input: string;
   status: CommandStatus;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  archived_at: string | null;
+};
+
+export type Conversation = {
+  id: string;
+  workspace_id: string;
+  created_by_user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+};
+
+export type ConversationMessage = {
+  id: string;
+  conversation_id: string;
+  author_user_id: string | null;
+  command_id: string | null;
+  role: 'user' | 'kiko' | 'system';
+  content: string;
+  created_at: string;
+};
+
+export type ConversationTurn = {
+  conversation: Conversation;
+  messages: ConversationMessage[];
+  command: Command;
+};
+
+export type ConversationDetail = {
+  conversation: Conversation;
+  messages: ConversationMessage[];
+  operations: ConversationOperation[];
+};
+
+export type ConversationOperation = {
+  command: Command;
+  plan: {
+    id: string;
+    title: string;
+    objective: string;
+    status: PlanStatus;
+  } | null;
+  supervisor_status:
+    'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | null;
+  task_counts: Record<string, number>;
+  pending_approvals: number;
+  latest_error: string | null;
 };
 
 export type Plan = {
@@ -141,7 +192,68 @@ export type WorkflowTask = {
   updated_at: string;
   started_at: string | null;
   completed_at: string | null;
+  due_at: string | null;
   error_message: string | null;
+};
+
+export type WorkspaceTask = WorkflowTask & {
+  command_id: string;
+  command_input: string;
+  plan_title: string;
+};
+
+export const PROJECT_STATUSES = [
+  'planned',
+  'active',
+  'blocked',
+  'completed',
+  'cancelled',
+] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+export type Project = {
+  id: string;
+  workspace_id: string;
+  owner_user_id: string;
+  client_id: string | null;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  starts_on: string | null;
+  due_on: string | null;
+  task_count: number;
+  completed_task_count: number;
+  progress_percentage: number;
+  created_at: string;
+  updated_at: string;
+};
+export type ProjectMember = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+};
+export type ProjectMilestone = {
+  id: string;
+  title: string;
+  due_on: string | null;
+  status: 'pending' | 'completed';
+  created_at: string;
+};
+export type ProjectActivity = {
+  id: string;
+  actor_user_id: string | null;
+  event_type: string;
+  description: string;
+  created_at: string;
+};
+export type ProjectDetail = Project & {
+  members: ProjectMember[];
+  milestones: ProjectMilestone[];
+  tasks: Pick<WorkflowTask, 'id' | 'title' | 'status' | 'agent_id'>[];
+  commands: Pick<Command, 'id' | 'input' | 'status'>[];
+  activity: ProjectActivity[];
 };
 
 export type TaskStatusHistory = {
@@ -154,8 +266,14 @@ export type TaskStatusHistory = {
   created_at: string;
 };
 
-export type TaskDetail = WorkflowTask & {
+export type TaskDetail = WorkspaceTask & {
   history: TaskStatusHistory[];
+};
+
+export type TaskDependency = {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
 };
 
 export const TASK_TRANSITIONS: Record<TaskStatus, readonly TaskStatus[]> = {
@@ -251,6 +369,26 @@ export type ApprovalRequest = {
   correlation_id: string;
 };
 
+export type ApprovalComment = {
+  id: string;
+  author_user_id: string | null;
+  body: string;
+  created_at: string;
+};
+export type ApprovalDetail = {
+  approval: ApprovalRequest;
+  action: TaskAction;
+  requesting_agent: string;
+  target_integration: string;
+  comments: ApprovalComment[];
+  history: {
+    event_type: string;
+    actor_id: string | null;
+    created_at: string;
+    metadata: Record<string, unknown>;
+  }[];
+};
+
 export type DispatchResponse = {
   action: TaskAction;
   execution: TaskExecution | null;
@@ -325,6 +463,19 @@ export type AgentOverview = {
   completed_runs: number;
   failed_runs: number;
   success_rate: number;
+  operational_status: 'operational' | 'sandbox' | 'unavailable' | 'disabled';
+  operational_message: string;
+  configuration: AgentConfiguration;
+};
+
+export type AgentConfiguration = {
+  enabled: boolean;
+  model: string | null;
+  allowed_tools: string[];
+  approval_policy: 'platform_default' | 'always' | 'risk_based';
+  max_actions_per_task: number;
+  monthly_token_budget: number | null;
+  knowledge_source_ids: string[];
 };
 
 export type GitHubIntegrationStatus = {
@@ -425,6 +576,16 @@ export type EmailIntegrationStatus = {
   send_enabled: boolean;
   mark_read_enabled: boolean;
   connected_accounts: number;
+  operational_state:
+    | 'disabled'
+    | 'not_connected'
+    | 'connected'
+    | 'degraded'
+    | 'reconciliation_required';
+  unresolved_writes: number;
+  pending_writes: number;
+  failed_writes: number;
+  last_sync_at: string | null;
 };
 
 export type CalendarAccount = EmailAccount;
@@ -433,6 +594,11 @@ export type CalendarIntegrationStatus = {
   provider: string;
   write_enabled: boolean;
   connected_accounts: number;
+  operational_state: EmailIntegrationStatus['operational_state'];
+  unresolved_writes: number;
+  pending_writes: number;
+  failed_writes: number;
+  last_sync_at: string | null;
 };
 export type CalendarEventTime = {
   date_time: string | null;
@@ -567,6 +733,22 @@ export type CrmOpportunity = {
   probability: number;
   status: string;
   expected_close_on: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type CrmPipelineStage = {
+  id: string;
+  name: string;
+  position: number;
+  default_probability: number;
+  is_terminal: boolean;
+};
+export type CrmPipeline = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+  stages: CrmPipelineStage[];
   created_at: string;
   updated_at: string;
 };

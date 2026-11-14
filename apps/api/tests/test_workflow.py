@@ -27,10 +27,18 @@ def register_user(
 ) -> dict[str, str]:
     response = client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": PASSWORD, "full_name": full_name},
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "full_name": full_name,
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        },
     )
-    assert response.status_code == 201
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    assert response.status_code == 202
+    login = client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+    assert login.status_code == 200
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
 def create_command(
@@ -368,6 +376,56 @@ def test_task_patch_uses_locked_read(
     plain_read.assert_not_called()
 
 
+def test_workspace_task_search_filters_deadline_and_context(
+    client: TestClient,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    headers, command, plan = workflow
+    task = create_task(client, headers, str(plan["id"]))
+
+    updated = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        headers=headers,
+        json={"due_at": "2026-10-31T17:00:00Z"},
+    )
+    listed = client.get(
+        "/api/v1/tasks?search=restaurant&status=pending&priority=high&agent_id=marketing",
+        headers=headers,
+    )
+    detail = client.get(f"/api/v1/tasks/{task['id']}", headers=headers)
+    no_match = client.get("/api/v1/tasks?search=missing", headers=headers)
+    explicit_assignment = client.patch(
+        f"/api/v1/tasks/{task['id']}",
+        headers=headers,
+        json={"agent_id": "sales"},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["due_at"].startswith("2026-10-31T17:00:00")
+    assert listed.status_code == 200
+    assert [item["id"] for item in listed.json()] == [task["id"]]
+    assert listed.json()[0]["command_id"] == command["id"]
+    assert listed.json()[0]["command_input"] == command["input"]
+    assert listed.json()[0]["plan_title"] == plan["title"]
+    assert detail.status_code == 200
+    assert detail.json()["command_id"] == command["id"]
+    assert detail.json()["history"][0]["to_status"] == "pending"
+    assert no_match.json() == []
+    assert explicit_assignment.status_code == 409
+
+
+def test_workspace_task_list_is_tenant_isolated(
+    client: TestClient,
+    workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
+) -> None:
+    owner, _, plan = workflow
+    task = create_task(client, owner, str(plan["id"]))
+    outsider = register_user(client, "task-list-outsider@example.com")
+
+    assert client.get("/api/v1/tasks", headers=outsider).json() == []
+    assert client.get(f"/api/v1/tasks/{task['id']}", headers=outsider).status_code == 404
+
+
 def test_failed_task_retry_clears_completion_and_error(
     client: TestClient,
     workflow: tuple[dict[str, str], dict[str, object], dict[str, object]],
@@ -428,6 +486,51 @@ def test_command_filters_and_pagination(client: TestClient) -> None:
     assert page.status_code == 200
     assert len(page.json()) == 1
     assert invalid_limit.status_code == 422
+
+
+def test_command_search_archive_restore_and_duplicate(client: TestClient) -> None:
+    headers = register_user(client, "command-lifecycle@example.com")
+    command = create_command(client, headers, "Launch the Alpine partner campaign")
+    create_command(client, headers, "Review support operations")
+
+    search = client.get("/api/v1/commands?search=ALPINE", headers=headers)
+    invalid_archive = client.post(f"/api/v1/commands/{command['id']}/archive", headers=headers)
+    client.post(f"/api/v1/commands/{command['id']}/cancel", headers=headers)
+    archived = client.post(f"/api/v1/commands/{command['id']}/archive", headers=headers)
+    active = client.get("/api/v1/commands?limit=100", headers=headers)
+    with_archive = client.get("/api/v1/commands?include_archived=true&limit=100", headers=headers)
+    restored = client.post(f"/api/v1/commands/{command['id']}/restore", headers=headers)
+    duplicate = client.post(f"/api/v1/commands/{command['id']}/duplicate", headers=headers)
+
+    assert search.status_code == 200
+    assert [item["id"] for item in search.json()] == [command["id"]]
+    assert invalid_archive.status_code == 409
+    assert archived.status_code == 200
+    assert archived.json()["archived_at"] is not None
+    assert command["id"] not in {item["id"] for item in active.json()}
+    assert command["id"] in {item["id"] for item in with_archive.json()}
+    assert restored.status_code == 200
+    assert restored.json()["archived_at"] is None
+    assert duplicate.status_code == 201
+    assert duplicate.json()["status"] == "pending"
+    assert duplicate.json()["input"] == command["input"]
+    assert duplicate.json()["duplicated_from_id"] == command["id"]
+    assert duplicate.json()["conversation_id"] is None
+
+
+def test_command_lifecycle_is_workspace_isolated(client: TestClient) -> None:
+    owner = register_user(client, "command-owner@example.com")
+    outsider = register_user(client, "command-outsider@example.com")
+    command = create_command(client, owner, "Private command")
+
+    assert (
+        client.post(f"/api/v1/commands/{command['id']}/duplicate", headers=outsider).status_code
+        == 404
+    )
+    assert (
+        client.post(f"/api/v1/commands/{command['id']}/archive", headers=outsider).status_code
+        == 404
+    )
 
 
 @pytest.mark.parametrize(

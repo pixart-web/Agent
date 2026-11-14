@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.agents.exceptions import AgentNotRegisteredError, AgentProposalError
@@ -16,6 +16,8 @@ from app.models.user import User
 from app.schemas.execution import TaskActionRead
 from app.schemas.specialized_agent import (
     AgentCapabilitiesRead,
+    AgentConfigurationRead,
+    AgentConfigurationUpdate,
     AgentOverviewRead,
     AgentReassignmentRequest,
     AgentRunRead,
@@ -113,7 +115,52 @@ def overview(
         )
     except Exception as error:
         _raise(error)
+    if value["operational_status"] != "disabled":
+        if settings.ai_provider == "fake":
+            value["operational_status"] = "sandbox"
+            value["operational_message"] = "Sandbox provider configured"
+        elif settings.openai_api_key:
+            value["operational_status"] = "operational"
+            value["operational_message"] = f"{settings.ai_provider} provider configured"
+        else:
+            value["operational_status"] = "unavailable"
+            value["operational_message"] = "AI provider credentials are missing"
     return AgentOverviewRead.model_validate(value)
+
+
+@router.get("/agents/{agent_id}/configuration", response_model=AgentConfigurationRead)
+def get_configuration(
+    agent_id: str,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AgentConfigurationRead:
+    try:
+        value = AgentManagementService(db).configuration(
+            agent_id, user.id, settings.agent_max_actions_per_task
+        )
+    except Exception as error:
+        _raise(error)
+    return AgentConfigurationRead.model_validate(value)
+
+
+@router.patch("/agents/{agent_id}/configuration", response_model=AgentConfigurationRead)
+def update_configuration(
+    agent_id: str,
+    data: AgentConfigurationUpdate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> AgentConfigurationRead:
+    try:
+        value = AgentManagementService(db).update_configuration(
+            agent_id, user.id, settings.agent_max_actions_per_task, data
+        )
+    except PermissionError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except Exception as error:
+        _raise(error)
+    return AgentConfigurationRead.model_validate(value)
 
 
 @router.post("/tasks/{task_id}/reassign-agent", response_model=TaskRead)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +21,11 @@ class EmailIntegrationStatus(BaseModel):
     send_enabled: bool
     mark_read_enabled: bool
     connected_accounts: int
+    operational_state: str
+    unresolved_writes: int
+    pending_writes: int
+    failed_writes: int
+    last_sync_at: datetime | None
 
 
 class EmailAccountsOutput(BaseModel):

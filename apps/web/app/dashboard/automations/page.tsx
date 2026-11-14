@@ -9,12 +9,13 @@ import {
 } from '../../../components/automation-summary';
 import { DashboardNav } from '../../../components/dashboard-nav';
 import {
-  createManualAutomation,
+  createAutomation,
   listAutomationRuns,
   listAutomations,
   recoverAutomationRun,
   setAutomationEnabled,
   triggerManualAutomation,
+  updateAutomation,
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 
@@ -24,6 +25,11 @@ export default function AutomationsPage() {
   const [runs, setRuns] = useState<AutomationRun[]>([]);
   const [name, setName] = useState('');
   const [commandTemplate, setCommandTemplate] = useState('');
+  const [triggerType, setTriggerType] =
+    useState<Automation['trigger_type']>('manual');
+  const [triggerValue, setTriggerValue] = useState('');
+  const [conditionField, setConditionField] = useState('');
+  const [conditionValue, setConditionValue] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -59,14 +65,47 @@ export default function AutomationsPage() {
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const triggerConfig: Record<string, unknown> = {};
+    let nextRunAt: string | undefined;
+    if (triggerType === 'schedule') {
+      triggerConfig.interval_minutes = Number(triggerValue);
+      nextRunAt = new Date(
+        Date.now() + Number(triggerValue) * 60_000,
+      ).toISOString();
+    } else if (triggerType === 'email_received') {
+      triggerConfig.account_id = triggerValue;
+    } else if (triggerType === 'calendar_event') {
+      const [accountId, calendarId] = triggerValue
+        .split(',')
+        .map((value) => value.trim());
+      triggerConfig.account_id = accountId;
+      triggerConfig.calendar_id = calendarId;
+    } else if (triggerType === 'webhook') {
+      triggerConfig.source = triggerValue;
+    } else if (triggerType === 'crm_change') {
+      triggerConfig.entity_types = triggerValue
+        .split(',')
+        .map((value) => value.trim());
+      triggerConfig.change_types = ['created', 'updated'];
+    } else if (triggerType === 'task_state') {
+      triggerConfig.statuses = triggerValue
+        .split(',')
+        .map((value) => value.trim());
+    }
     await act(
       () =>
-        createManualAutomation({
+        createAutomation({
           name: name.trim(),
           command_template: commandTemplate.trim(),
           description: 'Created by the authenticated operator.',
+          trigger_type: triggerType,
+          trigger_config: triggerConfig,
+          next_run_at: nextRunAt,
+          conditions: conditionField
+            ? [{ field: conditionField, operator: 'eq', value: conditionValue }]
+            : [],
         }),
-      'Manual automation created.',
+      'Governed automation created.',
     );
     setName('');
     setCommandTemplate('');
@@ -88,7 +127,7 @@ export default function AutomationsPage() {
       {error && <p className="workflow-alert">{error}</p>}
       {notice && <p className="workflow-success">{notice}</p>}
       <section className="workflow-panel">
-        <h2>Create a manual automation</h2>
+        <h2>Build an automation</h2>
         <form className="workflow-form" onSubmit={handleCreate}>
           <label>
             Name
@@ -99,6 +138,58 @@ export default function AutomationsPage() {
               onChange={(event) => setName(event.target.value)}
             />
           </label>
+          <label>
+            Trigger
+            <select
+              value={triggerType}
+              onChange={(event) =>
+                setTriggerType(event.target.value as Automation['trigger_type'])
+              }
+            >
+              <option value="manual">Manual</option>
+              <option value="schedule">Schedule</option>
+              <option value="email_received">Email received</option>
+              <option value="calendar_event">Calendar event</option>
+              <option value="crm_change">CRM change</option>
+              <option value="task_state">Task state</option>
+              <option value="webhook">Webhook</option>
+            </select>
+          </label>
+          {triggerType !== 'manual' && (
+            <label>
+              {triggerType === 'schedule'
+                ? 'Interval in minutes'
+                : triggerType === 'email_received'
+                  ? 'Connected account UUID'
+                  : triggerType === 'calendar_event'
+                    ? 'Account UUID, calendar ID'
+                    : triggerType === 'webhook'
+                      ? 'Webhook source'
+                      : 'Comma-separated values'}
+              <input
+                required
+                value={triggerValue}
+                onChange={(event) => setTriggerValue(event.target.value)}
+              />
+            </label>
+          )}
+          <label>
+            Optional condition field
+            <input
+              value={conditionField}
+              placeholder="payload.status"
+              onChange={(event) => setConditionField(event.target.value)}
+            />
+          </label>
+          {conditionField && (
+            <label>
+              Equals
+              <input
+                value={conditionValue}
+                onChange={(event) => setConditionValue(event.target.value)}
+              />
+            </label>
+          )}
           <label>
             Static command
             <textarea
@@ -133,6 +224,28 @@ export default function AutomationsPage() {
                 runs / {automation.window_seconds}s
               </p>
               <div className="button-row">
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  type="button"
+                  onClick={() => {
+                    const updated = window.prompt(
+                      'Static command for this automation',
+                      automation.command_template,
+                    );
+                    if (!updated || updated === automation.command_template)
+                      return;
+                    void act(
+                      () =>
+                        updateAutomation(automation.id, {
+                          command_template: updated,
+                        }),
+                      'Automation command updated.',
+                    );
+                  }}
+                >
+                  Edit command
+                </button>
                 <button
                   className="secondary-button"
                   disabled={busy}

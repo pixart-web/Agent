@@ -1,3 +1,6 @@
+from io import BytesIO
+
+from docx import Document
 from sqlalchemy import func, select
 
 from app.models.knowledge import KnowledgeRevision
@@ -190,3 +193,77 @@ def test_member_can_edit_own_draft_but_cannot_approve(client, db_session) -> Non
     )
     assert denied.status_code == 403
     assert db_session.scalar(select(func.count()).select_from(KnowledgeRevision)) == 2
+
+
+def test_document_ingestion_is_draft_deduplicated_and_retrievable_after_approval(client) -> None:
+    owner = register(client, "document-owner@example.com")
+    space = workspace(client, owner, "Document Workspace", "document-workspace")
+    body = b"# Refund policy\nRefund requests require an invoice and manager review."
+    ingested = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/documents",
+        headers=owner,
+        files={"upload": ("refund-policy.md", body, "text/markdown")},
+        data={"category": "policy", "sensitivity": "internal"},
+    )
+    assert ingested.status_code == 201, ingested.text
+    document = ingested.json()
+    assert document["status"] == "draft"
+    assert document["provenance"]["original_stored"] is False
+    assert document["provenance"]["sha256"] in document["source_reference"]
+
+    duplicate = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/documents",
+        headers=owner,
+        files={"upload": ("renamed.md", body, "text/markdown")},
+    )
+    assert duplicate.status_code == 409
+    hidden = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/search",
+        headers=owner,
+        json={"query": "refund invoice"},
+    )
+    assert hidden.json()["items"] == []
+    approve(client, owner, space["id"], document["id"])
+    visible = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/search",
+        headers=owner,
+        json={"query": "refund invoice"},
+    )
+    assert [item["id"] for item in visible.json()["items"]] == [document["id"]]
+    archived = client.delete(
+        f"/api/v1/knowledge/workspaces/{space['id']}/items/{document['id']}",
+        headers=owner,
+    )
+    assert archived.status_code == 204
+    after_archive = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/search",
+        headers=owner,
+        json={"query": "refund invoice"},
+    )
+    assert after_archive.json()["items"] == []
+
+    word = Document()
+    word.add_heading("Escalation procedure")
+    word.add_paragraph("Escalate priority cases to the service manager.")
+    stream = BytesIO()
+    word.save(stream)
+    docx = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/documents",
+        headers=owner,
+        files={
+            "upload": (
+                "escalation.docx",
+                stream.getvalue(),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+    )
+    assert docx.status_code == 201, docx.text
+    assert "service manager" in docx.json()["content"]
+
+    rejected = client.post(
+        f"/api/v1/knowledge/workspaces/{space['id']}/documents",
+        headers=owner,
+        files={"upload": ("macro.docm", b"not-safe", "application/octet-stream")},
+    )
+    assert rejected.status_code == 422

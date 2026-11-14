@@ -16,6 +16,7 @@ from app.models.workflow_enums import (
     TaskActionStatus,
     TaskExecutionStatus,
 )
+from app.workspaces.scope import active_workspace_id
 
 
 class ExecutionRepository:
@@ -29,7 +30,7 @@ class ExecutionRepository:
             .join(Task, Task.id == TaskAction.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Command.user_id == user_id)
+            .where(Command.workspace_id == active_workspace_id(user_id))
         )
 
     def add_action(self, action: TaskAction) -> None:
@@ -81,7 +82,10 @@ class ExecutionRepository:
             .join(Task, Task.id == TaskAction.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(TaskExecution.id == execution_id, Command.user_id == user_id)
+            .where(
+                TaskExecution.id == execution_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
         )
         return self.session.scalar(statement)
 
@@ -94,7 +98,10 @@ class ExecutionRepository:
             .join(Task, Task.id == TaskAction.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(TaskExecution.task_action_id == action_id, Command.user_id == user_id)
+            .where(
+                TaskExecution.task_action_id == action_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
             .order_by(TaskExecution.attempt_number, TaskExecution.created_at)
         )
         return list(self.session.scalars(statement))
@@ -112,17 +119,15 @@ class ExecutionRepository:
 
     def get_approval_owned(self, approval_id: UUID, user_id: UUID) -> ApprovalRequest | None:
         return self.session.scalar(
-            select(ApprovalRequest).where(
-                ApprovalRequest.id == approval_id, ApprovalRequest.user_id == user_id
-            )
+            self._owned_approvals(user_id).where(ApprovalRequest.id == approval_id)
         )
 
     def get_approval_owned_for_update(
         self, approval_id: UUID, user_id: UUID
     ) -> ApprovalRequest | None:
         return self.session.scalar(
-            select(ApprovalRequest)
-            .where(ApprovalRequest.id == approval_id, ApprovalRequest.user_id == user_id)
+            self._owned_approvals(user_id)
+            .where(ApprovalRequest.id == approval_id)
             .with_for_update(of=ApprovalRequest)
         )
 
@@ -154,7 +159,7 @@ class ExecutionRepository:
         limit: int,
         offset: int,
     ) -> list[ApprovalRequest]:
-        statement = select(ApprovalRequest).where(ApprovalRequest.user_id == user_id)
+        statement = self._owned_approvals(user_id)
         if status is not None:
             statement = statement.where(ApprovalRequest.status == status)
         if risk_level is not None:
@@ -203,7 +208,7 @@ class ExecutionRepository:
             .join(Task, Task.id == TaskAction.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Command.user_id == user_id)
+            .where(Command.workspace_id == active_workspace_id(user_id))
         )
         if status is not None:
             statement = statement.where(TaskExecution.status == status)
@@ -217,3 +222,14 @@ class ExecutionRepository:
             .offset(offset)
         )
         return list(self.session.scalars(statement))
+
+    @staticmethod
+    def _owned_approvals(user_id: UUID) -> Select:
+        return (
+            select(ApprovalRequest)
+            .join(TaskAction, TaskAction.id == ApprovalRequest.task_action_id)
+            .join(Task, Task.id == TaskAction.task_id)
+            .join(Plan, Plan.id == Task.plan_id)
+            .join(Command, Command.id == Plan.command_id)
+            .where(Command.workspace_id == active_workspace_id(user_id))
+        )

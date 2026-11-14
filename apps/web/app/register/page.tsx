@@ -13,6 +13,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +26,8 @@ export default function RegisterPage() {
       email,
       password,
       confirmPassword,
+      termsAccepted,
+      privacyAccepted,
     });
     setErrors(validationErrors);
     setMessage('');
@@ -31,8 +35,14 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(fullName.trim(), email.trim(), password);
-      router.replace('/dashboard');
+      await register(
+        fullName.trim(),
+        email.trim(),
+        password,
+        termsAccepted,
+        privacyAccepted,
+      );
+      router.replace(`/verify-email?email=${encodeURIComponent(email.trim())}`);
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
@@ -102,6 +112,30 @@ export default function RegisterPage() {
           </label>
           {errors.confirmPassword && (
             <span className="field-error">{errors.confirmPassword}</span>
+          )}
+
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+            />
+            <span>I accept the Terms of Service.</span>
+          </label>
+          {errors.termsAccepted && (
+            <span className="field-error">{errors.termsAccepted}</span>
+          )}
+
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={privacyAccepted}
+              onChange={(event) => setPrivacyAccepted(event.target.checked)}
+            />
+            <span>I accept the Privacy Policy.</span>
+          </label>
+          {errors.privacyAccepted && (
+            <span className="field-error">{errors.privacyAccepted}</span>
           )}
 
           {message && (

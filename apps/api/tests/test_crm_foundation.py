@@ -8,6 +8,7 @@ from app.core.config import Settings
 from app.crm.schemas import (
     CrmContactMethodInput,
     CrmContactUpdateInput,
+    CrmOrganizationsInput,
     CrmSearchContactsInput,
 )
 from app.crm.service import CrmService
@@ -25,6 +26,7 @@ from app.models.crm import (
 )
 from app.models.email_reference import EmailReference
 from app.models.integration_account import IntegrationAccount
+from app.models.knowledge import Workspace, WorkspaceMember
 from app.models.task_action import TaskAction
 from app.models.user import User
 from app.models.workflow_enums import (
@@ -65,6 +67,72 @@ def test_crm_method_validation_normalizes_email_and_rejects_short_phone() -> Non
     assert email.value == "Demo@Sponsor-Demo.Example"
     with pytest.raises(ValueError):
         CrmContactMethodInput(method_type="phone", value="123")
+
+
+def test_crm_roots_are_shared_with_workspace_members_and_hidden_from_outsiders(
+    db_session,
+) -> None:
+    owner = User(email="crm-owner-scope@example.com", password_hash="unused", full_name="Owner")
+    member = User(email="crm-member-scope@example.com", password_hash="unused", full_name="Member")
+    outsider = User(
+        email="crm-outsider-scope@example.com", password_hash="unused", full_name="Outsider"
+    )
+    db_session.add_all([owner, member, outsider])
+    db_session.flush()
+    shared = Workspace(
+        name="Shared CRM", slug=f"shared-crm-{uuid4().hex}", created_by_user_id=owner.id
+    )
+    isolated = Workspace(
+        name="Isolated CRM", slug=f"isolated-crm-{uuid4().hex}", created_by_user_id=outsider.id
+    )
+    db_session.add_all([shared, isolated])
+    db_session.flush()
+    owner.active_workspace_id = shared.id
+    member.active_workspace_id = shared.id
+    outsider.active_workspace_id = isolated.id
+    db_session.add_all(
+        [
+            WorkspaceMember(
+                workspace_id=shared.id,
+                user_id=owner.id,
+                role="owner",
+                created_by_user_id=owner.id,
+            ),
+            WorkspaceMember(
+                workspace_id=shared.id,
+                user_id=member.id,
+                role="member",
+                created_by_user_id=owner.id,
+            ),
+            WorkspaceMember(
+                workspace_id=isolated.id,
+                user_id=outsider.id,
+                role="owner",
+                created_by_user_id=outsider.id,
+            ),
+            CrmOrganization(
+                workspace_id=shared.id,
+                user_id=owner.id,
+                name="Shared Account",
+                normalized_name="shared account",
+                status="active",
+                source="test",
+            ),
+        ]
+    )
+    db_session.commit()
+    service = CrmService(sessionmaker(bind=db_session.get_bind(), expire_on_commit=False))
+
+    assert [
+        item.name
+        for item in service.list_organizations(
+            context(member.id), CrmOrganizationsInput()
+        ).organizations
+    ] == ["Shared Account"]
+    assert (
+        service.list_organizations(context(outsider.id), CrmOrganizationsInput()).organizations
+        == []
+    )
 
 
 def test_crm_tool_catalog_uses_green_reads_and_yellow_mutations() -> None:

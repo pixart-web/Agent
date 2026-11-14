@@ -25,7 +25,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      router.replace('/dashboard');
+      const requested = new URLSearchParams(window.location.search).get('next');
+      const destination =
+        requested?.startsWith('/') && !requested.startsWith('//')
+          ? requested
+          : '/dashboard';
+      router.replace(destination);
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
@@ -94,6 +99,9 @@ export default function LoginPage() {
 
         <p className="auth-switch">
           New to Agent? <Link href="/register">Create an account</Link>
+        </p>
+        <p className="auth-switch">
+          <Link href="/forgot-password">Forgot your password?</Link>
         </p>
       </section>
     </main>

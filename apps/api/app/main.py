@@ -45,6 +45,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url=None if settings.app_env.lower() == "production" else "/docs",
     redoc_url=None if settings.app_env.lower() == "production" else "/redoc",
+    openapi_url=None if settings.app_env.lower() == "production" else "/openapi.json",
 )
 
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_host_list)

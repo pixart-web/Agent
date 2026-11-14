@@ -1,10 +1,11 @@
 import re
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.commercial.service import provision_trial
 from app.core.time import utc_now
 from app.db.session import SessionLocal
 from app.knowledge.errors import (
@@ -31,7 +32,7 @@ from app.models.knowledge import KnowledgeItem, KnowledgeRevision, Workspace, Wo
 from app.models.user import User
 
 MANAGE_ROLES = frozenset({"owner", "admin"})
-EDIT_ROLES = frozenset({"owner", "admin", "member"})
+EDIT_ROLES = frozenset({"owner", "admin", "manager", "member"})
 
 
 class KnowledgeService:
@@ -50,10 +51,14 @@ class KnowledgeService:
                 created_by_user_id=user_id,
             )
             session.add(member)
+            provision_trial(session, workspace.id)
             try:
                 session.flush()
             except IntegrityError as error:
                 raise KnowledgeConflictError("Workspace slug is already in use") from error
+            user = session.get(User, user_id)
+            if user is not None and user.active_workspace_id is None:
+                user.active_workspace_id = workspace.id
             return self._workspace_read(workspace, member.role)
 
     def list_workspaces(self, user_id: UUID) -> WorkspaceList:
@@ -106,7 +111,18 @@ class KnowledgeService:
         with self.session_factory() as session, session.begin():
             membership = self._membership(session, workspace_id, user_id)
             self._require_role(membership, EDIT_ROLES)
-            self._validate_scopes(session, user_id, value.client_id, value.project_id)
+            self._validate_scopes(session, user_id, workspace_id, value.client_id, value.project_id)
+            if value.source_type == "document_upload" and value.source_reference:
+                duplicate = session.scalar(
+                    select(KnowledgeItem.id).where(
+                        KnowledgeItem.workspace_id == workspace_id,
+                        KnowledgeItem.source_type == "document_upload",
+                        KnowledgeItem.source_reference == value.source_reference,
+                        KnowledgeItem.status != "archived",
+                    )
+                )
+                if duplicate is not None:
+                    raise KnowledgeConflictError("This document is already ingested")
             item = KnowledgeItem(
                 workspace_id=workspace_id,
                 created_by_user_id=user_id,
@@ -157,6 +173,17 @@ class KnowledgeService:
             self._revision(session, item, user_id)
             session.flush()
             return self._item_read(item)
+
+    def archive_item(self, user_id: UUID, workspace_id: UUID, item_id: UUID) -> None:
+        with self.session_factory() as session, session.begin():
+            membership = self._membership(session, workspace_id, user_id)
+            self._require_role(membership, MANAGE_ROLES)
+            item = self._item(session, workspace_id, item_id)
+            if item.status == "archived":
+                return
+            item.status = "archived"
+            item.updated_at = utc_now()
+            self._revision(session, item, user_id)
 
     def list_items(
         self,
@@ -264,25 +291,43 @@ class KnowledgeService:
     def _sensitivity_filter(query, role: str):
         if role == "viewer":
             return query.where(KnowledgeItem.sensitivity == "internal")
-        if role == "member":
+        if role in {"manager", "member"}:
             return query.where(KnowledgeItem.sensitivity != "restricted")
         return query
 
     @staticmethod
     def _validate_scopes(
-        session: Session, user_id: UUID, client_id: UUID | None, project_id: UUID | None
+        session: Session,
+        user_id: UUID,
+        workspace_id: UUID,
+        client_id: UUID | None,
+        project_id: UUID | None,
     ) -> None:
         if (
             client_id
             and session.scalar(
-                select(CrmClient.id).where(CrmClient.id == client_id, CrmClient.user_id == user_id)
+                select(CrmClient.id).where(
+                    CrmClient.id == client_id,
+                    or_(
+                        CrmClient.workspace_id == workspace_id,
+                        and_(CrmClient.workspace_id.is_(None), CrmClient.user_id == user_id),
+                    ),
+                )
             )
             is None
         ):
             raise KnowledgeNotFoundError("Resource not found")
         if project_id:
             project = session.scalar(
-                select(CrmProject).where(CrmProject.id == project_id, CrmProject.user_id == user_id)
+                select(CrmProject)
+                .join(CrmClient, CrmClient.id == CrmProject.client_id)
+                .where(
+                    CrmProject.id == project_id,
+                    or_(
+                        CrmClient.workspace_id == workspace_id,
+                        and_(CrmClient.workspace_id.is_(None), CrmClient.user_id == user_id),
+                    ),
+                )
             )
             if project is None or (client_id is not None and project.client_id != client_id):
                 raise KnowledgeNotFoundError("Resource not found")

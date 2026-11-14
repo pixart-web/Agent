@@ -8,6 +8,8 @@ type LoginValues = {
 type RegisterValues = LoginValues & {
   fullName: string;
   confirmPassword: string;
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,6 +40,12 @@ export function validateRegisterForm(values: RegisterValues): Errors {
   }
   if (values.password !== values.confirmPassword) {
     errors.confirmPassword = 'Passwords do not match.';
+  }
+  if (!values.termsAccepted) {
+    errors.termsAccepted = 'Accept the Terms of Service to continue.';
+  }
+  if (!values.privacyAccepted) {
+    errors.privacyAccepted = 'Accept the Privacy Policy to continue.';
   }
   return errors;
 }

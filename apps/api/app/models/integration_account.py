@@ -13,13 +13,19 @@ class IntegrationAccount(Base):
     __tablename__ = "integration_accounts"
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "provider", "external_account_id", name="uq_integration_account_owner"
+            "workspace_id",
+            "provider",
+            "external_account_id",
+            name="uq_integration_account_workspace",
         ),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True
     )
     provider: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     account_type: Mapped[IntegrationAccountType] = mapped_column(

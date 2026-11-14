@@ -70,6 +70,36 @@ export async function approveKnowledge(
   );
 }
 
+export async function archiveKnowledge(
+  workspaceId: string,
+  itemId: string,
+): Promise<void> {
+  const response = await authFetch(
+    `/api/v1/knowledge/workspaces/${workspaceId}/items/${itemId}`,
+    { method: 'DELETE' },
+  );
+  if (!response.ok)
+    throw new Error(`Knowledge request failed (${response.status})`);
+}
+
+export async function ingestKnowledgeDocument(
+  workspaceId: string,
+  file: File,
+  category: KnowledgeItem['category'],
+  sensitivity: KnowledgeItem['sensitivity'],
+): Promise<KnowledgeItem> {
+  const form = new FormData();
+  form.set('upload', file);
+  form.set('category', category);
+  form.set('sensitivity', sensitivity);
+  return json<KnowledgeItem>(
+    await authFetch(`/api/v1/knowledge/workspaces/${workspaceId}/documents`, {
+      method: 'POST',
+      body: form,
+    }),
+  );
+}
+
 export async function searchKnowledge(
   workspaceId: string,
   query: string,

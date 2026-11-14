@@ -46,14 +46,22 @@ class Automation(Base):
         ),
         CheckConstraint("window_seconds BETWEEN 60 AND 86400", name="ck_automations_window"),
         CheckConstraint("cooldown_seconds BETWEEN 0 AND 86400", name="ck_automations_cooldown"),
-        UniqueConstraint("user_id", "name", name="uq_automations_owner_name"),
-        Index("ix_automations_owner_trigger_enabled", "user_id", "trigger_type", "enabled"),
+        UniqueConstraint("workspace_id", "name", name="uq_automations_workspace_name"),
+        Index(
+            "ix_automations_workspace_trigger_enabled",
+            "workspace_id",
+            "trigger_type",
+            "enabled",
+        ),
         Index("ix_automations_schedule_due", "trigger_type", "enabled", "next_run_at"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
@@ -103,7 +111,7 @@ class AutomationRun(Base):
         CheckConstraint("depth BETWEEN 0 AND 10", name="ck_automation_runs_depth"),
         UniqueConstraint("automation_id", "dedupe_key", name="uq_automation_runs_dedupe"),
         UniqueConstraint("command_id", name="uq_automation_runs_command"),
-        Index("ix_automation_runs_owner_created", "user_id", "created_at"),
+        Index("ix_automation_runs_automation_created", "automation_id", "created_at"),
         Index("ix_automation_runs_automation_status", "automation_id", "status"),
         Index("ix_automation_runs_correlation", "correlation_id"),
     )

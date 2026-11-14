@@ -1,7 +1,10 @@
 """SQLAlchemy models."""
 
+from app.models.account_token import AccountToken
 from app.models.agent import Agent
+from app.models.agent_configuration import AgentConfiguration
 from app.models.agent_run import AgentRun
+from app.models.approval_comment import ApprovalComment
 from app.models.approval_request import ApprovalRequest
 from app.models.audit_log import AuditLog
 from app.models.automation import Automation, AutomationRun
@@ -18,6 +21,8 @@ from app.models.client_management import (
 )
 from app.models.codex_run import CodexRun
 from app.models.command import Command
+from app.models.commercial import CommercialPlan, WorkspaceSubscription, WorkspaceUsagePeriod
+from app.models.conversation import Conversation, ConversationMessage
 from app.models.crm import (
     CrmActivity,
     CrmAddress,
@@ -34,7 +39,13 @@ from app.models.email_reference import EmailReference
 from app.models.email_send_record import EmailSendRecord
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
-from app.models.knowledge import KnowledgeItem, KnowledgeRevision, Workspace, WorkspaceMember
+from app.models.knowledge import (
+    KnowledgeItem,
+    KnowledgeRevision,
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMember,
+)
 from app.models.marketing import (
     MarketingAsset,
     MarketingCampaign,
@@ -43,8 +54,17 @@ from app.models.marketing import (
     MarketingPerformanceMetric,
     MarketingPublication,
 )
+from app.models.notification import Notification, NotificationPreference
 from app.models.outbox_event import OutboxEvent
 from app.models.plan import Plan
+from app.models.project import (
+    Project,
+    ProjectActivity,
+    ProjectCommand,
+    ProjectMember,
+    ProjectMilestone,
+    ProjectTask,
+)
 from app.models.refresh_token import RefreshToken
 from app.models.supervisor_run import SupervisorRun
 from app.models.task import Task
@@ -52,14 +72,22 @@ from app.models.task_action import TaskAction
 from app.models.task_dependency import TaskDependency
 from app.models.task_execution import TaskExecution
 from app.models.task_status_history import TaskStatusHistory
+from app.models.transactional_email import TransactionalEmailOutbox
 from app.models.user import User
 
 __all__ = [
     "AgentRun",
+    "AccountToken",
     "Agent",
+    "AgentConfiguration",
     "CalendarReference",
     "CalendarWriteRecord",
     "Command",
+    "CommercialPlan",
+    "WorkspaceSubscription",
+    "WorkspaceUsagePeriod",
+    "Conversation",
+    "ConversationMessage",
     "CrmActivity",
     "CrmAddress",
     "CrmClient",
@@ -82,11 +110,18 @@ __all__ = [
     "IntegrationAccount",
     "IntegrationOAuthState",
     "ApprovalRequest",
+    "ApprovalComment",
     "AuditLog",
     "Automation",
     "AutomationRun",
     "CodexRun",
     "Plan",
+    "Project",
+    "ProjectActivity",
+    "ProjectCommand",
+    "ProjectMember",
+    "ProjectMilestone",
+    "ProjectTask",
     "RefreshToken",
     "MarketingAsset",
     "MarketingCampaign",
@@ -95,13 +130,17 @@ __all__ = [
     "MarketingPerformanceMetric",
     "MarketingPublication",
     "OutboxEvent",
+    "Notification",
+    "NotificationPreference",
     "KnowledgeItem",
     "KnowledgeRevision",
     "Workspace",
+    "WorkspaceInvitation",
     "WorkspaceMember",
     "SupervisorRun",
     "Task",
     "TaskStatusHistory",
+    "TransactionalEmailOutbox",
     "User",
     "TaskAction",
     "TaskDependency",

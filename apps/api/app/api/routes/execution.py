@@ -12,7 +12,11 @@ from app.models.workflow_enums import ApprovalStatus, RiskLevel, TaskExecutionSt
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.command_repository import CommandRepository
 from app.schemas.execution import (
+    ApprovalCommentCreate,
+    ApprovalCommentRead,
     ApprovalDecision,
+    ApprovalDetail,
+    ApprovalHistoryRead,
     ApprovalRequestRead,
     AuditLogRead,
     DispatchResponse,
@@ -178,6 +182,52 @@ def get_approval(
     return ApprovalRequestRead.model_validate(approval)
 
 
+@router.get("/approvals/{approval_id}/detail", response_model=ApprovalDetail)
+def get_approval_detail(
+    approval_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalDetail:
+    try:
+        value = ApprovalService(db).detail(approval_id, user.id)
+    except WorkflowNotFoundError as error:
+        _raise(error)
+    return ApprovalDetail(
+        approval=ApprovalRequestRead.model_validate(value["approval"]),
+        action=TaskActionRead.model_validate(value["action"]),
+        requesting_agent=value["requesting_agent"],
+        target_integration=value["target_integration"],
+        comments=[ApprovalCommentRead.model_validate(item) for item in value["comments"]],
+        history=[
+            ApprovalHistoryRead(
+                event_type=item.event_type,
+                actor_id=item.actor_id,
+                created_at=item.created_at,
+                metadata=item.metadata_payload,
+            )
+            for item in value["history"]
+        ],
+    )
+
+
+@router.post(
+    "/approvals/{approval_id}/comments",
+    response_model=ApprovalCommentRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_approval_comment(
+    approval_id: UUID,
+    data: ApprovalCommentCreate,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ApprovalCommentRead:
+    try:
+        comment = ApprovalService(db).comment(approval_id, user.id, data)
+    except WorkflowNotFoundError as error:
+        _raise(error)
+    return ApprovalCommentRead.model_validate(comment)
+
+
 @router.post("/approvals/{approval_id}/approve", response_model=DispatchResponse)
 def approve_action(
     approval_id: UUID,
@@ -240,6 +290,22 @@ def list_dependencies(
     except WorkflowNotFoundError as error:
         _raise(error)
     return [TaskDependencyRead.model_validate(item) for item in dependencies]
+
+
+@router.delete(
+    "/tasks/{task_id}/dependencies/{dependency_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_dependency(
+    task_id: UUID,
+    dependency_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    try:
+        DependencyService(db).delete(task_id, dependency_id, user.id)
+    except WorkflowNotFoundError as error:
+        _raise(error)
 
 
 @router.post("/tasks/{task_id}/schedule", response_model=TaskRead)

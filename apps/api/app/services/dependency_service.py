@@ -48,6 +48,22 @@ class DependencyService:
             raise WorkflowNotFoundError("Task not found")
         return self.dependencies.list_for_task_owned(task_id, user_id)
 
+    def delete(self, task_id: UUID, dependency_id: UUID, user_id: UUID) -> None:
+        try:
+            task = self.tasks.get_owned_for_update(task_id, user_id)
+            dependency = self.dependencies.get_for_task_owned(
+                dependency_id,
+                task_id,
+                user_id,
+            )
+            if task is None or dependency is None:
+                raise WorkflowNotFoundError("Task dependency not found")
+            self.dependencies.delete(dependency)
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+
     def satisfied(self, task_id: UUID) -> bool:
         ids = self.dependencies.dependency_ids(task_id)
         if not ids:

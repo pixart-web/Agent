@@ -1,7 +1,19 @@
-from typing import Annotated
+import hashlib
+from pathlib import Path
+from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
@@ -11,6 +23,7 @@ from app.knowledge.errors import (
     KnowledgeNotFoundError,
     KnowledgePermissionError,
 )
+from app.knowledge.ingestion import MAX_DOCUMENT_BYTES, DocumentIngestionError, extract_document
 from app.knowledge.schemas import (
     KnowledgeCreate,
     KnowledgeList,
@@ -110,6 +123,65 @@ def create_item(
         _raise(error)
 
 
+@router.post(
+    "/workspaces/{workspace_id}/documents",
+    response_model=KnowledgeRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def ingest_document(
+    workspace_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+    upload: Annotated[UploadFile, File()],
+    category: Annotated[
+        Literal[
+            "company_profile",
+            "service",
+            "product",
+            "policy",
+            "client",
+            "project",
+            "brand_guideline",
+            "procedure",
+            "approved_knowledge",
+        ],
+        Form(),
+    ] = "approved_knowledge",
+    sensitivity: Annotated[Literal["internal", "confidential", "restricted"], Form()] = "internal",
+) -> KnowledgeRead:
+    filename = Path(upload.filename or "document").name
+    content = await upload.read(MAX_DOCUMENT_BYTES + 1)
+    digest = hashlib.sha256(content).hexdigest()
+    source_reference = f"sha256:{digest}"
+    try:
+        text, document_type = extract_document(filename, content)
+        title = Path(filename).stem.strip()[:255] or "Imported document"
+        return _service(db).create_item(
+            user.id,
+            workspace_id,
+            KnowledgeCreate(
+                category=category,
+                title=title,
+                content=text,
+                sensitivity=sensitivity,
+                source_type="document_upload",
+                source_reference=source_reference,
+                provenance={
+                    "filename": filename,
+                    "document_type": document_type,
+                    "byte_size": len(content),
+                    "sha256": digest,
+                    "extractor": "kiko-safe-text-v1",
+                    "original_stored": False,
+                },
+            ),
+        )
+    except DocumentIngestionError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except (KnowledgeNotFoundError, KnowledgePermissionError, KnowledgeConflictError) as error:
+        _raise(error)
+
+
 @router.get("/workspaces/{workspace_id}/items", response_model=KnowledgeList)
 def list_items(
     workspace_id: UUID,
@@ -151,6 +223,20 @@ def approve_item(
     try:
         return _service(db).approve_item(user.id, workspace_id, item_id)
     except (KnowledgeNotFoundError, KnowledgePermissionError, KnowledgeConflictError) as error:
+        _raise(error)
+
+
+@router.delete("/workspaces/{workspace_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archive_item(
+    workspace_id: UUID,
+    item_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    try:
+        _service(db).archive_item(user.id, workspace_id, item_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except (KnowledgeNotFoundError, KnowledgePermissionError) as error:
         _raise(error)
 
 

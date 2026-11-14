@@ -50,3 +50,18 @@ until write access is intentionally enabled. Never commit real client secrets, r
 or Fernet keys.
 
 CI and local tests use FakeCalendarProvider; they do not contact Google or create real events.
+
+## Operator smoke test
+
+With an authorized allowlisted test account, set `CALENDAR_SMOKE_REFRESH_TOKEN` only in the
+runtime environment and run the read-only validation from `apps/api`:
+
+    python -m app.scripts.test_calendar_integration
+
+An explicit write validation requires `CALENDAR_WRITE_ENABLED=true` and the operator flag:
+
+    python -m app.scripts.test_calendar_integration --allow-create
+
+The write creates a clearly named 15-minute event seven days in the future. Record and remove
+the returned event manually after verification. Never run the write smoke against a production
+calendar or without the account owner's authorization.

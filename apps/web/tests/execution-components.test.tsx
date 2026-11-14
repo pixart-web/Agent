@@ -28,7 +28,11 @@ const task: TaskDetail = {
   updated_at: '2026-08-18T10:00:00Z',
   started_at: null,
   completed_at: null,
+  due_at: null,
   error_message: null,
+  command_id: 'command-1',
+  command_input: 'Ship the feature',
+  plan_title: 'Release plan',
   history: [],
 };
 

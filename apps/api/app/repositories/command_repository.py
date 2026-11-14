@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.command import Command
 from app.models.workflow_enums import CommandStatus
+from app.workspaces.scope import active_workspace_id
 
 
 class CommandRepository:
@@ -17,7 +18,7 @@ class CommandRepository:
     def get_owned(self, command_id: UUID, user_id: UUID) -> Command | None:
         statement = select(Command).where(
             Command.id == command_id,
-            Command.user_id == user_id,
+            Command.workspace_id == active_workspace_id(user_id),
         )
         return self.session.scalar(statement)
 
@@ -26,7 +27,7 @@ class CommandRepository:
             select(Command)
             .where(
                 Command.id == command_id,
-                Command.user_id == user_id,
+                Command.workspace_id == active_workspace_id(user_id),
             )
             .with_for_update(of=Command)
         )
@@ -38,14 +39,20 @@ class CommandRepository:
         limit: int,
         offset: int,
         command_status: CommandStatus | None,
+        search: str | None,
+        include_archived: bool,
     ) -> list[Command]:
         statement = (
             select(Command)
-            .where(Command.user_id == user_id)
+            .where(Command.workspace_id == active_workspace_id(user_id))
             .order_by(Command.created_at.desc(), Command.id)
             .limit(limit)
             .offset(offset)
         )
         if command_status is not None:
             statement = statement.where(Command.status == command_status)
+        if search is not None:
+            statement = statement.where(Command.input.icontains(search, autoescape=True))
+        if not include_archived:
+            statement = statement.where(Command.archived_at.is_(None))
         return list(self.session.scalars(statement))

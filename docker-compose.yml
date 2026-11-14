@@ -53,6 +53,20 @@ services:
       AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
       AUTH_RATE_LIMIT_FAIL_OPEN: ${AUTH_RATE_LIMIT_FAIL_OPEN:-true}
       AUTH_CLEANUP_RETENTION_DAYS: ${AUTH_CLEANUP_RETENTION_DAYS:-7}
+      AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
+      EMAIL_VERIFICATION_EXPIRE_MINUTES: ${EMAIL_VERIFICATION_EXPIRE_MINUTES:-60}
+      PASSWORD_RESET_EXPIRE_MINUTES: ${PASSWORD_RESET_EXPIRE_MINUTES:-30}
+      ACCOUNT_TOKEN_RESEND_COOLDOWN_SECONDS: ${ACCOUNT_TOKEN_RESEND_COOLDOWN_SECONDS:-60}
+      LEGAL_TERMS_VERSION: ${LEGAL_TERMS_VERSION:-2026-10-10}
+      LEGAL_PRIVACY_VERSION: ${LEGAL_PRIVACY_VERSION:-2026-10-10}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
+      TRANSACTIONAL_EMAIL_ENABLED: ${TRANSACTIONAL_EMAIL_ENABLED:-false}
+      TRANSACTIONAL_EMAIL_FROM: ${TRANSACTIONAL_EMAIL_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
       AI_PROVIDER: ${AI_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
@@ -201,6 +215,33 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    stop_grace_period: 15s
+
+  transactional-email-dispatcher:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    entrypoint: []
+    command: python -m app.scripts.run_transactional_email_dispatcher
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?Set AUTH_SECRET_KEY in .env}
+      AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-true}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
+      TRANSACTIONAL_EMAIL_ENABLED: ${TRANSACTIONAL_EMAIL_ENABLED:-false}
+      TRANSACTIONAL_EMAIL_FROM: ${TRANSACTIONAL_EMAIL_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      TRANSACTIONAL_EMAIL_BATCH_SIZE: ${TRANSACTIONAL_EMAIL_BATCH_SIZE:-25}
+      TRANSACTIONAL_EMAIL_MAX_ATTEMPTS: ${TRANSACTIONAL_EMAIL_MAX_ATTEMPTS:-5}
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      postgres:
         condition: service_healthy
     stop_grace_period: 15s
   postgres:

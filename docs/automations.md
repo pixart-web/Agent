@@ -21,6 +21,10 @@ Supported trigger types are `schedule`, `email_received`, `calendar_event`, `crm
 arbitrary code, expression language, URL callback, shell, or dynamic import. Conditions support
 only bounded nested-field `eq`, `not_eq`, `in`, and `exists` comparisons.
 
+The dashboard builder supports every trigger type, bounded conditions, static command templates,
+pause/resume, manual triggering, command editing, recent run inspection, and one bounded recovery
+of failed runs. Mutations require an editor, admin, or owner workspace role.
+
 Email, Calendar, CRM and task adapters call `AutomationService.dispatch_event` after their own
 owned event is committed. Public arbitrary event ingestion is intentionally absent. Manual and
 webhook automations may be triggered only through the authenticated owner API in this phase.

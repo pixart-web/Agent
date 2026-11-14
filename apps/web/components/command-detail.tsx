@@ -1,4 +1,5 @@
 import type { Command, Plan, WorkflowTask } from '@agent/shared';
+import Link from 'next/link';
 import React from 'react';
 
 import type { Agent } from '../lib/workflow-client';
@@ -57,7 +58,9 @@ export function CommandDetail({
                   <span className="task-sequence">#{task.sequence}</span>
                   <StatusBadge status={task.status} />
                 </div>
-                <h3>{task.title}</h3>
+                <h3>
+                  <Link href={`/dashboard/tasks/${task.id}`}>{task.title}</Link>
+                </h3>
                 <p>{task.instructions}</p>
                 <dl className="task-meta">
                   <div>

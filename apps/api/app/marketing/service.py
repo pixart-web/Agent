@@ -55,6 +55,7 @@ from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.workflow_enums import ActorType
 from app.services.audit_service import AuditService
+from app.workspaces.scope import active_workspace_id, workspace_or_legacy_owner
 
 TRANSITIONS: dict[str, frozenset[str]] = {
     "idea": frozenset({"draft", "archived"}),
@@ -77,7 +78,7 @@ class MarketingService:
         with self.session_factory() as session:
             query = (
                 select(MarketingCampaign)
-                .where(MarketingCampaign.user_id == context.user_id)
+                .where(workspace_or_legacy_owner(MarketingCampaign, context.user_id))
                 .order_by(MarketingCampaign.updated_at.desc(), MarketingCampaign.id)
                 .offset(value.offset)
                 .limit(value.limit)
@@ -108,7 +109,6 @@ class MarketingService:
             query = (
                 select(MarketingContent)
                 .where(
-                    MarketingContent.user_id == context.user_id,
                     MarketingContent.campaign_id == value.campaign_id,
                 )
                 .order_by(MarketingContent.updated_at.desc(), MarketingContent.id)
@@ -131,7 +131,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingContentHistory)
                     .where(
-                        MarketingContentHistory.user_id == context.user_id,
                         MarketingContentHistory.content_id == content.id,
                     )
                     .order_by(
@@ -144,7 +143,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingAsset)
                     .where(
-                        MarketingAsset.user_id == context.user_id,
                         MarketingAsset.content_id == content.id,
                     )
                     .order_by(MarketingAsset.created_at, MarketingAsset.id)
@@ -154,7 +152,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPublication)
                     .where(
-                        MarketingPublication.user_id == context.user_id,
                         MarketingPublication.content_id == content.id,
                     )
                     .order_by(
@@ -167,7 +164,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPerformanceMetric)
                     .where(
-                        MarketingPerformanceMetric.user_id == context.user_id,
                         MarketingPerformanceMetric.content_id == content.id,
                     )
                     .order_by(
@@ -190,8 +186,12 @@ class MarketingService:
         with self.session_factory() as session:
             query = (
                 select(MarketingContent)
+                .join(
+                    MarketingCampaign,
+                    MarketingCampaign.id == MarketingContent.campaign_id,
+                )
                 .where(
-                    MarketingContent.user_id == context.user_id,
+                    workspace_or_legacy_owner(MarketingCampaign, context.user_id),
                     MarketingContent.scheduled_for >= value.starts_at,
                     MarketingContent.scheduled_for < value.ends_at,
                 )
@@ -214,7 +214,6 @@ class MarketingService:
                 session.scalars(
                     select(MarketingPerformanceMetric)
                     .where(
-                        MarketingPerformanceMetric.user_id == context.user_id,
                         MarketingPerformanceMetric.campaign_id == value.campaign_id,
                     )
                     .order_by(
@@ -232,21 +231,27 @@ class MarketingService:
             )
 
     def create_campaign(
-        self, context: ExecutionContext, value: CampaignCreateInput
+        self, context: ExecutionContext, value: CampaignCreateInput, *, governed: bool = True
     ) -> CampaignOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(MarketingCampaign).where(
-                    MarketingCampaign.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(MarketingCampaign).where(
+                        MarketingCampaign.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._campaign_output(existing)
             if value.client_id:
                 self._client(session, context.user_id, value.client_id)
             campaign = MarketingCampaign(
+                workspace_id=self._workspace_id(session, context.user_id),
                 user_id=context.user_id,
                 client_id=value.client_id,
                 owner_user_id=context.user_id,
@@ -255,7 +260,7 @@ class MarketingService:
                 status=value.status,
                 starts_at=value.starts_at,
                 ends_at=value.ends_at,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(campaign)
             session.flush()
@@ -270,11 +275,12 @@ class MarketingService:
             return self._campaign_output(campaign)
 
     def update_campaign(
-        self, context: ExecutionContext, value: CampaignUpdateInput
+        self, context: ExecutionContext, value: CampaignUpdateInput, *, governed: bool = True
     ) -> CampaignOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             campaign = self._campaign(session, context.user_id, value.campaign_id, lock=True)
             if value.name is not None:
                 campaign.name = self._display(value.name)
@@ -298,14 +304,21 @@ class MarketingService:
             session.commit()
             return self._campaign_output(campaign)
 
-    def create_content(self, context: ExecutionContext, value: ContentCreateInput) -> ContentOutput:
+    def create_content(
+        self, context: ExecutionContext, value: ContentCreateInput, *, governed: bool = True
+    ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
-            existing = session.scalar(
-                select(MarketingContent).where(
-                    MarketingContent.created_by_action_id == context.action_id
+            if governed:
+                self._approved_action(session, context, payload)
+            existing = (
+                session.scalar(
+                    select(MarketingContent).where(
+                        MarketingContent.created_by_action_id == context.action_id
+                    )
                 )
+                if governed
+                else None
             )
             if existing:
                 return self._content_output(existing)
@@ -321,7 +334,7 @@ class MarketingService:
                 title=self._display(value.title),
                 body=value.body,
                 lifecycle_status=value.lifecycle_status,
-                created_by_action_id=context.action_id,
+                created_by_action_id=context.action_id if governed else None,
             )
             session.add(content)
             session.flush()
@@ -343,10 +356,13 @@ class MarketingService:
             session.commit()
             return self._content_output(content)
 
-    def update_content(self, context: ExecutionContext, value: ContentUpdateInput) -> ContentOutput:
+    def update_content(
+        self, context: ExecutionContext, value: ContentUpdateInput, *, governed: bool = True
+    ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             if content.lifecycle_status not in {"idea", "draft"}:
                 raise MarketingConflictError("Content must return to draft before editing")
@@ -375,11 +391,12 @@ class MarketingService:
             return self._content_output(content)
 
     def transition_content(
-        self, context: ExecutionContext, value: ContentTransitionInput
+        self, context: ExecutionContext, value: ContentTransitionInput, *, governed: bool = True
     ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             previous = content.lifecycle_status
             self._require_transition(previous, value.target_status)
@@ -405,11 +422,12 @@ class MarketingService:
             return self._content_output(content)
 
     def schedule_content(
-        self, context: ExecutionContext, value: ContentScheduleInput
+        self, context: ExecutionContext, value: ContentScheduleInput, *, governed: bool = True
     ) -> ContentOutput:
         payload = value.model_dump(mode="json")
         with self.session_factory() as session:
-            self._approved_action(session, context, payload)
+            if governed:
+                self._approved_action(session, context, payload)
             content = self._content(session, context.user_id, value.content_id, lock=True)
             if value.scheduled_for <= utc_now():
                 raise MarketingValidationError("Scheduled content must be in the future")
@@ -461,7 +479,6 @@ class MarketingService:
                 raise MarketingValidationError("Publication confirmation cannot be in the future")
             duplicate = session.scalar(
                 select(MarketingPublication).where(
-                    MarketingPublication.user_id == context.user_id,
                     MarketingPublication.content_id == content.id,
                     MarketingPublication.external_reference == value.external_reference,
                 )
@@ -606,7 +623,7 @@ class MarketingService:
     ) -> MarketingCampaign:
         query = select(MarketingCampaign).where(
             MarketingCampaign.id == campaign_id,
-            MarketingCampaign.user_id == user_id,
+            workspace_or_legacy_owner(MarketingCampaign, user_id),
         )
         if lock:
             query = query.with_for_update()
@@ -623,9 +640,13 @@ class MarketingService:
         *,
         lock: bool = False,
     ) -> MarketingContent:
-        query = select(MarketingContent).where(
-            MarketingContent.id == content_id,
-            MarketingContent.user_id == user_id,
+        query = (
+            select(MarketingContent)
+            .join(MarketingCampaign, MarketingCampaign.id == MarketingContent.campaign_id)
+            .where(
+                MarketingContent.id == content_id,
+                workspace_or_legacy_owner(MarketingCampaign, user_id),
+            )
         )
         if lock:
             query = query.with_for_update()
@@ -639,7 +660,7 @@ class MarketingService:
         client = session.scalar(
             select(CrmClient).where(
                 CrmClient.id == client_id,
-                CrmClient.user_id == user_id,
+                workspace_or_legacy_owner(CrmClient, user_id),
             )
         )
         if client is None:
@@ -652,7 +673,7 @@ class MarketingService:
             select(Task)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(Task.id == task_id, Command.user_id == user_id)
+            .where(Task.id == task_id, Command.workspace_id == active_workspace_id(user_id))
         )
         if task is None:
             raise MarketingNotFoundError("Task was not found")
@@ -662,6 +683,13 @@ class MarketingService:
     def _require_transition(previous: str, target: str) -> None:
         if target not in TRANSITIONS[previous]:
             raise MarketingConflictError(f"Content cannot transition from {previous} to {target}")
+
+    @staticmethod
+    def _workspace_id(session: Session, user_id: UUID) -> UUID:
+        workspace_id = session.scalar(select(active_workspace_id(user_id)))
+        if workspace_id is None:
+            raise MarketingValidationError("An active workspace is required")
+        return workspace_id
 
     @staticmethod
     def _history(
@@ -679,7 +707,9 @@ class MarketingService:
                 from_status=previous,
                 to_status=target,
                 reason=reason,
-                actor_action_id=context.action_id,
+                actor_action_id=(
+                    context.action_id if session.get(TaskAction, context.action_id) else None
+                ),
             )
         )
 
@@ -781,7 +811,9 @@ class MarketingService:
         resource_id: UUID,
     ) -> None:
         AuditService(session).record(
-            actor_type=ActorType.WORKER,
+            actor_type=(
+                ActorType.WORKER if session.get(TaskAction, context.action_id) else ActorType.USER
+            ),
             actor_id=context.user_id,
             event_type=event_type,
             resource_type=resource_type,

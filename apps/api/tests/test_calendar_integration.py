@@ -170,7 +170,7 @@ def test_calendar_worker_write_is_approved_fingerprinted_and_never_retried(
     record_status: str,
 ) -> None:
     email = f"calendar-worker-{str(ambiguous).lower()}@example.com"
-    _headers, _command, task = ready_task(client, db_session, "sales", email=email)
+    headers, _command, task = ready_task(client, db_session, "sales", email=email)
     user = db_session.scalar(select(User).where(User.email == email))
     settings = calendar_settings(calendar_write_enabled=True)
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())
@@ -226,6 +226,13 @@ def test_calendar_worker_write_is_approved_fingerprinted_and_never_retried(
     assert record.payload_fingerprint == action.action_fingerprint
     assert fake.write_count == 1
     assert len(db_session.query(CalendarWriteRecord).all()) == 1
+    app.dependency_overrides[get_settings] = lambda: settings
+    integration = client.get("/api/v1/integrations/calendar/status", headers=headers)
+    assert integration.status_code == 200
+    assert integration.json()["unresolved_writes"] == int(ambiguous)
+    assert integration.json()["operational_state"] == (
+        "reconciliation_required" if ambiguous else "connected"
+    )
     assert (
         ExecutionWorker(
             factory,

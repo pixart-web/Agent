@@ -98,6 +98,43 @@ class ApprovalDecision(BaseModel):
         return value.strip() or None if value is not None else None
 
 
+class ApprovalCommentCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2_000)
+
+    @field_validator("body")
+    @classmethod
+    def normalize_body(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Comment cannot be blank")
+        return value
+
+
+class ApprovalCommentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    author_user_id: UUID | None
+    body: str
+    created_at: datetime
+
+
+class ApprovalHistoryRead(BaseModel):
+    event_type: str
+    actor_id: UUID | None
+    created_at: datetime
+    metadata: dict[str, object]
+
+
+class ApprovalDetail(BaseModel):
+    approval: ApprovalRequestRead
+    action: TaskActionRead
+    requesting_agent: str
+    target_integration: str
+    comments: list[ApprovalCommentRead]
+    history: list[ApprovalHistoryRead]
+
+
 class TaskDependencyCreate(BaseModel):
     depends_on_task_id: UUID
 

@@ -2,28 +2,42 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
 from app.db.session import get_db
 from app.execution.context import ExecutionContext
 from app.integrations.credentials import EnvironmentCredentialProvider
+from app.marketing.errors import (
+    MarketingConflictError,
+    MarketingNotFoundError,
+    MarketingValidationError,
+)
 from app.marketing.schemas import (
+    CampaignCreateInput,
     CampaignInput,
     CampaignListInput,
     CampaignOutput,
     CampaignsOutput,
+    CampaignUpdateInput,
     ContentCalendarInput,
     ContentCalendarOutput,
+    ContentCreateInput,
     ContentDetailOutput,
     ContentInput,
     ContentListInput,
+    ContentOutput,
+    ContentScheduleInput,
     ContentsOutput,
+    ContentTransitionInput,
+    ContentUpdateInput,
     MetricsListInput,
     MetricsOutput,
 )
 from app.marketing.service import MarketingService
+from app.models.knowledge import WorkspaceMember
 from app.models.user import User
 
 router = APIRouter(prefix="/marketing", tags=["marketing"])
@@ -44,6 +58,115 @@ def _context(user_id: UUID) -> ExecutionContext:
 
 def _service(db: Session) -> MarketingService:
     return MarketingService(sessionmaker(bind=db.get_bind(), expire_on_commit=False))
+
+
+def _require_editor(db: Session, user: User) -> None:
+    membership = db.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == user.active_workspace_id,
+            WorkspaceMember.user_id == user.id,
+        )
+    )
+    if membership is None or membership.role == "viewer":
+        raise HTTPException(status_code=403, detail="Workspace edit permission is required")
+
+
+def _raise_marketing(error: Exception) -> None:
+    if isinstance(error, MarketingNotFoundError):
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    if isinstance(error, MarketingConflictError):
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/campaigns", response_model=CampaignOutput, status_code=status.HTTP_201_CREATED)
+def create_campaign(
+    value: CampaignCreateInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CampaignOutput:
+    _require_editor(db, user)
+    try:
+        return _service(db).create_campaign(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
+
+
+@router.patch("/campaigns/{campaign_id}", response_model=CampaignOutput)
+def update_campaign(
+    campaign_id: UUID,
+    value: CampaignUpdateInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CampaignOutput:
+    _require_editor(db, user)
+    if value.campaign_id != campaign_id:
+        raise HTTPException(status_code=422, detail="Campaign id does not match path")
+    try:
+        return _service(db).update_campaign(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
+
+
+@router.post("/content", response_model=ContentOutput, status_code=status.HTTP_201_CREATED)
+def create_content(
+    value: ContentCreateInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ContentOutput:
+    _require_editor(db, user)
+    try:
+        return _service(db).create_content(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
+
+
+@router.patch("/content/{content_id}", response_model=ContentOutput)
+def update_content(
+    content_id: UUID,
+    value: ContentUpdateInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ContentOutput:
+    _require_editor(db, user)
+    if value.content_id != content_id:
+        raise HTTPException(status_code=422, detail="Content id does not match path")
+    try:
+        return _service(db).update_content(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
+
+
+@router.post("/content/{content_id}/transition", response_model=ContentOutput)
+def transition_content(
+    content_id: UUID,
+    value: ContentTransitionInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ContentOutput:
+    _require_editor(db, user)
+    if value.content_id != content_id:
+        raise HTTPException(status_code=422, detail="Content id does not match path")
+    try:
+        return _service(db).transition_content(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
+
+
+@router.post("/content/{content_id}/schedule", response_model=ContentOutput)
+def schedule_content(
+    content_id: UUID,
+    value: ContentScheduleInput,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ContentOutput:
+    _require_editor(db, user)
+    if value.content_id != content_id:
+        raise HTTPException(status_code=422, detail="Content id does not match path")
+    try:
+        return _service(db).schedule_content(_context(user.id), value, governed=False)
+    except (MarketingNotFoundError, MarketingConflictError, MarketingValidationError) as error:
+        _raise_marketing(error)
 
 
 @router.get("/campaigns", response_model=CampaignsOutput)

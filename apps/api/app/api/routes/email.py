@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.dependencies.auth import get_current_active_user
@@ -32,6 +33,7 @@ from app.integrations.email.schemas import (
     EmailThreadOutput,
 )
 from app.integrations.email.service import EmailService
+from app.models.email_send_record import EmailSendRecord
 from app.models.integration_account import IntegrationAccount
 from app.models.integration_oauth_state import IntegrationOAuthState
 from app.models.user import User
@@ -77,13 +79,46 @@ def email_status(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> EmailIntegrationStatus:
     accounts = IntegrationAccountRepository(db).list_owned(user.id, "gmail")
+    account_ids = [account.id for account in accounts]
+    counts = (
+        dict(
+            db.execute(
+                select(EmailSendRecord.status, func.count(EmailSendRecord.id))
+                .where(EmailSendRecord.account_id.in_(account_ids))
+                .group_by(EmailSendRecord.status)
+            ).all()
+        )
+        if account_ids
+        else {}
+    )
+    connected = sum(account.status == IntegrationAccountStatus.CONNECTED for account in accounts)
+    unresolved = counts.get("delivery_unknown", 0)
+    failed = counts.get("failed", 0)
+    pending = counts.get("pending", 0)
+    operational_state = (
+        "disabled"
+        if not settings.email_integration_enabled
+        else "reconciliation_required"
+        if unresolved or pending
+        else "degraded"
+        if failed
+        or any(account.status != IntegrationAccountStatus.CONNECTED for account in accounts)
+        else "connected"
+        if connected
+        else "not_connected"
+    )
     return EmailIntegrationStatus(
         enabled=settings.email_integration_enabled,
         provider=settings.email_provider,
         send_enabled=settings.email_send_enabled,
         mark_read_enabled=settings.email_mark_read_enabled,
-        connected_accounts=sum(
-            account.status == IntegrationAccountStatus.CONNECTED for account in accounts
+        connected_accounts=connected,
+        operational_state=operational_state,
+        unresolved_writes=unresolved,
+        pending_writes=pending,
+        failed_writes=failed,
+        last_sync_at=max(
+            (account.last_sync_at for account in accounts if account.last_sync_at), default=None
         ),
     )
 
@@ -112,6 +147,7 @@ def email_connect(
     now = utc_now()
     oauth_state = IntegrationOAuthState(
         user_id=user.id,
+        workspace_id=user.active_workspace_id,
         provider=OAUTH_PROVIDER,
         purpose=OAUTH_PURPOSE,
         expires_at=now + timedelta(minutes=settings.email_oauth_state_expire_minutes),
@@ -135,14 +171,14 @@ def email_callback(
     _require_enabled(settings)
     oauth = GmailOAuthClient(settings)
     claims = oauth.decode_state(state_token)
-    consumed = IntegrationOAuthStateRepository(db).consume(
+    workspace_id = IntegrationOAuthStateRepository(db).consume(
         claims.state_id,
         claims.user_id,
         OAUTH_PROVIDER,
         OAUTH_PURPOSE,
         utc_now(),
     )
-    if not consumed:
+    if workspace_id is None:
         db.rollback()
         raise EmailAuthenticationError(INVALID_STATE_MESSAGE)
     db.commit()
@@ -177,6 +213,7 @@ def email_callback(
         account = repository.add(
             IntegrationAccount(
                 user_id=user_id,
+                workspace_id=workspace_id,
                 provider="gmail",
                 account_type=IntegrationAccountType.PERSONAL,
                 external_account_id=external_id,

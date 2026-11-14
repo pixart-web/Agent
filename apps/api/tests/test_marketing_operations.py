@@ -14,6 +14,7 @@ from app.marketing.errors import MarketingConflictError, MarketingValidationErro
 from app.marketing.schemas import (
     AssetCreateInput,
     CampaignCreateInput,
+    CampaignListInput,
     ContentCalendarInput,
     ContentCreateInput,
     ContentInput,
@@ -23,7 +24,9 @@ from app.marketing.schemas import (
     PublicationRecordInput,
 )
 from app.marketing.service import MarketingService
+from app.models.knowledge import Workspace, WorkspaceMember
 from app.models.marketing import (
+    MarketingCampaign,
     MarketingContent,
     MarketingContentHistory,
     MarketingPublication,
@@ -37,6 +40,82 @@ from tests.test_specialized_agents import ready_task
 
 def settings() -> Settings:
     return Settings(auth_secret_key="test-only-auth-secret-with-at-least-32-characters")
+
+
+def read_context(user_id: UUID) -> ExecutionContext:
+    identifier = uuid4()
+    return ExecutionContext(
+        user_id=user_id,
+        command_id=identifier,
+        task_id=identifier,
+        action_id=identifier,
+        execution_id=identifier,
+        correlation_id=identifier,
+        credentials=EnvironmentCredentialProvider(),
+    )
+
+
+def test_marketing_is_shared_inside_workspace_and_hidden_outside(db_session) -> None:
+    owner = User(email="marketing-scope-owner@example.com", password_hash="x", full_name="Owner")
+    member = User(email="marketing-scope-member@example.com", password_hash="x", full_name="Member")
+    outsider = User(
+        email="marketing-scope-outsider@example.com", password_hash="x", full_name="Outsider"
+    )
+    db_session.add_all([owner, member, outsider])
+    db_session.flush()
+    shared = Workspace(
+        name="Shared Marketing",
+        slug=f"shared-marketing-{uuid4().hex}",
+        created_by_user_id=owner.id,
+    )
+    isolated = Workspace(
+        name="Isolated Marketing",
+        slug=f"isolated-marketing-{uuid4().hex}",
+        created_by_user_id=outsider.id,
+    )
+    db_session.add_all([shared, isolated])
+    db_session.flush()
+    owner.active_workspace_id = shared.id
+    member.active_workspace_id = shared.id
+    outsider.active_workspace_id = isolated.id
+    db_session.add_all(
+        [
+            WorkspaceMember(
+                workspace_id=shared.id,
+                user_id=owner.id,
+                role="owner",
+                created_by_user_id=owner.id,
+            ),
+            WorkspaceMember(
+                workspace_id=shared.id,
+                user_id=member.id,
+                role="member",
+                created_by_user_id=owner.id,
+            ),
+            WorkspaceMember(
+                workspace_id=isolated.id,
+                user_id=outsider.id,
+                role="owner",
+                created_by_user_id=outsider.id,
+            ),
+            MarketingCampaign(
+                workspace_id=shared.id,
+                user_id=owner.id,
+                owner_user_id=owner.id,
+                name="Shared Launch",
+                objective="Visible to the shared workspace only.",
+                status="active",
+            ),
+        ]
+    )
+    db_session.commit()
+    service = MarketingService(sessionmaker(bind=db_session.get_bind(), expire_on_commit=False))
+
+    assert [
+        item.name
+        for item in service.list_campaigns(read_context(member.id), CampaignListInput()).campaigns
+    ] == ["Shared Launch"]
+    assert service.list_campaigns(read_context(outsider.id), CampaignListInput()).campaigns == []
 
 
 def approved_context(

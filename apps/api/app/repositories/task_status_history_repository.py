@@ -7,6 +7,7 @@ from app.models.command import Command
 from app.models.plan import Plan
 from app.models.task import Task
 from app.models.task_status_history import TaskStatusHistory
+from app.workspaces.scope import active_workspace_id
 
 
 class TaskStatusHistoryRepository:
@@ -26,7 +27,10 @@ class TaskStatusHistoryRepository:
             .join(Task, Task.id == TaskStatusHistory.task_id)
             .join(Plan, Plan.id == Task.plan_id)
             .join(Command, Command.id == Plan.command_id)
-            .where(TaskStatusHistory.task_id == task_id, Command.user_id == user_id)
+            .where(
+                TaskStatusHistory.task_id == task_id,
+                Command.workspace_id == active_workspace_id(user_id),
+            )
             .order_by(TaskStatusHistory.created_at, TaskStatusHistory.id)
         )
         return list(self.session.scalars(statement))

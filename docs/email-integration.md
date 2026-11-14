@@ -51,6 +51,11 @@ ambiguous provider response records delivery_unknown; an operator must investiga
 creating a new approved action. EmailSendRecord makes successful actions idempotent and
 rejects payload changes after approval.
 
+The integration dashboard derives an operational state from account health and write records.
+`reconciliation_required` means at least one delivery is pending or unknown; operators must
+check Gmail before initiating a replacement action. `degraded` means a write failed or an
+account is expired/revoked/error. Provider errors never silently appear as connected.
+
 Audit events contain provider/account identifiers and bounded counts, never message bodies,
 tokens, client secrets, or arbitrary headers.
 

@@ -8,7 +8,11 @@ def get_llm_provider() -> LLMProvider:
     settings = get_settings()
     if settings.ai_provider == "openai":
         return OpenAIProvider(
-            api_key=settings.openai_api_key,
+            api_key=(
+                settings.openai_api_key.get_secret_value()
+                if settings.openai_api_key is not None
+                else None
+            ),
             model=settings.openai_model,
             timeout_seconds=settings.ai_request_timeout_seconds,
             max_retries=settings.ai_max_retries,

@@ -206,13 +206,20 @@ def test_fake_codex_approval_worker_lifecycle_and_ownership(
     assert run.tests_passed is True
     assert client.get(f"/api/v1/codex/runs/{run.id}", headers=headers).status_code == 200
 
-    other = client.post(
+    registration = client.post(
         "/api/v1/auth/register",
         json={
             "email": "other-codex@example.com",
             "password": PASSWORD,
             "full_name": "Other Owner",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
+    )
+    assert registration.status_code == 202
+    other = client.post(
+        "/api/v1/auth/login",
+        json={"email": "other-codex@example.com", "password": PASSWORD},
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}
     assert client.get(f"/api/v1/codex/runs/{run.id}", headers=other_headers).status_code == 404
