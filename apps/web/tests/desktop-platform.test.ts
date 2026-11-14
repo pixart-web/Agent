@@ -21,6 +21,7 @@ import {
   DesktopConnectionError,
   __test,
   desktopFetch,
+  takePendingRoute,
 } from '../lib/desktop-bridge';
 import { isRestorableRoute } from '../lib/desktop-routes';
 import {
@@ -74,6 +75,12 @@ describe('desktop route params', () => {
 
 describe('desktop bridge transport', () => {
   beforeEach(() => invoke.mockReset());
+
+  it('asks the shell for the deep link that launched the app', async () => {
+    invoke.mockResolvedValue('/verify-email/?token=abc');
+    await expect(takePendingRoute()).resolves.toBe('/verify-email/?token=abc');
+    expect(invoke).toHaveBeenCalledWith('take_pending_route');
+  });
 
   it('round-trips binary data through base64', () => {
     const bytes = new Uint8Array([0, 1, 2, 250, 255]);
