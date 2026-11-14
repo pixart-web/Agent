@@ -81,8 +81,18 @@ async function atPath(prefix, timeout) {
 }
 
 async function go(path) {
-  window.next.router.push(path);
-  await atPath(path.split('?')[0].replace(/\/$/, ''));
+  const target = path.split('?')[0].replace(/\/$/, '');
+  // The App Router can drop a push issued while a previous transition is still running;
+  // retry instead of failing on a lost navigation.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    window.next.router.push(path);
+    try {
+      await atPath(target, 7000);
+      return;
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
+  }
 }
 
 async function step(name, body) {

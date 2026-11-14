@@ -1,4 +1,14 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript"],
-  "ignorePatterns": ["next-env.d.ts", "out/"]
+  "ignorePatterns": ["next-env.d.ts", "out/"],
+  "rules": {
+    "no-restricted-properties": [
+      "error",
+      {
+        "object": "window",
+        "property": "confirm",
+        "message": "Use confirmAction() from lib/confirm: window.confirm does not block in the desktop app."
+      }
+    ]
+  }
 }

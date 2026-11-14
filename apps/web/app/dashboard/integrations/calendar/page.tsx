@@ -10,6 +10,7 @@ import {
   getCalendarIntegrationStatus,
   listCalendarAccounts,
 } from '../../../../lib/workflow-client';
+import { confirmAction } from '../../../../lib/confirm';
 import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
@@ -43,7 +44,7 @@ export default function CalendarIntegrationPage() {
   }
 
   async function handleDisconnect(accountId: string) {
-    if (!window.confirm('Disconnect this Calendar account?')) return;
+    if (!(await confirmAction('Disconnect this Calendar account?'))) return;
     await disconnectCalendar(accountId);
     await refresh();
   }

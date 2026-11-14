@@ -33,14 +33,6 @@ export default function DesktopConnectionPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (
-      info?.hasSession &&
-      !window.confirm(
-        'Changing the server signs you out of the current server on this Mac. Continue?',
-      )
-    ) {
-      return;
-    }
     setBusy(true);
     try {
       await setServerUrl(value);

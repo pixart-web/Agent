@@ -121,6 +121,10 @@ export function openExternal(url: string): Promise<void> {
   return invoke('open_external', { url });
 }
 
+export function confirmNative(message: string): Promise<boolean> {
+  return invoke<boolean>('confirm_action', { message });
+}
+
 export function notify(title: string, body: string): Promise<void> {
   return invoke('notify', { title, body });
 }

@@ -111,6 +111,7 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::open_external,
         commands::save_file,
         commands::notify,
+        commands::confirm_action,
     ]
 }
 
@@ -125,6 +126,7 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::open_external,
         commands::save_file,
         commands::notify,
+        commands::confirm_action,
         smoke::smoke_report,
     ]
 }

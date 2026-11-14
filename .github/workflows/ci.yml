@@ -178,6 +178,78 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: pnpm build
 
+  desktop:
+    name: Desktop (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm with Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build desktop UI (static export)
+        run: pnpm --filter @agent/desktop run build:ui
+
+      - name: Rust format
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --check
+
+      - name: Clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Rust tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test
+
+      - name: Build unsigned .app and .dmg
+        env:
+          CI: 'true'
+        working-directory: apps/desktop
+        run: pnpm tauri build --bundles app,dmg
+
+      - name: Verify bundle
+        run: |
+          APP=apps/desktop/src-tauri/target/release/bundle/macos/Kiko.app
+          codesign --verify --deep --strict "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Contents/Info.plist"
+          test "$(codesign -d --entitlements - --xml "$APP" 2>/dev/null | grep -c '<key>')" -eq 1
+
+      - name: Upload unsigned development build
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiko-macos-unsigned-${{ github.sha }}
+          path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          retention-days: 14
+
   containers:
     name: Production container build
     runs-on: ubuntu-latest

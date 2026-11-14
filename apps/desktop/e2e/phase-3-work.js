@@ -56,6 +56,75 @@ phase('governed-work', async () => {
     await click('Add task');
     await seeText('Call the QA client', 20000);
   });
+  let commandPath = '';
+  await step('approve the plan (human plan approval)', async () => {
+    commandPath = location.pathname;
+    await click('Aprovar plano');
+    await waitFor(() => !actionByText('Aprovar plano'), 'plan approved', 20000);
+  });
+  await step('mark the task ready', async () => {
+    if (
+      await waitFor(
+        () => document.querySelector('.action-composer'),
+        'composer',
+        3000,
+      ).catch(() => null)
+    )
+      return;
+    const select = await waitFor(
+      () =>
+        [...document.querySelectorAll('select')].find((item) =>
+          [...item.options].some((option) => option.value === 'ready'),
+        ),
+      'status select',
+    );
+    setValue(select, 'ready');
+    await click('Change status');
+    await waitFor(
+      () => document.querySelector('.action-composer'),
+      'action composer',
+      20000,
+    );
+  });
+  await step('dispatch a governed action that requires approval', async () => {
+    const composer = document.querySelector('.action-composer');
+    setValue(
+      composer.querySelector('select'),
+      'internal.simulate_external_action',
+    );
+    setValue(
+      composer.querySelector('input'),
+      'Notify the QA client about the rollout window',
+    );
+    [...composer.querySelectorAll('button')]
+      .find((b) => /Create & dispatch/.test(b.textContent))
+      .click();
+    await waitFor(
+      () =>
+        /waiting[_ ]approval/i.test(
+          document.querySelector('.action-row')?.textContent ?? '',
+        ),
+      'action waiting for approval',
+      20000,
+    );
+  });
+  await step('approve it in the Approvals centre', async () => {
+    await go('/dashboard/approvals/');
+    await fill('Decision note', 'Approved from the macOS app.');
+    await click('Aprovar');
+    await waitFor(() => !actionByText('Aprovar'), 'approval recorded', 20000);
+  });
+  await step('approved action executed by the backend worker', async () => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await go('/dashboard/executions/');
+      await go(commandPath);
+      await sleep(1500);
+      const row = document.querySelector('.action-row')?.textContent ?? '';
+      if (/completed/i.test(row)) return;
+      if (/failed/i.test(row)) throw new Error(`action failed: ${row}`);
+    }
+    throw new Error('action did not complete');
+  });
   await step('task persisted and opens from the task list', async () => {
     await go('/dashboard/tasks/');
     const link = await waitFor(

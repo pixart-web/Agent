@@ -10,6 +10,7 @@ import {
   getEmailIntegrationStatus,
   listEmailAccounts,
 } from '../../../../lib/workflow-client';
+import { confirmAction } from '../../../../lib/confirm';
 import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 
@@ -44,7 +45,7 @@ export default function EmailIntegrationPage() {
   }
 
   async function handleDisconnect(accountId: string) {
-    if (!window.confirm('Disconnect this email account?')) return;
+    if (!(await confirmAction('Disconnect this email account?'))) return;
     await disconnectEmail(accountId);
     await refresh();
   }

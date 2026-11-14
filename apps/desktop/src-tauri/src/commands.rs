@@ -5,7 +5,7 @@
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 use url::Url;
@@ -46,7 +46,9 @@ pub async fn clear_session(client: State<'_, ApiClient>) -> Result<(), ApiError>
     client.clear_session().await
 }
 
-/// Change the Kiko server. Clears the session for the previous server first.
+/// Change the Kiko server. The user must confirm in a native dialog that the WebView cannot
+/// draw or dismiss, so injected script cannot silently redirect sign-ins to another server.
+/// The session for the previous server is cleared first.
 #[tauri::command]
 pub async fn set_server_url(
     app: AppHandle,
@@ -54,11 +56,27 @@ pub async fn set_server_url(
     url: String,
 ) -> Result<String, String> {
     let parsed = config::validate_api_url(&url)?;
+    let origin = parsed.origin().ascii_serialization();
+    let confirmed = app
+        .dialog()
+        .message(format!(
+            "Kiko will send your sign-in and business data to:\n\n{origin}\n\nOnly continue if your administrator gave you this address. You will be signed out of the current server."
+        ))
+        .title("Connect to this Kiko server?")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "Connect".into(),
+            "Cancel".into(),
+        ))
+        .blocking_show();
+    if !confirmed {
+        return Err("Server change cancelled.".into());
+    }
     client.clear_session().await.map_err(|e| e.to_string())?;
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     config::save_api_url(&dir, &parsed).map_err(|e| e.to_string())?;
-    client.set_base_url(parsed.clone()).await;
-    Ok(parsed.origin().ascii_serialization())
+    client.set_base_url(parsed).await;
+    Ok(origin)
 }
 
 /// Allowed external destinations: HTTPS pages and mail links. Everything else is refused.
@@ -127,6 +145,22 @@ pub async fn save_file(
     let path = path.into_path().map_err(|e| e.to_string())?;
     std::fs::write(&path, bytes).map_err(|e| e.to_string())?;
     Ok(Some(path.display().to_string()))
+}
+
+/// Native confirmation for destructive actions. `window.confirm` is asynchronous inside the
+/// Tauri WebView, so the UI must not rely on it.
+#[tauri::command]
+pub async fn confirm_action(app: AppHandle, message: String) -> bool {
+    let message: String = message.chars().take(300).collect();
+    app.dialog()
+        .message(message)
+        .title("Kiko")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "Continue".into(),
+            "Cancel".into(),
+        ))
+        .blocking_show()
 }
 
 #[tauri::command]

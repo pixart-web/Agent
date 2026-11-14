@@ -17,7 +17,10 @@ use crate::keychain::TokenStore;
 pub const REFRESH_COOKIE_NAME: &str = "agent_refresh_token";
 pub const MAX_BODY_BYTES: usize = 25 * 1024 * 1024;
 const MAX_PATH_LEN: usize = 2048;
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+/// Below common server keep-alive limits (uvicorn 5 s) so a connection the server is about
+/// to close is not reused for the next request.
+const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(4);
 /// Replaces the real access token in JSON bodies handed to the WebView.
 pub const DESKTOP_TOKEN_SENTINEL: &str = "desktop-managed";
 
@@ -156,6 +159,11 @@ pub fn extract_access_token(body: &[u8]) -> Option<(String, Vec<u8>)> {
     Some((token, serde_json::to_vec(&value).ok()?))
 }
 
+/// Methods that can be retried without risk of repeating a business write.
+pub fn is_retry_safe(method: &reqwest::Method) -> bool {
+    matches!(*method, reqwest::Method::GET | reqwest::Method::HEAD)
+}
+
 fn is_auth_session_path(route: &str) -> bool {
     matches!(route, "/api/v1/auth/refresh" | "/api/v1/auth/logout")
 }
@@ -180,6 +188,7 @@ impl ApiClient {
         let http = reqwest::Client::builder()
             .timeout(REQUEST_TIMEOUT)
             .connect_timeout(Duration::from_secs(10))
+            .pool_idle_timeout(POOL_IDLE_TIMEOUT)
             // Redirects could leak the bearer token to another origin.
             .redirect(reqwest::redirect::Policy::none())
             // Plain HTTP is only reachable for loopback hosts (see config::validate_api_url).
@@ -339,31 +348,50 @@ impl ApiClient {
         let account = Self::account_key(&base);
         let route = path.split('?').next().unwrap_or_default();
 
-        let mut builder = self
-            .http
-            .request(method.clone(), url)
-            .headers(headers.clone())
-            .header(reqwest::header::USER_AGENT, &self.user_agent)
-            .header("X-Kiko-Client", "desktop-macos");
-        if let Some(token) = self.access_token.read().await.as_ref() {
-            builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
-        }
-        if is_auth_session_path(route) {
-            if let Some(refresh) = self.tokens.load(&account)? {
+        let build = |token: Option<&String>, refresh: Option<&String>| {
+            let mut builder = self
+                .http
+                .request(method.clone(), url.clone())
+                .headers(headers.clone())
+                .header(reqwest::header::USER_AGENT, &self.user_agent)
+                .header("X-Kiko-Client", "desktop-macos");
+            if let Some(token) = token {
+                builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
+            }
+            if let Some(refresh) = refresh {
                 builder = builder.header(COOKIE, format!("{REFRESH_COOKIE_NAME}={refresh}"));
             }
-        }
-        if let Some(bytes) = body {
-            builder = builder.body(bytes.to_vec());
-        }
-
-        let response = builder.send().await.map_err(|error| {
-            if error.is_timeout() {
-                ApiError::Timeout(error.to_string())
-            } else {
-                ApiError::Offline(error.to_string())
+            if let Some(bytes) = body {
+                builder = builder.body(bytes.to_vec());
             }
-        })?;
+            builder
+        };
+        let token = self.access_token.read().await.clone();
+        let refresh = if is_auth_session_path(route) {
+            self.tokens.load(&account)?
+        } else {
+            None
+        };
+
+        let mut attempt = 0;
+        let response = loop {
+            attempt += 1;
+            match build(token.as_ref(), refresh.as_ref()).send().await {
+                Ok(response) => break response,
+                // Only safe methods are retried, and only for connection-level failures
+                // (e.g. a pooled keep-alive connection closed by the server). Writes are
+                // never repeated automatically.
+                Err(error)
+                    if attempt == 1
+                        && is_retry_safe(method)
+                        && (error.is_connect() || error.is_request())
+                        && !error.is_timeout() => {}
+                Err(error) if error.is_timeout() => {
+                    return Err(ApiError::Timeout(error.to_string()))
+                }
+                Err(error) => return Err(ApiError::Offline(error.to_string())),
+            }
+        };
         let status = response.status().as_u16();
         let response_headers = response.headers().clone();
         for value in response_headers.get_all(SET_COOKIE) {
@@ -420,6 +448,19 @@ mod tests {
             assert!(validate_path(path).is_err(), "{path} should be rejected");
         }
         assert!(validate_path(&format!("/api/v1/{}", "a".repeat(3000))).is_err());
+    }
+
+    #[test]
+    fn only_safe_methods_are_retried() {
+        assert!(is_retry_safe(&reqwest::Method::GET));
+        for method in [
+            reqwest::Method::POST,
+            reqwest::Method::PUT,
+            reqwest::Method::PATCH,
+            reqwest::Method::DELETE,
+        ] {
+            assert!(!is_retry_safe(&method));
+        }
     }
 
     #[test]
