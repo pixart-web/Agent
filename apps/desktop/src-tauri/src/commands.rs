@@ -167,12 +167,23 @@ pub async fn confirm_action(app: AppHandle, message: String) -> bool {
 pub async fn notify(app: AppHandle, title: String, body: String) -> Result<(), String> {
     let title: String = title.chars().take(120).collect();
     let body: String = body.chars().take(400).collect();
-    app.notification()
-        .builder()
-        .title(title)
-        .body(body)
-        .show()
-        .map_err(|e| e.to_string())
+    // On macOS `show()` blocks until the notification is delivered (it can wait for a long
+    // time, e.g. for unbundled builds). Running it here would park an async runtime worker
+    // and stall every IPC request queued on it, so it runs on the blocking pool and the
+    // command returns at once. Notifications are best-effort.
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Err(error) = app.notification().builder().title(title).body(body).show() {
+            log::warn!("native notification failed: {error}");
+        }
+    });
+    Ok(())
+}
+
+/// Called by the UI once it listens for navigation events: returns the deep link that
+/// launched the app (if any) and switches later links to live events.
+#[tauri::command]
+pub fn take_pending_route(pending: State<'_, crate::deep_link::PendingRoute>) -> Option<String> {
+    pending.take()
 }
 
 #[cfg(test)]

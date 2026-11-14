@@ -147,6 +147,14 @@ export function onNavigate(
   return listen<string>(NAVIGATE_EVENT, (event) => handler(event.payload));
 }
 
+/**
+ * Deep link that launched the app before the UI was listening (cold start). Call only after
+ * `onNavigate` is registered: from then on the shell delivers links as live events.
+ */
+export function takePendingRoute(): Promise<string | null> {
+  return invoke<string | null>('take_pending_route');
+}
+
 export function onCommand(
   handler: (command: string) => void,
 ): Promise<UnlistenFn> {

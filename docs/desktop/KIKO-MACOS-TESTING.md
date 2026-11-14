@@ -32,6 +32,10 @@ release builds) injects a script that drives the actual UI through the DOM; ever
 goes through the production IPC bridge and Keychain code to a real local backend
 (PostgreSQL, Redis, Celery worker, outbox dispatcher).
 
+The simplest way to get that backend is the local test environment
+([KIKO-LOCAL-TEST-ENVIRONMENT.md](KIKO-LOCAL-TEST-ENVIRONMENT.md)):
+`scripts/local/kiko-local.sh start` then `scripts/local/kiko-local.sh desktop-e2e`.
+
 ```bash
 # API, outbox dispatcher and Celery worker running locally with an isolated database
 KIKO_API_URL=http://127.0.0.1:8765 API_PYTHON=.venv/bin/python PYTHONPATH=apps/api \

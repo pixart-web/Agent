@@ -83,7 +83,8 @@ fn handle_deep_links<R: tauri::Runtime>(app: &tauri::AppHandle<R>, urls: &[url::
     for link in urls {
         if let Some(route) = deep_link::route_for(link.as_str()) {
             focus_main(app);
-            if let Some(window) = app.get_webview_window("main") {
+            let live = app.state::<deep_link::PendingRoute>().offer(route);
+            if let (Some(route), Some(window)) = (live, app.get_webview_window("main")) {
                 let _ = window.emit(menu::NAVIGATE_EVENT, route);
             }
         } else {
@@ -112,6 +113,7 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::save_file,
         commands::notify,
         commands::confirm_action,
+        commands::take_pending_route,
     ]
 }
 
@@ -127,6 +129,7 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::save_file,
         commands::notify,
         commands::confirm_action,
+        commands::take_pending_route,
         smoke::smoke_report,
     ]
 }
@@ -157,6 +160,7 @@ pub fn run() {
             let client = ApiClient::new(base, token_store(), &version)
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
             app.manage(client);
+            app.manage(deep_link::PendingRoute::default());
 
             let handle = app.handle().clone();
             app.set_menu(menu::build(&handle)?)?;

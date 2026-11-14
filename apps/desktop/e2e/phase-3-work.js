@@ -26,7 +26,7 @@ phase('governed-work', async () => {
       await click('Gerar plano com Supervisor');
       await waitFor(
         () =>
-          /AI provider|Supervisor planning failed|Não foi possível gerar/i.test(
+          /AI provider|is not configured|Supervisor planning failed|Não foi possível gerar/i.test(
             pageText(),
           ),
         'supervisor error',
@@ -170,7 +170,7 @@ phase('governed-work', async () => {
     await waitFor(
       () =>
         /\/dashboard\/kiko\/[^/]+/.test(location.pathname) ||
-        /AI provider|Não foi possível/i.test(pageText()),
+        /AI provider|is not configured|Não foi possível/i.test(pageText()),
       'conversation outcome',
       30000,
     );

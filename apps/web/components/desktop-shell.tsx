@@ -17,6 +17,7 @@ import {
   onCommand,
   onNavigate,
   openExternal,
+  takePendingRoute,
 } from '../lib/desktop-bridge';
 import { rememberRoute } from '../lib/desktop-routes';
 import { listNotifications } from '../lib/notification-client';
@@ -215,11 +216,20 @@ export function DesktopShell() {
   }, [pathname]);
 
   useEffect(() => {
+    const navigate = (route: string) => {
+      setPaletteOpen(false);
+      router.push(route);
+    };
+    const navigation = onNavigate(navigate);
+    // A link that launched the app arrived before this listener existed; open it now.
+    void navigation
+      .then(() => takePendingRoute())
+      .then((route) => {
+        if (route) navigate(route);
+      })
+      .catch(() => undefined);
     const unlisteners = [
-      onNavigate((route) => {
-        setPaletteOpen(false);
-        router.push(route);
-      }),
+      navigation,
       onCommand((command) => {
         if (command === 'back') window.history.back();
         if (command === 'forward') window.history.forward();

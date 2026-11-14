@@ -7,6 +7,8 @@
 //! - `kiko://reset-password?token=<token>` → `/reset-password/?token=<token>`
 //! - `kiko://invite?token=<token>` → `/invite/?token=<token>`
 
+use std::sync::Mutex;
+
 use url::Url;
 
 const MAX_LINK_LEN: usize = 2048;
@@ -67,9 +69,56 @@ pub fn route_for(link: &str) -> Option<String> {
     }
 }
 
+/// Holds a deep link that arrived before the UI could listen for navigation events
+/// (cold start: the link is delivered while the window is still loading, so an emitted
+/// event would be lost). Once the UI has taken the pending route, links are emitted live.
+#[derive(Default)]
+pub struct PendingRoute(Mutex<PendingState>);
+
+#[derive(Default)]
+struct PendingState {
+    route: Option<String>,
+    ui_ready: bool,
+}
+
+impl PendingRoute {
+    /// Offer a route. Returns it back when the UI is listening (emit it now); otherwise it
+    /// is kept (latest wins) until the UI calls [`PendingRoute::take`].
+    pub fn offer(&self, route: String) -> Option<String> {
+        let mut state = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        if state.ui_ready {
+            Some(route)
+        } else {
+            state.route = Some(route);
+            None
+        }
+    }
+
+    /// Mark the UI as listening and hand over the route that arrived before, if any.
+    pub fn take(&self) -> Option<String> {
+        let mut state = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        state.ui_ready = true;
+        state.route.take()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pending_route_is_kept_until_the_ui_listens() {
+        let pending = PendingRoute::default();
+        assert_eq!(pending.offer("/verify-email/?token=a".into()), None);
+        assert_eq!(pending.offer("/verify-email/?token=b".into()), None);
+        assert_eq!(pending.take().as_deref(), Some("/verify-email/?token=b"));
+        assert_eq!(pending.take(), None);
+        assert_eq!(
+            pending.offer("/dashboard/tasks/".into()).as_deref(),
+            Some("/dashboard/tasks/")
+        );
+        assert_eq!(pending.take(), None);
+    }
 
     #[test]
     fn maps_supported_links() {

@@ -2,7 +2,8 @@
 # Real desktop E2E: drives the debug Kiko.app binary against a LOCAL Kiko API.
 # Usage: KIKO_API_URL=http://127.0.0.1:8765 API_PYTHON=/path/to/python e2e/run-journey.sh
 # Requires: a debug build (pnpm tauri build --debug --no-bundle), the API, outbox
-# dispatcher and Celery worker running with AI_PROVIDER=fake, and API env vars exported
+# dispatcher and Celery worker running without a usable AI provider (AI_PROVIDER=fake, or
+# openai without a key as in scripts/local/kiko-local.sh), and API env vars exported
 # (for the token helper). Uses the login Keychain for session persistence and removes the
 # item again by logging out.
 set -euo pipefail
