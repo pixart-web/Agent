@@ -29,16 +29,31 @@ class AgentTaskContext:
     previous_attempts: tuple[str, ...]
     feedback: str | None
     max_context_chars: int
+    # "name — description — input JSON Schema" per allowed tool, so the model knows the exact
+    # arguments each tool accepts (proposals are validated against these schemas).
+    tool_specs: tuple[str, ...] = ()
 
     def user_prompt(self) -> str:
-        content = (
-            f"Plan objective: {self.plan_objective}\n"
-            f"Task: {self.task_title}\nInstructions: {self.task_instructions}\n"
-            f"Task risk: {self.task_risk}\nDependencies: {list(self.dependencies)}\n"
-            f"Available tools: {list(self.available_tools)}\n"
-            f"Previous attempts: {list(self.previous_attempts)}\n"
-            f"User feedback: {self.feedback or 'none'}"
+        parts = [
+            f"Plan objective: {self.plan_objective}",
+            f"Task: {self.task_title}",
+            f"Instructions: {self.task_instructions}",
+            f"Task risk: {self.task_risk}",
+            f"Dependencies: {list(self.dependencies)}",
+            f"Previous attempts: {list(self.previous_attempts)}",
+            f"User feedback: {self.feedback or 'none'}",
+            f"Available tools: {list(self.available_tools)}",
+        ]
+        parts.append(
+            "Rules: never invent identifiers (UUIDs, ids, emails). If a tool needs an id you "
+            "do not have, first use a search or list tool that does not require it."
         )
+        if self.tool_specs:
+            parts.append(
+                "Tool inputs (input_payload must contain exactly these fields; * = required):"
+            )
+            parts.extend(self.tool_specs)
+        content = "\n".join(parts)
         return content[: self.max_context_chars]
 
 

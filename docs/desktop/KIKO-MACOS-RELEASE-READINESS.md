@@ -1,5 +1,10 @@
 # Kiko for macOS — release readiness
 
+> **Superseded for 0.2.0 (2026-11-15):** see `docs/qa/KIKO-FULL-QA-REPORT.md` and
+> `docs/releases/KIKO-MACOS-0.2.0-RELEASE-NOTES.md`. Current decision: **READY FOR OWNER
+> ACCEPTANCE TESTING** (local AI verified; deployment blockers listed there). The 0.1.0
+> assessment below is kept for history.
+
 **Assessed:** 2026-11-14 · **Version:** 0.1.0 · **Branch:** `feat/kiko-macos-desktop`
 
 ## 1. Build classification

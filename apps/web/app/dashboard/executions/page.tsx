@@ -55,6 +55,7 @@ export default function ExecutionsPage() {
       </section>
       <section className="execution-filters">
         <select
+          aria-label="Filter by status"
           value={status}
           onChange={(e) =>
             setStatus(e.target.value as TaskExecutionStatus | '')
@@ -73,6 +74,7 @@ export default function ExecutionsPage() {
           ))}
         </select>
         <select
+          aria-label="Filter by risk"
           value={risk}
           onChange={(e) => setRisk(e.target.value as RiskLevel | '')}
         >
@@ -81,7 +83,11 @@ export default function ExecutionsPage() {
           <option>yellow</option>
           <option>red</option>
         </select>
-        <select value={agent} onChange={(e) => setAgent(e.target.value)}>
+        <select
+          aria-label="Filter by agent"
+          value={agent}
+          onChange={(e) => setAgent(e.target.value)}
+        >
           <option value="">All agents</option>
           {['supervisor', 'marketing', 'sales', 'support', 'development'].map(
             (item) => (

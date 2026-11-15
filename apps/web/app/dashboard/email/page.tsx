@@ -49,6 +49,7 @@ export default function EmailInboxPage() {
           </p>
         </div>
         <select
+          aria-label="Email account"
           value={accountId}
           onChange={(event) => setAccountId(event.target.value)}
         >

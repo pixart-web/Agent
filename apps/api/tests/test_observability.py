@@ -18,8 +18,8 @@ def production_settings(**overrides: object) -> Settings:
         "database_url": "postgresql+psycopg://kiko:strong-password@db:5432/kiko",
         "observability_metrics_enabled": True,
         "observability_metrics_token": "metrics-secret-value",
-        "ai_provider": "openai",
-        "openai_api_key": "test-production-provider-key",
+        "ai_provider": "ollama",
+        "ai_local_base_url": "http://ollama:11434",
     }
     values.update(overrides)
     return Settings(**values)
@@ -57,7 +57,7 @@ def test_valid_production_configuration_is_accepted() -> None:
         ({"trusted_hosts": "*"}, "TRUSTED_HOSTS"),
         ({"observability_metrics_enabled": False}, "observability metrics"),
         ({"observability_metrics_token": None}, "METRICS_TOKEN"),
-        ({"openai_api_key": None}, "OPENAI_API_KEY"),
+        ({"codex_integration_enabled": True}, "local-AI policy"),
         ({"ai_provider": "fake"}, "fake AI provider"),
         (
             {"database_url": "postgresql+psycopg://agent:agent@db:5432/agent"},

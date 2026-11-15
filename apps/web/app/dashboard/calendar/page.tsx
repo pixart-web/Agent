@@ -78,6 +78,7 @@ export default function CalendarPage() {
         </div>
         <div>
           <select
+            aria-label="Calendar account"
             value={accountId}
             onChange={(event) => setAccountId(event.target.value)}
           >
@@ -88,6 +89,7 @@ export default function CalendarPage() {
             ))}
           </select>
           <select
+            aria-label="Calendar"
             value={calendarId}
             onChange={(event) => setCalendarId(event.target.value)}
           >

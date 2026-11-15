@@ -116,6 +116,7 @@ export default function KnowledgePage() {
       <section className="workflow-panel">
         <h2>Workspace</h2>
         <select
+          aria-label="Workspace"
           value={selected}
           onChange={(event) => setSelected(event.target.value)}
         >

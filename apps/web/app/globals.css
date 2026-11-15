@@ -605,8 +605,9 @@ h1 {
   line-height: 1.55;
 }
 
-.agent-card:first-child p {
-  color: rgba(255, 255, 255, 0.74);
+.agent-card:first-child p,
+.agent-card:first-child dt {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .auth-page,

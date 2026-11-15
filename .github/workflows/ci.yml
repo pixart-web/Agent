@@ -22,7 +22,7 @@ jobs:
       AUTH_SECRET_KEY: test-only-auth-secret-with-at-least-32-characters
       AUTH_RATE_LIMIT_ENABLED: 'false'
       AI_PROVIDER: fake
-      OPENAI_MODEL: fake-supervisor-v1
+      AI_LOCAL_MODEL: fake-supervisor-v1
       GITHUB_INTEGRATION_ENABLED: 'false'
       CODEX_INTEGRATION_ENABLED: 'false'
       EMAIL_INTEGRATION_ENABLED: 'false'
@@ -107,7 +107,7 @@ jobs:
       INTEGRATION_DATABASE_URL: postgresql+psycopg://agent:agent@localhost:5432/agent
       INTEGRATION_REDIS_URL: redis://localhost:6379/1
       AI_PROVIDER: fake
-      OPENAI_MODEL: fake-supervisor-v1
+      AI_LOCAL_MODEL: fake-supervisor-v1
       GITHUB_INTEGRATION_ENABLED: 'false'
       CODEX_INTEGRATION_ENABLED: 'false'
       EMAIL_INTEGRATION_ENABLED: 'false'
@@ -128,6 +128,18 @@ jobs:
           python -m alembic upgrade head
       - name: Test locking, outbox, and Redis
         run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
+      - name: Create a disposable database for the full suite
+        run: |
+          python - <<'PY'
+          import psycopg
+          with psycopg.connect("postgresql://agent:agent@localhost:5432/agent", autocommit=True) as conn:
+              conn.execute("CREATE DATABASE agent_pytest_test")
+          PY
+      - name: Full backend suite on PostgreSQL 16 (foreign keys, enums, full-text search)
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://agent:agent@localhost:5432/agent_pytest_test
+          AUTH_RATE_LIMIT_ENABLED: 'false'
+        run: python -m pytest apps/api
 
   frontend:
     name: Frontend

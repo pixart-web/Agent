@@ -10,8 +10,8 @@ from app.schemas.supervisor import SupervisorPlanProposal
 
 def main() -> None:
     settings = get_settings()
-    if not settings.openai_api_key:
-        print("Skipped: OPENAI_API_KEY is not configured.")
+    if settings.ai_provider != "ollama":
+        print("Skipped: AI_PROVIDER is not ollama.")
         return
 
     agents = [

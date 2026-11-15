@@ -4,7 +4,9 @@
 
 - No authorized isolated staging environment or registry was available in this completion run.
   Locally built image IDs are evidence of reproducible Dockerfiles, not deployable registry digests.
-- Gmail, Google Calendar, SMTP delivery, GitHub, Codex, OpenAI, and billing-provider journeys were not
+- AI is local-only (Ollama) since 2026-11-15; OpenAI is no longer supported and Codex is excluded
+  (external inference). See `docs/ai/` and `docs/qa/KIKO-FULL-QA-REPORT.md`.
+- Gmail, Google Calendar, SMTP delivery, GitHub, and billing-provider journeys were not
   invoked with real credentials. They remain disabled until least-privilege test-account validation.
 - DNS, TLS, private networking, managed database/Redis failover, secret manager, alert routing, and
   named on-call ownership require the target infrastructure owner.

@@ -1,43 +1,43 @@
 # AI providers
 
-The Supervisor depends on `LLMProvider.generate_structured`. Provider adapters return a
-typed `LLMResult` containing validated data and optional model, token, request, cost,
-and latency metadata. Domain services do not import provider SDK details.
+**Kiko uses local models only.** Every AI feature depends on
+`LLMProvider.generate_structured` (`apps/api/app/ai/base.py`); the only runtime adapter is
+`OllamaProvider` (`apps/api/app/ai/providers/ollama.py`), which talks to an Ollama server on
+loopback or a private network. External inference APIs (OpenAI, Anthropic, Google Gemini and
+similar) are not supported: `AI_PROVIDER` accepts only `ollama`, plus `fake`, which automated
+tests inject.
 
-## OpenAI
+Full design: [ai/KIKO-LOCAL-AI-ARCHITECTURE.md](ai/KIKO-LOCAL-AI-ARCHITECTURE.md) · models:
+[ai/KIKO-LOCAL-MODEL-INVENTORY.md](ai/KIKO-LOCAL-MODEL-INVENTORY.md) · measurements:
+[ai/KIKO-LOCAL-AI-BENCHMARKS.md](ai/KIKO-LOCAL-AI-BENCHMARKS.md) · migration notes:
+[ai/KIKO-LOCAL-AI-MIGRATION.md](ai/KIKO-LOCAL-AI-MIGRATION.md).
 
-The initial adapter uses the official Python SDK Responses API structured-output parser
-with the Pydantic proposal schema. It does not extract JSON from markdown. Configure:
+## Configuration
 
 ```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5.4-mini
-AI_REQUEST_TIMEOUT_SECONDS=60
+AI_PROVIDER=ollama
+AI_LOCAL_BASE_URL=http://127.0.0.1:11434   # loopback / private hosts only
+AI_LOCAL_MODEL=gemma4:12b-it-qat
+AI_LOCAL_STRUCTURED_MODE=native_schema     # or "prompted" for models without schema support
+AI_LOCAL_THINK=false
+AI_LOCAL_KEEP_ALIVE=30m
+AI_LOCAL_NUM_CTX=8192
+AI_REQUEST_TIMEOUT_SECONDS=180
 AI_MAX_RETRIES=2
 ```
 
-The key is optional at process startup so `/health` and non-AI features keep working.
-Invoking generation without it returns a safe configuration error. Never commit or log
-the key. `OPENAI_MODEL` must identify a structured-output-capable model available to the
-account.
+The runtime is optional at start-up: `/health` and non-AI features keep working, and AI calls
+return HTTP 503 with "Local AI runtime is not reachable" or "Local AI model … is not
+installed". Every answer is validated against the Pydantic response model; invalid answers are
+retried with the validation errors fed back to the model. Specialist agents receive a
+response schema restricted to the tools they may use, so the runtime enforces valid tool calls.
 
-Timeout is passed to the SDK client. SDK retries are disabled; the adapter alone owns a
-bounded exponential retry for timeouts, connection/rate-limit/server errors, and a
-missing structured result. Permanent configuration and client request errors do not
-retry. Normal tests inject a deterministic fake provider, and CI sets
-`AI_PROVIDER=fake`; neither makes an external request.
-
-An optional manual check is available:
+## Checks
 
 ```bash
 cd apps/api
-python -m app.scripts.test_supervisor_provider
+python -m app.scripts.test_supervisor_provider        # one Supervisor plan with the local model
+../../scripts/local/kiko-local.sh ai-eval              # every AI flow + network egress check
 ```
 
-It skips when `OPENAI_API_KEY` is absent and prints only validation and safe metadata.
-Provider output and commands are not persisted raw. Adding Anthropic or a local adapter
-should implement the same protocol and be selected in the factory without changing the
-Supervisor domain.
-
-Reference: [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+Normal tests inject a deterministic fake provider and make no model call.

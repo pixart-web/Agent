@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Protocol
 
+from pydantic import BaseModel
+
 from app.agents.context import AgentTaskContext
 from app.ai.base import LLMProvider, LLMResult
 from app.models.workflow_enums import RiskLevel
@@ -17,7 +19,11 @@ class SpecializedAgent(Protocol):
     max_actions_per_task: int
 
     def propose_actions(
-        self, *, context: AgentTaskContext, provider: LLMProvider
+        self,
+        *,
+        context: AgentTaskContext,
+        provider: LLMProvider,
+        response_model: type[BaseModel] | None = None,
     ) -> LLMResult[AgentProposal]: ...
 
 

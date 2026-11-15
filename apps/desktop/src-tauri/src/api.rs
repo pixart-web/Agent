@@ -18,6 +18,29 @@ pub const REFRESH_COOKIE_NAME: &str = "agent_refresh_token";
 pub const MAX_BODY_BYTES: usize = 25 * 1024 * 1024;
 const MAX_PATH_LEN: usize = 2048;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+/// Local-AI generation (Supervisor plans, specialist agent runs) runs on the user's own
+/// hardware and can take minutes; the backend bounds it with AI_REQUEST_TIMEOUT_SECONDS.
+const AI_REQUEST_TIMEOUT: Duration = Duration::from_secs(600);
+const AI_ROUTE_SUFFIXES: [&str; 4] = [
+    "/generate-plan",
+    "/regenerate-plan",
+    "/run-agent",
+    "/rerun-agent",
+];
+
+/// Timeout for one request: long only for the AI generation endpoints.
+pub fn request_timeout(method: &reqwest::Method, route: &str) -> Duration {
+    if method == reqwest::Method::POST
+        && route.starts_with("/api/v1/")
+        && AI_ROUTE_SUFFIXES
+            .iter()
+            .any(|suffix| route.ends_with(suffix))
+    {
+        AI_REQUEST_TIMEOUT
+    } else {
+        REQUEST_TIMEOUT
+    }
+}
 /// Below common server keep-alive limits (uvicorn 5 s) so a connection the server is about
 /// to close is not reused for the next request.
 const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(4);
@@ -354,7 +377,8 @@ impl ApiClient {
                 .request(method.clone(), url.clone())
                 .headers(headers.clone())
                 .header(reqwest::header::USER_AGENT, &self.user_agent)
-                .header("X-Kiko-Client", "desktop-macos");
+                .header("X-Kiko-Client", "desktop-macos")
+                .timeout(request_timeout(method, route));
             if let Some(token) = token {
                 builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
             }
@@ -453,6 +477,22 @@ mod tests {
     #[test]
     fn only_safe_methods_are_retried() {
         assert!(is_retry_safe(&reqwest::Method::GET));
+        assert_eq!(
+            request_timeout(&reqwest::Method::POST, "/api/v1/commands/abc/generate-plan"),
+            AI_REQUEST_TIMEOUT
+        );
+        assert_eq!(
+            request_timeout(&reqwest::Method::POST, "/api/v1/tasks/abc/run-agent"),
+            AI_REQUEST_TIMEOUT
+        );
+        assert_eq!(
+            request_timeout(&reqwest::Method::GET, "/api/v1/commands/abc/generate-plan"),
+            REQUEST_TIMEOUT
+        );
+        assert_eq!(
+            request_timeout(&reqwest::Method::POST, "/api/v1/auth/login"),
+            REQUEST_TIMEOUT
+        );
         for method in [
             reqwest::Method::POST,
             reqwest::Method::PUT,

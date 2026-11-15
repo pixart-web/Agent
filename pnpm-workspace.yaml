@@ -8,6 +8,9 @@ overrides:
   postcss: 8.5.23
   sharp: 0.35.5
   source-map-js: 1.2.2
+  # Security patches for dev tooling (vitest -> vite, typescript-eslint -> minimatch).
+  'vite@>=7.0.0 <7.3.7': 7.3.8
+  'minimatch@>=7.0.0 <11.0.1': 11.0.8
 
 allowBuilds:
   esbuild: true

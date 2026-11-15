@@ -17,7 +17,9 @@ from app.execution.policies import RetryPolicy
 from app.execution.tools.registry import build_tool_registry
 from app.execution.worker import ExecutionWorker
 from app.integrations.credentials import EnvironmentCredentialProvider
+from app.models.agent import Agent
 from app.models.audit_log import AuditLog
+from app.models.command import Command
 from app.models.crm import (
     CrmActivity,
     CrmContact,
@@ -27,6 +29,8 @@ from app.models.crm import (
 from app.models.email_reference import EmailReference
 from app.models.integration_account import IntegrationAccount
 from app.models.knowledge import Workspace, WorkspaceMember
+from app.models.plan import Plan
+from app.models.task import Task
 from app.models.task_action import TaskAction
 from app.models.user import User
 from app.models.workflow_enums import (
@@ -357,8 +361,24 @@ def test_crm_partial_update_preserves_omitted_organization_and_job_title(
     db_session.add(contact)
     db_session.flush()
     value = CrmContactUpdateInput(contact_id=contact.id, status="inactive")
+    # A real command -> plan -> task chain: PostgreSQL enforces the action's task foreign key.
+    workspace = Workspace(
+        name="CRM Partial", slug=f"crm-partial-{user.id}", created_by_user_id=user.id
+    )
+    db_session.add(workspace)
+    db_session.add(Agent(id="sales", name="Sales", description="Test agent"))
+    db_session.flush()
+    command = Command(user_id=user.id, workspace_id=workspace.id, input="Update the contact")
+    db_session.add(command)
+    db_session.flush()
+    plan = Plan(command_id=command.id, title="CRM update", objective="Update the contact")
+    db_session.add(plan)
+    db_session.flush()
+    task = Task(plan_id=plan.id, agent_id="sales", title="Update", instructions="Update contact")
+    db_session.add(task)
+    db_session.flush()
     action = TaskAction(
-        task_id=uuid4(),
+        task_id=task.id,
         tool_name="crm.update_contact",
         tool_version="1",
         input_payload=value.model_dump(mode="json"),

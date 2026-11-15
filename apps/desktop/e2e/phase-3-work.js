@@ -20,9 +20,14 @@ phase('governed-work', async () => {
       'command detail',
     );
   });
+  // With the local AI runtime configured (K.ai === 'local') real generation is covered by
+  // phase-3b-local-ai.js; here the plan is built by hand either way.
   await step(
-    'Supervisor without an AI provider shows an honest unavailable state',
+    K.ai === 'local'
+      ? 'Supervisor available (local AI) - checked in the local-AI phase'
+      : 'Supervisor without an AI provider shows an honest unavailable state',
     async () => {
+      if (K.ai === 'local') return;
       await click('Gerar plano com Supervisor');
       await waitFor(
         () =>
