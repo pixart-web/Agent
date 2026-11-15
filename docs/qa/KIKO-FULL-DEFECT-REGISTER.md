@@ -19,6 +19,8 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-011 | Desktop dependencies (Linux-only crates) | LOW      | Accepted                           |
 | KQA-012 | Desktop / notifications                  | HIGH     | Fixed in #33 (before this program) |
 | KQA-013 | Desktop / deep links                     | MEDIUM   | Fixed in #33 (before this program) |
+| KQA-014 | Background dispatchers                   | HIGH     | Fixed                              |
+| KQA-015 | Web UI accessibility                     | MEDIUM   | Fixed                              |
 
 ---
 
@@ -92,7 +94,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
   and another asserted the SQLite-only retrieval path.
 - **Fix:** `TEST_DATABASE_URL` runs the suite on a disposable PostgreSQL database (name must
   contain "test"); SQLite now enforces foreign keys; the two tests fixed.
-- **Evidence:** 286 passed on PostgreSQL 16 + Redis (0 skipped); 283 passed / 6 skipped on SQLite.
+- **Evidence:** at the time of the fix 286 passed on PostgreSQL 16 + Redis (0 skipped); final: 293 on PostgreSQL, 287 passed / 6 skipped on SQLite.
 
 ### KQA-007 — CI never ran the full suite on PostgreSQL
 
@@ -136,3 +138,29 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 ### KQA-013 — Cold-start `kiko://` deep links ignored (fixed in PR #33)
 
 Kept for history; details in `docs/desktop/KIKO-LOCAL-TEST-ENVIRONMENT.md` §9.
+
+### KQA-014 — Dispatchers died when PostgreSQL restarted
+
+- **Severity:** HIGH (after a database restart no verification or reset email was sent until
+  someone restarted the dispatcher; the outbox dispatcher could die the same way and stop all
+  background execution).
+- **Reproduction:** restart PostgreSQL while the stack runs → `mailer` log ends with
+  `psycopg.OperationalError ... Connection refused`, process gone; new registrations get no email.
+- **Root cause:** the polling loops had no error handling (the outbox loop only guarded the
+  per-event send, not the batch claim).
+- **Fix:** shared `run_forever()` loop (`app/scripts/_loop.py`): log, exponential backoff capped at
+  30 s, resume; SIGTERM-aware. Commit `950b015`.
+- **Regression tests:** `tests/test_dispatcher_loop.py`; live: PostgreSQL stopped for 12 s → both
+  dispatchers logged two failures and recovered; smoke test 20/20 afterwards.
+- **Remaining risk:** in production the container restart policy was already a second line of
+  defence.
+
+### KQA-015 — Accessibility violations on dashboard screens
+
+- **Severity:** MEDIUM. Found by the new Playwright sweep (WCAG 2 A/AA, serious/critical):
+  contrast 1.49:1 for labels on the highlighted agent card (`/dashboard`, `/dashboard/agents`);
+  `<select>` without accessible name on Executions (3), Email (1), Calendar (2), Knowledge (1);
+  action composer select/input unlabeled (found by code scan).
+- **Fix:** card label colour; `aria-label` on each control (commit `e9e47d2` and follow-up).
+- **Regression test:** `apps/web/e2e/dashboard-quality-sweep.spec.ts` — 21 screens, desktop and
+  mobile: no findings.
