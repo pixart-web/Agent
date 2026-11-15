@@ -1,5 +1,11 @@
 # Codex integration
 
+> **Excluded by the local-AI policy (2026-11-15).** The Codex CLI performs inference on
+> OpenAI's servers, which Kiko no longer allows. `CodexCLIAdapter.execute` refuses to start,
+> production configuration rejects `CODEX_INTEGRATION_ENABLED=true`, and the CLI is no
+> longer installed in the API image. The design below is kept for a future local coding
+> agent.
+
 Phase 5A.2 adds Codex as a governed implementation engine behind the existing Execution
 Engine. The architectural boundary is:
 

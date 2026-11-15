@@ -7,7 +7,7 @@ Browser -> Next.js -> FastAPI route -> service -> repository -> PostgreSQL
                                       |
                                       +-> Redis rate limiter
                                       |
-                                      +-> SupervisorService -> LLMProvider -> OpenAI
+                                      +-> SupervisorService -> LLMProvider -> Ollama (local)
 
 GET /ready -> readiness service -> PostgreSQL + Redis
 ```
@@ -93,8 +93,9 @@ enum checks, ownership links, ordering indexes, and a complete downgrade. Revisi
 
 ## Supervisor and AI boundary
 
-`SupervisorService` depends on the `LLMProvider` protocol, not the OpenAI SDK. The
-OpenAI adapter uses structured output parsed directly into Pydantic schemas. Prompts
+`SupervisorService` depends on the `LLMProvider` protocol, not on a runtime. The local
+Ollama adapter sends the Pydantic schema as the runtime's JSON-schema `format` and validates
+the answer (see `docs/ai/KIKO-LOCAL-AI-ARCHITECTURE.md`); no external inference API is used. Prompts
 are code-versioned as `supervisor-plan-v1`, the agent catalog is loaded dynamically,
 and provider metadata is persisted without raw prompts, raw responses, or API keys.
 

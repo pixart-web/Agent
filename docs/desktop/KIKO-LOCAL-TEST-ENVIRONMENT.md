@@ -98,32 +98,31 @@ under service `pt.pixart.kiko.session`, account `http://localhost:8000`.
   Works whether Kiko is already open or not (cold-start links were fixed, see section 9).
 - Use fictitious addresses only (`…@example.com`).
 
-## 6. AI provider
+## 6. AI (local models only)
 
-The backend supports two providers (`apps/api/app/core/config.py`, `docs/ai-providers.md`):
-
-- `openai` — the real provider (Responses API, structured outputs), needs `OPENAI_API_KEY`.
-- `fake` — deterministic, injected by automated tests only; it is **not** usable at runtime
-  (the factory raises "Fake AI provider must be injected by the application").
-
-The local environment runs `AI_PROVIDER=openai` **without a key**. The result:
-
-- Supervisor “Gerar plano com Supervisor” → HTTP 503 `OpenAI is not configured`, shown in the UI.
-- Kiko AI conversations are created, but no assistant answer is generated.
-- Manual plans, tasks, human plan approval, governed actions, the Approvals centre and the
-  Celery execution of approved actions all work without AI.
-
-To enable real AI (an OpenAI paid service; use only a key you are authorised to use), add to
-`~/.kiko-local/overrides.env`:
+Since 2026-11-15 Kiko uses **local models only** (see `docs/ai/KIKO-LOCAL-AI-ARCHITECTURE.md`).
+The environment points the API at the Ollama service already running on this Mac
+(`http://127.0.0.1:11434`, Homebrew service shared with other projects — not started, stopped
+or modified by these scripts):
 
 ```env
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-5.4-mini
+AI_PROVIDER=ollama
+AI_LOCAL_BASE_URL=http://127.0.0.1:11434
+AI_LOCAL_MODEL=gemma4:12b-it-qat
+AI_LOCAL_STRUCTURED_MODE=native_schema
+AI_REQUEST_TIMEOUT_SECONDS=180
 ```
 
-then `scripts/local/kiko-local.sh restart api worker outbox`. Optional check:
-`(set -a; . ~/.kiko-local/run/api.env; set +a; cd apps/api && ../../.venv/bin/python -m app.scripts.test_supervisor_provider)`.
-No key was configured or used while preparing this environment.
+- Supervisor plans, Kiko AI, specialist agents and `internal.summarize` all run on the local model
+  (about 35–65 s per generation on the M4).
+- If Ollama is not running, AI requests answer 503 "Local AI runtime is not reachable" and the
+  rest of the product keeps working; if the model is missing, "Local AI model … is not installed".
+- Change the model in `~/.kiko-local/overrides.env` (`AI_LOCAL_MODEL=…`; use
+  `AI_LOCAL_STRUCTURED_MODE=prompted` for models whose runtime cannot enforce JSON schemas), then
+  `scripts/local/kiko-local.sh restart api worker outbox`.
+- `scripts/local/kiko-local.sh ai-eval` runs every AI flow against the real model and checks that
+  the API, worker and Ollama make no external network connections.
+- OpenAI and other external inference APIs are not supported.
 
 ## 7. Test procedure and results (2026-11-14)
 

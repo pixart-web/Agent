@@ -17,8 +17,9 @@ Codex, and per-user Gmail access with encrypted OAuth credentials and approved w
   refresh tokens in HttpOnly cookies.
 - **Workflow:** owned commands, versioned plans, agent tasks, immutable status history,
   and explicit human approval.
-- **AI:** provider-neutral structured generation with an initial OpenAI Responses API
-  adapter, domain validation, and audited Supervisor runs.
+- **AI:** local models only (Ollama on Pixart-controlled hardware; no external inference
+  APIs), schema-constrained structured generation, domain validation, audited runs. See
+  [docs/ai/KIKO-LOCAL-AI-ARCHITECTURE.md](docs/ai/KIKO-LOCAL-AI-ARCHITECTURE.md).
 - **Infrastructure:** Redis for readiness and authentication rate limiting.
 - **Migrations:** Alembic configured from application settings.
 - **Local environment:** Docker Compose for web, API, PostgreSQL, and Redis.
@@ -131,11 +132,11 @@ historical version and returns the command to `pending`. Runs and plan versions 
 available through `GET /commands/{id}/supervisor-runs`, `GET /commands/{id}/plans`, and
 `GET /plans/{id}`.
 
-Set `AI_PROVIDER=openai`, `OPENAI_MODEL`, and `OPENAI_API_KEY` to use the provider.
-FastAPI still starts and `/health` remains healthy without a key; an AI request then
-fails safely with HTTP 503. CI uses an injected fake and makes no external AI call. The
-command text is sent to the configured provider, so do not submit passwords, API keys,
-or other secrets.
+AI runs on a local model served by Ollama (`AI_PROVIDER=ollama`, `AI_LOCAL_BASE_URL`,
+`AI_LOCAL_MODEL`, default `gemma4:12b-it-qat`). The base URL must be loopback or a private
+network host; external inference providers are rejected at start-up. FastAPI starts and
+`/health` stays healthy without the runtime; an AI request then fails safely with HTTP 503
+("Local AI runtime is not reachable"). CI uses an injected fake and makes no AI call.
 
 ## Migrations and maintenance
 
@@ -148,7 +149,7 @@ alembic downgrade -1
 alembic revision --autogenerate -m "description"
 python -m app.scripts.seed_agents
 python -m app.scripts.cleanup_refresh_tokens
-python -m app.scripts.test_supervisor_provider  # optional, requires OPENAI_API_KEY
+python -m app.scripts.test_supervisor_provider  # optional, needs the local Ollama runtime
 ```
 
 The cleanup command deletes expired tokens and tokens revoked longer than
@@ -222,8 +223,8 @@ behavior. No job requires a GitHub integration token or repository secret.
 - No social login, password recovery, organizations, or advanced permissions.
 - No automatic refresh-token cleanup scheduler.
 - Fixed-window rate limiting is intentionally simple.
-- The OpenAI provider requires a separately supplied key and enabled compatible model;
-  normal tests never call it.
+- AI quality depends on the local model; plans and external actions always need human
+  approval. Normal tests never call a model; `scripts/local/kiko-local.sh ai-eval` does.
 - Prompt injection has defense in depth, not a claim of complete prevention.
 - No background work or real multi-agent task execution.
 - A real PostgreSQL/Redis container flow requires Docker and cannot be proven by static

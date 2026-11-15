@@ -62,10 +62,12 @@ TOKEN="$(cd "$HERE/../../api" && "$PY" "$HERE/outbox_token.py" "$EMAIL")"
 run_phase verify phase-2-verify-onboard.js 0 ", \"token\": \"$TOKEN\""
 keychain_has_session && echo "[keychain] refresh token stored after sign-in" | tee -a "$RESULTS" \
   || { echo "[keychain] FAIL no session item after sign-in" | tee -a "$RESULTS"; exit 1; }
-run_phase work phase-3-work.js 0
+# Real local-AI generation runs before the work phase so the persistence phase still sees
+# the work phase's last screen when it checks "restore last screen".
 if [ "$AI_MODE" = "local" ]; then
   run_phase local-ai phase-3b-local-ai.js 0 "" 420
 fi
+run_phase work phase-3-work.js 0
 run_phase persist phase-4-persist-logout.js 0
 keychain_has_session && { echo "[keychain] FAIL item still present after logout" | tee -a "$RESULTS"; exit 1; } \
   || echo "[keychain] session item removed by logout" | tee -a "$RESULTS"

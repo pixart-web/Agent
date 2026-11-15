@@ -97,8 +97,9 @@ again on a clean machine before a public release.
 - **OS-level deep links**: route parsing is unit-tested, but `open kiko://…` could not be
   exercised because LaunchServices does not bind schemes for apps in temporary folders and
   the app was not installed into `/Applications` without owner consent.
-- **Real AI provider**: Supervisor planning and Kiko AI answers need `AI_PROVIDER=openai`
-  and a key; the app's unavailable state was verified instead.
+- **Real AI**: verified with the local model since 2026-11-15 — the journey's `local-ai`
+  phase generates and approves a Supervisor plan in the app (`KIKO_E2E_AI=local`, set by
+  `scripts/local/kiko-local.sh desktop-e2e` when the backend uses Ollama).
 - **Native dialogs, notifications banners, menu clicks and the save panel** need a person
   (or UI automation with Accessibility permission) to click them.
 - **Gmail/Calendar OAuth hand-off, GitHub/Codex**: providers disabled in the test backend.
