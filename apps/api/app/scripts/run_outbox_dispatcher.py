@@ -1,30 +1,26 @@
-import signal
-import time
+import logging
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.execution.dispatcher import OutboxDispatcher
-
-_stopping = False
-
-
-def _stop(_signum, _frame) -> None:
-    global _stopping
-    _stopping = True
+from app.scripts._loop import StopFlag, run_forever
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
     settings = get_settings()
-    signal.signal(signal.SIGTERM, _stop)
-    signal.signal(signal.SIGINT, _stop)
+    stop = StopFlag().install()
     dispatcher = OutboxDispatcher(
         SessionLocal,
         batch_size=settings.outbox_batch_size,
         max_attempts=settings.outbox_max_attempts,
     )
-    while not _stopping:
-        dispatcher.dispatch_once()
-        time.sleep(settings.outbox_poll_interval_seconds)
+    run_forever(
+        dispatcher.dispatch_once,
+        name="outbox_dispatcher",
+        interval_seconds=settings.outbox_poll_interval_seconds,
+        should_stop=lambda: stop.stopping,
+    )
 
 
 if __name__ == "__main__":
