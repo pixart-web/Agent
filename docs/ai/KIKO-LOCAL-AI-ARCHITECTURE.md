@@ -15,13 +15,13 @@ Every AI call goes through one domain interface, `LLMProvider.generate_structure
 (`apps/api/app/ai/base.py`): a system prompt, a user prompt and a Pydantic response model in, a
 validated object plus usage metadata out. Consumers:
 
-| Feature | Code | Response model | Runs in |
-| --- | --- | --- | --- |
-| Supervisor plan generation / regeneration | `services/supervisor_service.py` | `SupervisorPlanProposal` | API request |
-| Kiko AI conversations (each message becomes a command, planned by the Supervisor) | `services/conversation_service.py` + Supervisor | `SupervisorPlanProposal` | API request |
-| Specialist agents (marketing, sales, support, development) | `agents/runner.py`, `agents/specialists/*` | `AgentProposal` | API request |
-| `internal.summarize` tool | `execution/tools/internal.py` | `SummarizeOutput` | Celery worker |
-| Automation planning | `automations/tasks.py` | `SupervisorPlanProposal` | Celery worker |
+| Feature                                                                           | Code                                            | Response model           | Runs in       |
+| --------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------ | ------------- |
+| Supervisor plan generation / regeneration                                         | `services/supervisor_service.py`                | `SupervisorPlanProposal` | API request   |
+| Kiko AI conversations (each message becomes a command, planned by the Supervisor) | `services/conversation_service.py` + Supervisor | `SupervisorPlanProposal` | API request   |
+| Specialist agents (marketing, sales, support, development)                        | `agents/runner.py`, `agents/specialists/*`      | `AgentProposal`          | API request   |
+| `internal.summarize` tool                                                         | `execution/tools/internal.py`                   | `SummarizeOutput`        | Celery worker |
+| Automation planning                                                               | `automations/tasks.py`                          | `SupervisorPlanProposal` | Celery worker |
 
 Knowledge retrieval uses PostgreSQL full-text search (`to_tsvector`), not embeddings, so it
 already works without any model.
@@ -94,17 +94,17 @@ backend bounds each model call with `AI_REQUEST_TIMEOUT_SECONDS` (default 180).
 
 ## 6. Configuration
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `AI_PROVIDER` | `ollama` | `ollama` or `fake` (tests only) |
-| `AI_LOCAL_BASE_URL` | `http://127.0.0.1:11434` | Ollama endpoint (loopback/private only) |
-| `AI_LOCAL_MODEL` | `gemma4:12b-it-qat` | Model tag |
-| `AI_LOCAL_STRUCTURED_MODE` | `native_schema` | `native_schema` or `prompted` |
-| `AI_LOCAL_THINK` | `false` | Enable model thinking |
-| `AI_LOCAL_KEEP_ALIVE` | `30m` | How long the model stays loaded |
-| `AI_LOCAL_NUM_CTX` | `8192` | Context window |
-| `AI_REQUEST_TIMEOUT_SECONDS` | `180` | Per-call timeout |
-| `AI_MAX_RETRIES` | `2` | Retries (with repair feedback) |
+| Variable                     | Default                  | Meaning                                 |
+| ---------------------------- | ------------------------ | --------------------------------------- |
+| `AI_PROVIDER`                | `ollama`                 | `ollama` or `fake` (tests only)         |
+| `AI_LOCAL_BASE_URL`          | `http://127.0.0.1:11434` | Ollama endpoint (loopback/private only) |
+| `AI_LOCAL_MODEL`             | `gemma4:12b-it-qat`      | Model tag                               |
+| `AI_LOCAL_STRUCTURED_MODE`   | `native_schema`          | `native_schema` or `prompted`           |
+| `AI_LOCAL_THINK`             | `false`                  | Enable model thinking                   |
+| `AI_LOCAL_KEEP_ALIVE`        | `30m`                    | How long the model stays loaded         |
+| `AI_LOCAL_NUM_CTX`           | `8192`                   | Context window                          |
+| `AI_REQUEST_TIMEOUT_SECONDS` | `180`                    | Per-call timeout                        |
+| `AI_MAX_RETRIES`             | `2`                      | Retries (with repair feedback)          |
 
 ## 7. Skills, tools and approvals
 

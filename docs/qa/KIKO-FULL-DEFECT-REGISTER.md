@@ -4,25 +4,26 @@ Program: `qa/kiko-full-system-hardening` (started 2026-11-15 from `main` @ `f9e1
 Severity scale: BLOCKER · CRITICAL · HIGH · MEDIUM · LOW · IMPROVEMENT. Historical findings stay
 listed after they are fixed. "Fix commit" refers to commits on the QA branch unless stated.
 
-| ID | Module | Severity | Status |
-| --- | --- | --- | --- |
-| KQA-001 | AI / architecture | BLOCKER | Fixed |
-| KQA-002 | Integrations / Codex | HIGH | Fixed (excluded) |
-| KQA-003 | Web dependencies (Next.js) | CRITICAL | Fixed |
-| KQA-004 | Desktop / API proxy | HIGH | Fixed |
-| KQA-005 | Specialist agents | HIGH | Fixed |
-| KQA-006 | Test infrastructure | MEDIUM | Fixed |
-| KQA-007 | Test infrastructure / CI | MEDIUM | Fixed |
-| KQA-008 | Local environment script | MEDIUM | Fixed |
-| KQA-009 | Dev dependencies | MEDIUM | Fixed |
-| KQA-010 | Data model | LOW | Open (documented) |
-| KQA-011 | Desktop dependencies (Linux-only crates) | LOW | Accepted |
-| KQA-012 | Desktop / notifications | HIGH | Fixed in #33 (before this program) |
-| KQA-013 | Desktop / deep links | MEDIUM | Fixed in #33 (before this program) |
+| ID      | Module                                   | Severity | Status                             |
+| ------- | ---------------------------------------- | -------- | ---------------------------------- |
+| KQA-001 | AI / architecture                        | BLOCKER  | Fixed                              |
+| KQA-002 | Integrations / Codex                     | HIGH     | Fixed (excluded)                   |
+| KQA-003 | Web dependencies (Next.js)               | CRITICAL | Fixed                              |
+| KQA-004 | Desktop / API proxy                      | HIGH     | Fixed                              |
+| KQA-005 | Specialist agents                        | HIGH     | Fixed                              |
+| KQA-006 | Test infrastructure                      | MEDIUM   | Fixed                              |
+| KQA-007 | Test infrastructure / CI                 | MEDIUM   | Fixed                              |
+| KQA-008 | Local environment script                 | MEDIUM   | Fixed                              |
+| KQA-009 | Dev dependencies                         | MEDIUM   | Fixed                              |
+| KQA-010 | Data model                               | LOW      | Open (documented)                  |
+| KQA-011 | Desktop dependencies (Linux-only crates) | LOW      | Accepted                           |
+| KQA-012 | Desktop / notifications                  | HIGH     | Fixed in #33 (before this program) |
+| KQA-013 | Desktop / deep links                     | MEDIUM   | Fixed in #33 (before this program) |
 
 ---
 
 ### KQA-001 — AI depended on an external inference API (OpenAI)
+
 - **Severity:** BLOCKER (owner directive: local AI only).
 - **Description:** every AI feature (Supervisor, Kiko AI, specialist agents, summarisation,
   automation planning) called the OpenAI Responses API through `OpenAIProvider`.
@@ -38,6 +39,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 - **Remaining risk:** answer quality depends on the local model; human approval stays mandatory.
 
 ### KQA-002 — Codex integration performs external inference
+
 - **Severity:** HIGH (policy). **Status:** fixed by exclusion.
 - **Description:** the Codex development integration launches the OpenAI Codex CLI, which runs
   inference on OpenAI servers.
@@ -50,6 +52,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
   exists (future scope).
 
 ### KQA-003 — Next.js critical advisory (unauthenticated RCE in image optimisation) and DoS
+
 - **Severity:** CRITICAL for the web edition (the desktop app ships a static export without the
   Next server).
 - **Reproduction:** `pnpm audit --prod` → `next >=10.0.0 <=15.5.27` critical, `>=13 <=15.5.27`
@@ -58,6 +61,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 - **Regression check:** `pnpm audit` → "No known vulnerabilities found"; CI frontend job.
 
 ### KQA-004 — Desktop app cut AI generation off after 30 s
+
 - **Severity:** HIGH (every Supervisor plan / agent run from the desktop app would time out with
   local models).
 - **Reproduction:** local generation takes 33–60 s (measured); the Rust proxy applied a 30 s
@@ -67,6 +71,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 - **Regression test:** Rust unit test in `api.rs` (`request_timeout` cases).
 
 ### KQA-005 — Specialist agents never received tool input schemas
+
 - **Severity:** HIGH (specialist agent runs failed with real models).
 - **Reproduction:** approve an AI plan, run the assigned agent with the local model → run
   `failed`, `error_code=ToolInputValidationError` (2/2 runs in the first evaluation).
@@ -81,6 +86,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
   asserts the repair round explicitly).
 
 ### KQA-006 — Backend tests only ran on SQLite without foreign keys
+
 - **Severity:** MEDIUM. **Description:** the suite used in-memory SQLite, which ignores foreign
   keys and lacks PostgreSQL full-text search; one test inserted an action for a non-existent task
   and another asserted the SQLite-only retrieval path.
@@ -89,10 +95,12 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 - **Evidence:** 286 passed on PostgreSQL 16 + Redis (0 skipped); 283 passed / 6 skipped on SQLite.
 
 ### KQA-007 — CI never ran the full suite on PostgreSQL
+
 - **Severity:** MEDIUM. **Fix:** the CI integration job creates `agent_pytest_test` and runs the
   full backend suite on PostgreSQL 16 after the integration tests.
 
 ### KQA-008 — `kiko-local.sh` race left the Celery worker on the default broker
+
 - **Severity:** MEDIUM (local environment): background jobs silently never ran.
 - **Root cause:** each service rewrote `api.env` with `cat >` while the previous one was still
   sourcing it; the worker read an empty file and fell back to `redis://redis:6379/1`.
@@ -100,11 +108,13 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
   "Cannot connect".
 
 ### KQA-009 — 22 advisories in development tooling
+
 - **Severity:** MEDIUM (dev only: vitest/vite, eslint → brace-expansion, js-yaml, minimatch,
   tinypool). **Fix:** vitest 4.1.12, in-range updates, two pnpm overrides; `pnpm audit` clean;
   64/64 web tests, lint, typecheck and format pass.
 
 ### KQA-010 — ORM models drift from the migrated schema
+
 - **Severity:** LOW. **Status:** open, documented.
 - **Description:** `alembic check` on a fresh database reports differences: `workspace_id` is
   `NOT NULL` in 9 CRM/marketing/integration tables but nullable in the models; some unique
@@ -116,10 +126,13 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 - **Recommendation:** align models and fixtures in a dedicated change; add `alembic check` to CI.
 
 ### KQA-011 — Unmaintained/unsound crates in the Tauri Linux stack
+
 - **Severity:** LOW (accepted). `cargo audit`: 0 vulnerabilities, 5 warnings (`glib`
   RUSTSEC-2024-0429, `zbus_names`/`zvariant`/`zvariant_derive` unmaintained). These belong to
   the GTK/D-Bus stack, which is not compiled for macOS.
 
 ### KQA-012 — Desktop app froze after a native notification (fixed in PR #33)
+
 ### KQA-013 — Cold-start `kiko://` deep links ignored (fixed in PR #33)
+
 Kept for history; details in `docs/desktop/KIKO-LOCAL-TEST-ENVIRONMENT.md` §9.
