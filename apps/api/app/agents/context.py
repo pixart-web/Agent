@@ -44,6 +44,10 @@ class AgentTaskContext:
             f"User feedback: {self.feedback or 'none'}",
             f"Available tools: {list(self.available_tools)}",
         ]
+        parts.append(
+            "Rules: never invent identifiers (UUIDs, ids, emails). If a tool needs an id you "
+            "do not have, first use a search or list tool that does not require it."
+        )
         if self.tool_specs:
             parts.append(
                 "Tool inputs (input_payload must contain exactly these fields; * = required):"

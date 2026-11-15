@@ -113,6 +113,7 @@ export function TaskExecutionPanel({
           {task.status === 'ready' && (
             <div className="action-composer">
               <select
+                aria-label="Tool"
                 value={tool[task.id] ?? TOOLS[0]}
                 onChange={(event) =>
                   setTool((current) => ({
@@ -126,6 +127,7 @@ export function TaskExecutionPanel({
                 ))}
               </select>
               <input
+                aria-label="Action input"
                 placeholder="Text or simulated action description"
                 value={text[task.id] ?? ''}
                 onChange={(event) =>

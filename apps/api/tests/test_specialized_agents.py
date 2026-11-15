@@ -317,3 +317,54 @@ def test_agent_configuration_rejects_unsupported_tools(
         json={"allowed_tools": ["github.create_pull_request"]},
     )
     assert response.status_code == 409
+
+
+def test_placeholder_identifier_is_rejected_and_repaired(
+    client: TestClient, db_session: Session
+) -> None:
+    _headers, _command, task = ready_task(client, db_session, "sales")
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    invented = AgentProposal(
+        summary="List opportunities",
+        actions=[
+            AgentActionProposal(
+                tool_name="crm.list_opportunities",
+                input_payload={"client_id": "00000000-0000-0000-0000-000000000000"},
+                reason="Need the pipeline",
+                expected_outcome="Opportunity list",
+                sequence=1,
+            )
+        ],
+    )
+    provider = FakeLLMProvider([outcome(invented), outcome(proposal("internal.create_note"))])
+    result = AgentRunnerService(db_session, provider).run(UUID(task["id"]), user.id)
+
+    assert result.run.status == AgentRunStatus.COMPLETED
+    assert "placeholder identifier" in provider.calls[1]["user_prompt"]
+    assert "never invent identifiers" in provider.calls[0]["user_prompt"]
+
+
+def test_tools_needing_ids_are_hidden_when_the_task_has_no_identifiers(
+    client: TestClient, db_session: Session
+) -> None:
+    from app.agents.runner import requires_identifier
+    from app.execution.tools.registry import build_tool_registry
+
+    tools = {item.name: item for item in build_tool_registry().definitions()}
+    assert requires_identifier(tools["crm.list_opportunities"])
+    assert not requires_identifier(tools["crm.search_contacts"])
+
+    _headers, _command, task = ready_task(client, db_session, "sales")
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    provider = FakeLLMProvider([outcome(proposal("internal.create_note"))])
+    AgentRunnerService(db_session, provider).run(UUID(task["id"]), user.id)
+
+    schema = provider.calls[0]["response_model"].model_json_schema()
+    offered = {
+        variant["properties"]["tool_name"]["const"]
+        for variant in schema["$defs"].values()
+        if "tool_name" in variant.get("properties", {})
+    }
+    assert "crm.search_contacts" in offered
+    assert "crm.list_opportunities" not in offered
+    assert "crm.list_opportunities" not in provider.calls[0]["user_prompt"].split("Tool inputs")[1]

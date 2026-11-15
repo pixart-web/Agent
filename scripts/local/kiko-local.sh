@@ -27,6 +27,7 @@
 #   desktop-e2e       run the real macOS app journey (debug build) against this backend
 #   ai-eval           evaluate every AI flow with the real local model (slow, minutes)
 #   idor-sweep        cross-tenant authorization sweep over every API operation with an id
+#   perf              bounded latency/concurrency probe of the main API endpoints
 #   open-link <url>   open an emailed http://localhost:3000/... link in the Kiko macOS app
 #   psql              open psql on the Kiko local database
 #   env               print the non-secret configuration
@@ -427,6 +428,12 @@ cmd_idor_sweep() {
     --api "http://127.0.0.1:$API_PORT" --mailpit "http://127.0.0.1:$MAIL_UI_PORT" --state "$H/security"
 }
 
+cmd_perf() {
+  init_home; write_api_env
+  with_api_env "$PY" "$REPO/scripts/local/kiko_local_perf.py" \
+    --api "http://127.0.0.1:$API_PORT" --mailpit "http://127.0.0.1:$MAIL_UI_PORT" --state "$H/perf"
+}
+
 cmd_desktop_e2e() {
   init_home; write_api_env
   local bin="$REPO/apps/desktop/src-tauri/target/debug/kiko-desktop"
@@ -475,8 +482,9 @@ case "${1:-}" in
   desktop-e2e) cmd_desktop_e2e ;;
   ai-eval) cmd_ai_eval ;;
   idor-sweep) cmd_idor_sweep ;;
+  perf) cmd_perf ;;
   open-link) shift; cmd_open_link "$@" ;;
   psql) init_home; pg_env; exec "$PG_BIN/psql" -h 127.0.0.1 -p "$PG_PORT" -U kiko_local kiko_local ;;
   env) cmd_env ;;
-  *) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

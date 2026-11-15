@@ -1,5 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
+from pydantic import BaseModel
+
+from app.agents.constrained import to_agent_proposal
 from app.agents.context import AgentTaskContext
 from app.ai.base import LLMProvider, LLMResult
 from app.models.workflow_enums import RiskLevel
@@ -18,10 +21,19 @@ class PromptSpecializedAgent:
     max_actions_per_task: int = 10
 
     def propose_actions(
-        self, *, context: AgentTaskContext, provider: LLMProvider
+        self,
+        *,
+        context: AgentTaskContext,
+        provider: LLMProvider,
+        response_model: type[BaseModel] | None = None,
     ) -> LLMResult[AgentProposal]:
-        return provider.generate_structured(
+        """Ask the model for actions. With `response_model` (a tool-constrained proposal from
+        `app.agents.constrained`) the runtime enforces each tool's input schema."""
+        result = provider.generate_structured(
             system_prompt=self.system_prompt,
             user_prompt=context.user_prompt(),
-            response_model=AgentProposal,
+            response_model=response_model or AgentProposal,
         )
+        if response_model is None:
+            return result
+        return replace(result, data=to_agent_proposal(result.data))
