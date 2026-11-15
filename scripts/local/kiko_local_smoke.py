@@ -36,9 +36,10 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
 
 
 class Api:
-    def __init__(self, base: str) -> None:
+    def __init__(self, base: str, timeout: float = 30) -> None:
         self.base = base.rstrip("/")
         self.refresh: str | None = None
+        self.timeout = timeout
 
     def call(
         self,
@@ -60,7 +61,7 @@ class Api:
         if send_cookie and self.refresh:
             request.add_header("Cookie", f"{COOKIE}={self.refresh}")
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 status, raw, headers = (
                     response.status,
                     response.read(),

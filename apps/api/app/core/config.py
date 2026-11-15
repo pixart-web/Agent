@@ -5,6 +5,8 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
+from app.core.network import is_private_endpoint
+
 
 class Settings(BaseSettings):
     app_name: str = "Kiko API"
@@ -47,10 +49,16 @@ class Settings(BaseSettings):
     smtp_starttls: bool = True
     transactional_email_batch_size: int = Field(default=25, ge=1, le=200)
     transactional_email_max_attempts: int = Field(default=5, ge=1, le=20)
-    ai_provider: Literal["openai", "fake"] = "openai"
-    openai_api_key: SecretStr | None = None
-    openai_model: str = Field(default="gpt-5.4-mini", min_length=1)
-    ai_request_timeout_seconds: float = Field(default=60, gt=0)
+    # Local AI only: Kiko never calls an external inference API (OpenAI, Anthropic, Gemini…).
+    # "ollama" = models served on loopback or a private network; "fake" = injected in tests.
+    ai_provider: Literal["ollama", "fake"] = "ollama"
+    ai_local_base_url: str = "http://127.0.0.1:11434"
+    ai_local_model: str = Field(default="gemma4:12b-it-qat", min_length=1, max_length=200)
+    ai_local_structured_mode: Literal["native_schema", "prompted"] = "native_schema"
+    ai_local_think: bool = False
+    ai_local_keep_alive: str = Field(default="30m", min_length=1, max_length=16)
+    ai_local_num_ctx: int = Field(default=8192, ge=2048, le=131072)
+    ai_request_timeout_seconds: float = Field(default=180, gt=0, le=1800)
     ai_max_retries: int = Field(default=2, ge=0, le=5)
     supervisor_max_tasks: int = Field(default=20, ge=1, le=100)
     supervisor_max_command_chars: int = Field(default=10_000, ge=100, le=100_000)
@@ -124,7 +132,6 @@ class Settings(BaseSettings):
 
     @field_validator(
         "auth_cookie_domain",
-        "openai_api_key",
         "github_token",
         "codex_api_key",
         "codex_model",
@@ -144,13 +151,33 @@ class Settings(BaseSettings):
     def empty_optional_string_is_none(cls, value: object) -> object:
         return None if value == "" else value
 
-    @field_validator("openai_model")
+    @field_validator("ai_provider", mode="before")
+    @classmethod
+    def reject_external_ai(cls, value: object) -> object:
+        if isinstance(value, str) and value.strip().lower() not in {"ollama", "fake"}:
+            raise ValueError(
+                "Kiko uses local AI only: set AI_PROVIDER=ollama (external inference APIs "
+                "such as OpenAI are not supported)"
+            )
+        return value
+
+    @field_validator("ai_local_model")
     @classmethod
     def require_non_empty_model(cls, value: str) -> str:
         normalized = value.strip()
         if not normalized:
-            raise ValueError("OPENAI_MODEL must not be empty")
+            raise ValueError("AI_LOCAL_MODEL must not be empty")
         return normalized
+
+    @field_validator("ai_local_base_url")
+    @classmethod
+    def require_private_ai_endpoint(cls, value: str) -> str:
+        if not is_private_endpoint(value):
+            raise ValueError(
+                "AI_LOCAL_BASE_URL must point to loopback or a private network host "
+                "(local AI runtime only)"
+            )
+        return value.rstrip("/")
 
     @property
     def web_origin_list(self) -> list[str]:
@@ -270,8 +297,11 @@ class Settings(BaseSettings):
                 raise ValueError("Production metrics require OBSERVABILITY_METRICS_TOKEN")
             if self.ai_provider == "fake":
                 raise ValueError("Production cannot use the fake AI provider")
-            if self.ai_provider == "openai" and self.openai_api_key is None:
-                raise ValueError("Production OpenAI provider requires OPENAI_API_KEY")
+            if self.codex_integration_enabled:
+                raise ValueError(
+                    "Codex integration uses an external AI service and is excluded by the "
+                    "local-AI policy"
+                )
             if self.auth_require_email_verification and not self.transactional_email_enabled:
                 raise ValueError(
                     "Production email verification requires TRANSACTIONAL_EMAIL_ENABLED=true"

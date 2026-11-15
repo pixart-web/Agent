@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.agents.exceptions import AgentNotRegisteredError, AgentProposalError
 from app.agents.runner import AgentRunnerResult, AgentRunnerService
 from app.ai.base import LLMProvider
-from app.ai.provider_factory import get_llm_provider
+from app.ai.provider_factory import build_local_provider, get_llm_provider
 from app.api.dependencies.auth import get_current_active_user
 from app.api.workflow_responses import raise_workflow_http_error
 from app.core.config import Settings, get_settings
@@ -119,12 +119,18 @@ def overview(
         if settings.ai_provider == "fake":
             value["operational_status"] = "sandbox"
             value["operational_message"] = "Sandbox provider configured"
-        elif settings.openai_api_key:
-            value["operational_status"] = "operational"
-            value["operational_message"] = f"{settings.ai_provider} provider configured"
         else:
-            value["operational_status"] = "unavailable"
-            value["operational_message"] = "AI provider credentials are missing"
+            health = build_local_provider(settings).health()
+            if health["reachable"] and health["model_installed"]:
+                value["operational_status"] = "operational"
+                value["operational_message"] = f"Local model {settings.ai_local_model} ready"
+            else:
+                value["operational_status"] = "unavailable"
+                value["operational_message"] = (
+                    f"Local model {settings.ai_local_model} is not installed"
+                    if health["reachable"]
+                    else "Local AI runtime is not reachable"
+                )
     return AgentOverviewRead.model_validate(value)
 
 

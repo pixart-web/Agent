@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.ai.provider_factory import build_local_provider
 from app.core.config import get_settings
 from app.core.time import utc_now
 from app.models.audit_log import AuditLog
@@ -44,9 +45,12 @@ class PlatformAdminService:
             ),
             providers=[
                 ProviderStatus(
-                    provider="openai",
-                    enabled=settings.ai_provider == "openai",
-                    configured=bool(settings.openai_api_key),
+                    provider="local_ai",
+                    enabled=settings.ai_provider == "ollama",
+                    configured=bool(
+                        settings.ai_provider == "ollama"
+                        and build_local_provider(settings).health()["model_installed"]
+                    ),
                 ),
                 ProviderStatus(
                     provider="github",

@@ -14,7 +14,7 @@ from app.execution.policies import RetryPolicy
 from app.execution.tools.registry import build_tool_registry
 from app.execution.worker import ExecutionWorker
 from app.integrations.codex.adapter import CodexCLIAdapter
-from app.integrations.codex.errors import CodexPolicyError, CodexValidationError
+from app.integrations.codex.errors import CodexDisabledError, CodexPolicyError, CodexValidationError
 from app.integrations.codex.fake import FakeCodexRunner
 from app.integrations.codex.policy import CodexRepositoryPolicy
 from app.integrations.codex.schemas import CodexAdapterChangeResult
@@ -109,7 +109,7 @@ def test_cli_adapter_uses_shell_false_bounded_environment_and_removes_log(
         return subprocess.CompletedProcess(args=args, returncode=0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    result = CodexCLIAdapter(binary="codex", timeout_seconds=60, max_output_chars=1000).execute(
+    result = CodexCLIAdapter(binary="codex", timeout_seconds=60, max_output_chars=1000)._run_cli(
         prompt="Implement the approved task",
         repository=repository,
         metadata=metadata,
@@ -129,6 +129,24 @@ def test_cli_adapter_uses_shell_false_bounded_environment_and_removes_log(
     assert not (metadata / "technical.log").exists()
 
 
+def test_cli_adapter_never_launches_codex_under_local_ai_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    launched: list[object] = []
+    monkeypatch.setattr(subprocess, "run", lambda **kwargs: launched.append(kwargs))
+    with pytest.raises(CodexDisabledError, match="local-AI policy"):
+        CodexCLIAdapter(binary="codex", timeout_seconds=60, max_output_chars=1000).execute(
+            prompt="Task",
+            repository=tmp_path,
+            metadata=tmp_path,
+            output_schema=CodexAdapterChangeResult,
+            api_key="dedicated-test-key",
+            writable=True,
+            model=None,
+        )
+    assert launched == []
+
+
 def test_cli_adapter_rejects_credential_in_structured_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -146,7 +164,7 @@ def test_cli_adapter_rejects_credential_in_structured_output(
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     with pytest.raises(CodexValidationError):
-        CodexCLIAdapter(binary="codex", timeout_seconds=60, max_output_chars=1000).execute(
+        CodexCLIAdapter(binary="codex", timeout_seconds=60, max_output_chars=1000)._run_cli(
             prompt="Task",
             repository=repository,
             metadata=metadata,

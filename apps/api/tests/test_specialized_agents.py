@@ -142,16 +142,60 @@ def test_marketing_allowlist_and_risk_escalation(client: TestClient, db_session:
 def test_forbidden_tool_marks_run_failed(client: TestClient, db_session: Session) -> None:
     _headers, _command, task = ready_task(client, db_session, "marketing")
     user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
-    runner = AgentRunnerService(
-        db_session,
-        FakeLLMProvider(
-            [outcome(proposal("internal.simulate_critical_action", risk=RiskLevel.RED))]
-        ),
-    )
-    with pytest.raises(AgentProposalError):
+    forbidden = outcome(proposal("internal.simulate_critical_action", risk=RiskLevel.RED))
+    provider = FakeLLMProvider([forbidden, forbidden])
+    runner = AgentRunnerService(db_session, provider)
+    with pytest.raises(AgentProposalError, match="outside its allowlist"):
         runner.run(UUID(task["id"]), user.id)
     run = db_session.scalar(select(AgentRun))
     assert run.status == AgentRunStatus.FAILED
+    # One repair round with the rejection reason, then the run fails; nothing is persisted.
+    assert len(provider.calls) == 2
+    assert "outside its allowlist" in provider.calls[1]["user_prompt"]
+
+
+def invalid_input_proposal() -> AgentProposal:
+    bad = proposal("internal.create_note")
+    action = bad.actions[0].model_copy(update={"input_payload": {"body": "wrong field"}})
+    return bad.model_copy(update={"actions": [action]})
+
+
+def test_agent_prompt_lists_tool_input_schemas(client: TestClient, db_session: Session) -> None:
+    _headers, _command, task = ready_task(client, db_session, "marketing")
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    provider = FakeLLMProvider([outcome(proposal("internal.create_note"))])
+    AgentRunnerService(db_session, provider).run(UUID(task["id"]), user.id)
+
+    prompt = provider.calls[0]["user_prompt"]
+    assert "Tool inputs" in prompt
+    assert "internal.create_note@1: input_payload {text*:string}" in prompt
+
+
+def test_invalid_tool_input_is_repaired_once_with_validation_feedback(
+    client: TestClient, db_session: Session
+) -> None:
+    _headers, _command, task = ready_task(client, db_session, "marketing")
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    provider = FakeLLMProvider(
+        [outcome(invalid_input_proposal()), outcome(proposal("internal.create_note"))]
+    )
+    result = AgentRunnerService(db_session, provider).run(UUID(task["id"]), user.id)
+
+    assert result.run.status == AgentRunStatus.COMPLETED
+    assert result.actions[0].input_payload == {"text": "Create a concise internal note"}
+    assert "Tool input does not match its schema" in provider.calls[1]["user_prompt"]
+
+
+def test_invalid_tool_input_twice_fails_the_run(client: TestClient, db_session: Session) -> None:
+    _headers, _command, task = ready_task(client, db_session, "marketing")
+    user = db_session.scalar(select(User).where(User.email == "agent@example.com"))
+    provider = FakeLLMProvider(
+        [outcome(invalid_input_proposal()), outcome(invalid_input_proposal())]
+    )
+    with pytest.raises(AgentProposalError):
+        AgentRunnerService(db_session, provider).run(UUID(task["id"]), user.id)
+    assert db_session.scalar(select(AgentRun)).status == AgentRunStatus.FAILED
+    assert len(provider.calls) == 2
 
 
 def test_development_can_propose_red_but_execution_engine_still_approves(

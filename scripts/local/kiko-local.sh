@@ -10,6 +10,7 @@
 #   outbox    outbox dispatcher
 #   mailer    transactional email dispatcher -> Mailpit
 #   web       Next.js web client (email links)  http://localhost:3000
+#   (AI)      local models via the Ollama service  http://127.0.0.1:11434 (not managed here)
 #
 # Data, secrets and logs live in $KIKO_LOCAL_HOME (default ~/.kiko-local) and survive
 # stop/restart. This script never deletes that directory.
@@ -24,6 +25,8 @@
 #   test              run the backend smoke test (fictitious data) against the running stack
 #   test-persisted    after a restart: sign in again with the account the last test created
 #   desktop-e2e       run the real macOS app journey (debug build) against this backend
+#   ai-eval           evaluate every AI flow with the real local model (slow, minutes)
+#   idor-sweep        cross-tenant authorization sweep over every API operation with an id
 #   open-link <url>   open an emailed http://localhost:3000/... link in the Kiko macOS app
 #   psql              open psql on the Kiko local database
 #   env               print the non-secret configuration
@@ -95,11 +98,10 @@ init_home() {
 # Local overrides for the Kiko local test environment (read after the defaults).
 # Restart the API/worker after editing: scripts/local/kiko-local.sh restart api worker outbox
 #
-# AI provider. The backend supports AI_PROVIDER=openai (real) and fake (automated tests
-# only). Without a key, Kiko AI / Supervisor planning report "AI provider unavailable".
-# Using a real key is a paid OpenAI service: only add one you are authorised to use.
-# OPENAI_API_KEY=
-# OPENAI_MODEL=gpt-5.4-mini
+# Local AI (Ollama on this Mac). Kiko never calls external inference APIs.
+# AI_LOCAL_MODEL=gemma4:12b-it-qat
+# AI_LOCAL_STRUCTURED_MODE=native_schema   # use "prompted" for models without schema support
+# AI_REQUEST_TIMEOUT_SECONDS=180
 EOF
     chmod 600 "$OVERRIDES"
   fi
@@ -114,7 +116,10 @@ load_secrets() {
 write_api_env() {
   load_secrets
   umask 077
-  cat > "$RUN/api.env" <<EOF
+  # Written to a temporary file and renamed: background services source api.env while the
+  # next service is being started, so the file must never be seen half-written.
+  local tmp="$RUN/api.env.$$"
+  cat > "$tmp" <<EOF
 APP_NAME="Kiko API (local)"
 APP_ENV=development
 API_PORT=$API_PORT
@@ -136,15 +141,19 @@ SMTP_PORT=$SMTP_PORT
 SMTP_STARTTLS=false
 SMTP_USERNAME=
 SMTP_PASSWORD=
-AI_PROVIDER=openai
-OPENAI_API_KEY=
+AI_PROVIDER=ollama
+AI_LOCAL_BASE_URL=http://127.0.0.1:${KIKO_LOCAL_OLLAMA_PORT:-11434}
+AI_LOCAL_MODEL=${KIKO_LOCAL_AI_MODEL:-gemma4:12b-it-qat}
+AI_LOCAL_STRUCTURED_MODE=native_schema
+AI_REQUEST_TIMEOUT_SECONDS=180
 EMAIL_INTEGRATION_ENABLED=false
 CALENDAR_INTEGRATION_ENABLED=false
 GITHUB_INTEGRATION_ENABLED=false
 CODEX_INTEGRATION_ENABLED=false
 OUTBOX_POLL_INTERVAL_SECONDS=2
 EOF
-  grep -E '^[A-Z_]+=' "$OVERRIDES" >> "$RUN/api.env" || true
+  grep -E '^[A-Z_]+=' "$OVERRIDES" >> "$tmp" || true
+  mv -f "$tmp" "$RUN/api.env"
   umask 022
 }
 
@@ -278,7 +287,19 @@ start_worker() {
   start_bg worker "$LOGS/worker.log" bash -c "set -a; . '$RUN/api.env'; set +a; cd '$API_DIR'; \
     exec '$PY' -m celery -A app.execution.celery_app:celery_app worker \
       --loglevel=INFO --pool=solo --hostname=kiko-local@%h"
-  say "worker: started"
+  local i log_start
+  log_start=$(wc -l < "$LOGS/worker.log" 2>/dev/null || echo 0)
+  for ((i = 0; i < 60; i++)); do
+    if tail -n +"$((log_start + 1))" "$LOGS/worker.log" | grep -q "kiko-local@.* ready"; then
+      say "worker: ready (broker connected)"; return
+    fi
+    if tail -n +"$((log_start + 1))" "$LOGS/worker.log" | grep -q "Cannot connect to"; then
+      die "worker cannot reach its broker (see $LOGS/worker.log)"
+    fi
+    alive worker || die "worker exited (see $LOGS/worker.log)"
+    sleep 0.5
+  done
+  die "worker did not become ready (see $LOGS/worker.log)"
 }
 
 start_outbox() {
@@ -391,6 +412,21 @@ cmd_test() {
     --state "$H/smoke" --pg-bin "$PG_BIN" "$@"
 }
 
+cmd_ai_eval() {
+  init_home; write_api_env
+  local pids
+  pids="$(pid_of api),$(pid_of worker),$(pgrep -x ollama | paste -sd, -)"
+  with_api_env "$PY" "$REPO/scripts/local/kiko_local_ai_eval.py" \
+    --api "http://127.0.0.1:$API_PORT" --mailpit "http://127.0.0.1:$MAIL_UI_PORT" \
+    --state "$H/ai-eval" --pids "$pids" --model "$(grep '^AI_LOCAL_MODEL=' "$RUN/api.env" | cut -d= -f2)"
+}
+
+cmd_idor_sweep() {
+  init_home; write_api_env
+  with_api_env "$PY" "$REPO/scripts/local/kiko_local_idor_sweep.py" \
+    --api "http://127.0.0.1:$API_PORT" --mailpit "http://127.0.0.1:$MAIL_UI_PORT" --state "$H/security"
+}
+
 cmd_desktop_e2e() {
   init_home; write_api_env
   local bin="$REPO/apps/desktop/src-tauri/target/debug/kiko-desktop"
@@ -398,7 +434,9 @@ cmd_desktop_e2e() {
   # Single-instance app: a running Kiko would receive the launch instead of the test binary.
   pgrep -f "/kiko-desktop" >/dev/null && die "quit the Kiko app first (the journey launches its own copy)"
   # 127.0.0.1 (not localhost) keeps the test's Keychain item apart from your own session.
-  (set -a; . "$RUN/api.env"; set +a; PYTHONPATH="$API_DIR" KIKO_API_URL="http://127.0.0.1:$API_PORT" \
+  local ai=unavailable
+  grep -q '^AI_PROVIDER=ollama' "$RUN/api.env" && ai=local
+  (set -a; . "$RUN/api.env"; set +a; PYTHONPATH="$API_DIR" KIKO_API_URL="http://127.0.0.1:$API_PORT" KIKO_E2E_AI="$ai" \
     API_PYTHON="$PY" "$REPO/apps/desktop/e2e/run-journey.sh")
 }
 
@@ -435,8 +473,10 @@ case "${1:-}" in
   test) shift; cmd_test "$@" ;;
   test-persisted) shift; cmd_test --persisted "$@" ;;
   desktop-e2e) cmd_desktop_e2e ;;
+  ai-eval) cmd_ai_eval ;;
+  idor-sweep) cmd_idor_sweep ;;
   open-link) shift; cmd_open_link "$@" ;;
   psql) init_home; pg_env; exec "$PG_BIN/psql" -h 127.0.0.1 -p "$PG_PORT" -U kiko_local kiko_local ;;
   env) cmd_env ;;
-  *) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

@@ -1,6 +1,5 @@
 FROM python:3.12-slim
 
-ARG CODEX_CLI_VERSION=0.149.0
 ARG PNPM_VERSION=11.9.0
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -10,7 +9,7 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates curl git \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install --no-install-recommends -y nodejs \
-    && npm install --global "@openai/codex@${CODEX_CLI_VERSION}" "pnpm@${PNPM_VERSION}" \
+    && npm install --global "pnpm@${PNPM_VERSION}" \
     && rm -rf /var/lib/apt/lists/*
 
 

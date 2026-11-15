@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -15,6 +15,7 @@ from app.ai.exceptions import AIError
 from app.core.config import Settings, get_settings
 from app.core.time import utc_now
 from app.execution.context_safety import sanitize_execution_payload
+from app.execution.exceptions import ToolInputValidationError
 from app.execution.policies import ExecutionRiskPolicy, action_fingerprint, maximum_risk
 from app.execution.registry import ToolRegistry
 from app.execution.tools.registry import build_tool_registry
@@ -46,6 +47,7 @@ from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFound
 from app.workspaces.scope import active_workspace_id
 
 logger = logging.getLogger(__name__)
+MAX_TOOL_SCHEMA_CHARS = 600
 
 
 @dataclass(frozen=True)
@@ -176,6 +178,7 @@ class AgentRunnerService:
                 feedback,
                 self.settings.agent_max_context_chars,
             )
+            context = replace(context, tool_specs=self._tool_specs(allowed_tools))
             run = AgentRun(
                 task_id=task.id,
                 agent_id=agent.agent_id,
@@ -215,13 +218,49 @@ class AgentRunnerService:
         agent = self.registry.get(self.session.get(AgentRun, run_id).agent_id)
         try:
             result = agent.propose_actions(context=context, provider=self.provider)
-            proposal = self._validate(result.data, context, agent)
+            try:
+                proposal = self._validate(result.data, context, agent)
+            except (ToolInputValidationError, AgentProposalError) as rejected:
+                # One repair round: tell the model exactly why the proposal was rejected.
+                # Validation itself is never relaxed.
+                retry_context = replace(
+                    context,
+                    feedback=(
+                        f"{context.feedback + chr(10) if context.feedback else ''}"
+                        f"Your previous proposal was rejected: {self._rejection(rejected)}. "
+                        "Use only the listed tools and make every input_payload match the "
+                        "tool input schema exactly."
+                    ),
+                )
+                result = agent.propose_actions(context=retry_context, provider=self.provider)
+                proposal = self._validate(result.data, retry_context, agent)
             return self._persist(run_id, user_id, proposal, result)
         except Exception as error:
             self._mark_failed(run_id, user_id, error)
             if isinstance(error, (AIError, WorkflowConflictError, AgentProposalError)):
                 raise
             raise AgentProposalError("Specialized agent proposal failed validation") from error
+
+    def _tool_specs(self, allowed_tools: frozenset[str]) -> tuple[str, ...]:
+        specs = []
+        for definition in sorted(self.tools.definitions(), key=lambda item: item.name):
+            if definition.name not in allowed_tools:
+                continue
+            fields = describe_input_fields(definition.input_schema.model_json_schema())
+            specs.append(
+                f"- {definition.name}@{definition.version}: input_payload {{{fields}}}"[
+                    :MAX_TOOL_SCHEMA_CHARS
+                ]
+            )
+        return tuple(specs)
+
+    @staticmethod
+    def _rejection(error: Exception) -> str:
+        cause = error.__cause__
+        detail = str(error)
+        if cause is not None:
+            detail = f"{detail} ({str(cause)[:600]})"
+        return detail[:800]
 
     def _validate(self, proposal: AgentProposal, context: AgentTaskContext, agent) -> AgentProposal:
         maximum = min(self.settings.agent_max_actions_per_task, agent.max_actions_per_task)
@@ -405,3 +444,30 @@ class AgentRunnerService:
             "latency": run.latency_ms,
             "correlation_id": str(run.correlation_id),
         }
+
+
+def describe_input_fields(schema: dict) -> str:
+    """Compact field list for a tool input schema: name:type, `*` = required, enums inline."""
+    definitions = schema.get("$defs", {})
+    required = set(schema.get("required", []))
+
+    def kind(node: dict) -> str:
+        if "$ref" in node:
+            target = definitions.get(node["$ref"].split("/")[-1], {})
+            if "enum" in target:
+                return "|".join(map(str, target["enum"]))
+            return "object"
+        if "enum" in node:
+            return "|".join(map(str, node["enum"]))
+        for key in ("anyOf", "oneOf"):
+            if key in node:
+                options = [kind(item) for item in node[key] if item.get("type") != "null"]
+                return "/".join(options) or "null"
+        if node.get("type") == "array":
+            return f"list[{kind(node.get('items', {}))}]"
+        return str(node.get("format") or node.get("type") or "any")
+
+    return ", ".join(
+        f"{name}{'*' if name in required else ''}:{kind(node)}"
+        for name, node in schema.get("properties", {}).items()
+    )

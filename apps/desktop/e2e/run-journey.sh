@@ -27,8 +27,11 @@ clear_test_session() {
 clear_test_session
 trap clear_test_session EXIT
 
-run_phase() { # name script ephemeral(0|1) extra-json
-  local name="$1" script="$2" ephemeral="$3" extra="${4:-}"
+AI_MODE="${KIKO_E2E_AI:-unavailable}"  # "local" when the backend has a local AI model
+
+run_phase() { # name script ephemeral(0|1) extra-json timeout-seconds
+  local name="$1" script="$2" ephemeral="$3" extra="${4:-}" limit="${5:-180}"
+  extra="$extra, \"ai\": \"$AI_MODE\""
   local file="$WORK/$name.js"
   {
     printf 'window.__KIKO_SMOKE__ = {"email": "%s", "password": "%s"%s};\n' "$EMAIL" "$PASSWORD" "$extra"
@@ -39,7 +42,7 @@ run_phase() { # name script ephemeral(0|1) extra-json
   local started=$(python3 -c 'import time;print(time.time())')
   set +e
   env ${env_flag[@]+"${env_flag[@]}"} KIKO_API_URL="$API_URL" KIKO_DESKTOP_SMOKE_SCRIPT="$file" \
-    timeout 180 "$APP" > "$WORK/$name.log" 2>&1
+    timeout "$limit" "$APP" > "$WORK/$name.log" 2>&1
   local code=$?
   set -e
   grep '^SMOKE \(PASS\|DONE\|FAIL\)' "$WORK/$name.log" | sed "s/^SMOKE /[$name] /" | tee -a "$RESULTS"
@@ -60,6 +63,9 @@ run_phase verify phase-2-verify-onboard.js 0 ", \"token\": \"$TOKEN\""
 keychain_has_session && echo "[keychain] refresh token stored after sign-in" | tee -a "$RESULTS" \
   || { echo "[keychain] FAIL no session item after sign-in" | tee -a "$RESULTS"; exit 1; }
 run_phase work phase-3-work.js 0
+if [ "$AI_MODE" = "local" ]; then
+  run_phase local-ai phase-3b-local-ai.js 0 "" 420
+fi
 run_phase persist phase-4-persist-logout.js 0
 keychain_has_session && { echo "[keychain] FAIL item still present after logout" | tee -a "$RESULTS"; exit 1; } \
   || echo "[keychain] session item removed by logout" | tee -a "$RESULTS"

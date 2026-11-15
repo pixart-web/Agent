@@ -76,6 +76,26 @@ class CodexCLIAdapter:
         writable: bool,
         model: str | None,
     ) -> CodexAdapterExecution:
+        # The Codex CLI performs inference on OpenAI's servers. Kiko's local-AI policy forbids
+        # external inference, so the CLI is never launched. The sandboxed process handling in
+        # `_run_cli` is kept (and tested) for a future local coding-agent runner.
+        from app.integrations.codex.errors import CodexDisabledError
+
+        raise CodexDisabledError(
+            "Codex uses an external AI service and is disabled by the local-AI policy"
+        )
+
+    def _run_cli(
+        self,
+        *,
+        prompt: str,
+        repository: Path,
+        metadata: Path,
+        output_schema: type[ResultModel],
+        api_key: str,
+        writable: bool,
+        model: str | None,
+    ) -> CodexAdapterExecution:
         schema_path = metadata / "output-schema.json"
         result_path = metadata / "result.json"
         log_path = metadata / "technical.log"

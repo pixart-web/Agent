@@ -98,7 +98,12 @@ def test_sporting_demo_retrieval_is_approved_relevant_and_workspace_scoped(
     assert draft["id"] not in str(result)
     assert leaked["id"] not in str(result)
     assert "untrusted" in result["trust_notice"].lower()
-    assert result["retrieval_method"] == "substring_fallback"
+    expected_method = (
+        "postgres_full_text"
+        if db_session.get_bind().dialect.name == "postgresql"
+        else "substring_fallback"
+    )
+    assert result["retrieval_method"] == expected_method
     assert db_session.scalar(select(func.count()).select_from(KnowledgeRevision)) == 7
 
 
