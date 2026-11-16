@@ -24,6 +24,9 @@ function scriptSources(): string {
 const isStaticExport = process.env.NEXT_OUTPUT_MODE === 'export';
 
 const nextConfig: NextConfig = {
+  // The local test environment runs `next dev` in its own folder so a desktop build
+  // (`next build` into .next) cannot break the running dev server.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   output: isStaticExport
     ? 'export'
     : process.env.NEXT_OUTPUT_MODE === 'standalone'

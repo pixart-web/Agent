@@ -324,7 +324,7 @@ start_web() {
   port_busy "$WEB_PORT" && die "port $WEB_PORT is used by another process; set KIKO_LOCAL_WEB_PORT"
   [ -x "$WEB_DIR/node_modules/.bin/next" ] || die "web dependencies missing (run pnpm install)"
   start_bg web "$LOGS/web.log" bash -c "cd '$WEB_DIR'; \
-    NEXT_PUBLIC_API_URL=http://localhost:$API_PORT exec ./node_modules/.bin/next dev \
+    NEXT_DIST_DIR=.next-dev NEXT_PUBLIC_API_URL=http://localhost:$API_PORT exec ./node_modules/.bin/next dev \
       --hostname 127.0.0.1 --port $WEB_PORT"
   wait_port "$WEB_PORT" 60 || die "web did not start (see $LOGS/web.log)"
   say "web: http://localhost:$WEB_PORT"
