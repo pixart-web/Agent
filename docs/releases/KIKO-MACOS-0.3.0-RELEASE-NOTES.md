@@ -15,6 +15,7 @@
   actions; real progress, agents and integrations.
 - Commands, conversations and reports show which stage the work is in.
 - Logout is now "Terminar sessão" at the bottom of the navigation.
+- Sign-in and account screens show the Kiko logo; "Sign in to Kiko", "PIXART Ecosystem".
 
 Details: `docs/design/KIKO-ALIVE-IMPLEMENTATION-REPORT.md`.
 
@@ -22,7 +23,7 @@ Details: `docs/design/KIKO-ALIVE-IMPLEMENTATION-REPORT.md`.
 
 |          |                                                                                        |
 | -------- | -------------------------------------------------------------------------------------- |
-| File     | `Kiko_0.3.0_aarch64.dmg` (5,588,999 bytes)                                             |
-| SHA-256  | `ba7185ed6481ba1ce4abdf8642c71576ce07cb0cc23d243ff1e370453395c362`                     |
+| File     | `Kiko_0.3.0_aarch64.dmg` (5,589,198 bytes)                                             |
+| SHA-256  | `252743ab33a336ccf2ea7fff61b7b672b56880ffc1a0e0b8b10efd4526314d50`                     |
 | Requires | Apple Silicon Mac, macOS 12+; 32 GB recommended when the AI model runs on the same Mac |
 | Signing  | ad-hoc (hardened runtime); **not** Developer ID signed, **not** notarised              |

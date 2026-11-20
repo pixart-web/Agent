@@ -8,6 +8,7 @@ import { getCurrentUser } from '../../lib/auth-client';
 import { getAppInfo, type DesktopAppInfo } from '../../lib/desktop-bridge';
 import { lastRoute } from '../../lib/desktop-routes';
 import { isDesktop } from '../../lib/platform';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 type LaunchState =
   | { status: 'starting' }
@@ -66,6 +67,7 @@ export default function DesktopLaunchPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="offline-title">
+        <KikoLogo />
         <p className="eyebrow">Connection</p>
         <h1 id="offline-title" className="auth-title">
           Kiko can’t reach its server

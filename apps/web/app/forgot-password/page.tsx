@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 
 import { AuthClientError, requestPasswordReset } from '../../lib/auth-client';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -30,6 +31,7 @@ export default function ForgotPasswordPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="forgot-title">
+        <KikoLogo />
         <p className="eyebrow">Account recovery</p>
         <h1 id="forgot-title" className="auth-title">
           Reset your password

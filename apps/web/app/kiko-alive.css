@@ -2041,3 +2041,53 @@ a.kiko-feed__item:hover {
     animation: none;
   }
 }
+
+/* ── Sign-in and account screens ──────────────────────────────────────────────── */
+
+.auth-page {
+  min-height: 100vh;
+  padding: calc(var(--titlebar) + 32px) 16px 32px;
+}
+
+.auth-card {
+  border-color: var(--kiko-line-strong);
+  background: linear-gradient(
+    180deg,
+    rgba(29, 27, 46, 0.9),
+    rgba(21, 20, 34, 0.9)
+  );
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(24px);
+}
+
+.kiko-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.kiko-logo .kiko-avatar {
+  flex: none;
+}
+
+.kiko-logo__text {
+  display: grid;
+  line-height: 1.1;
+}
+
+.kiko-logo__text strong {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+}
+
+.kiko-logo__text span {
+  color: var(--kiko-text-2);
+  font-size: 0.8rem;
+}
+
+.auth-form input:focus {
+  border-color: var(--kiko-amber);
+  outline: 3px solid rgba(255, 153, 95, 0.18);
+}

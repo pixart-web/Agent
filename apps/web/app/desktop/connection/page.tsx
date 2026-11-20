@@ -10,6 +10,7 @@ import {
   type DesktopAppInfo,
 } from '../../../lib/desktop-bridge';
 import { isDesktop } from '../../../lib/platform';
+import { KikoLogo } from '../../../components/kiko/kiko-logo';
 
 /** Desktop-only: choose which Kiko server this app talks to. */
 export default function DesktopConnectionPage() {
@@ -51,6 +52,7 @@ export default function DesktopConnectionPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="connection-title">
+        <KikoLogo />
         <p className="eyebrow">
           Kiko for macOS{info ? ` · ${info.version}` : ''}
         </p>

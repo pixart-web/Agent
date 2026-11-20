@@ -6,6 +6,7 @@ import { FormEvent, useState } from 'react';
 
 import { AuthClientError, register } from '../../lib/auth-client';
 import { validateRegisterForm } from '../../lib/form-validation';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,11 +58,12 @@ export default function RegisterPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="register-title">
-        <p className="eyebrow">Pixart operations</p>
+        <KikoLogo />
+        <p className="eyebrow">PIXART Ecosystem</p>
         <h1 id="register-title" className="auth-title">
           Create your account
         </h1>
-        <p className="auth-intro">Start a secure Agent session.</p>
+        <p className="auth-intro">Start a secure Kiko session.</p>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label>
