@@ -748,6 +748,15 @@ h1 {
   white-space: nowrap;
 }
 
+.workspace-access-notice {
+  margin: -48px 0 32px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--ink);
+}
+
 .brand-mark {
   margin-right: 16px;
   font-size: 1.25rem;
@@ -2319,6 +2328,10 @@ html[data-platform='desktop'] .dashboard-nav {
   border-right: 1px solid var(--line);
   background: color-mix(in srgb, var(--background) 82%, white);
   backdrop-filter: saturate(160%) blur(18px);
+}
+
+html[data-platform='desktop'] .workspace-access-notice {
+  margin: 0 0 20px;
 }
 
 html[data-platform='desktop'] .dashboard-nav > div {

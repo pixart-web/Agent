@@ -21,6 +21,13 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-013 | Desktop / deep links                     | MEDIUM   | Fixed in #33 (before this program) |
 | KQA-014 | Background dispatchers                   | HIGH     | Fixed                              |
 | KQA-015 | Web UI accessibility                     | MEDIUM   | Fixed                              |
+| KQA-016 | Authorization / workspace roles          | HIGH     | Fixed (acceptance round)           |
+| KQA-017 | Invitations / onboarding                 | HIGH     | Fixed (acceptance round)           |
+| KQA-018 | Local environment / web dev server       | MEDIUM   | Fixed in #35                       |
+| KQA-019 | Web UI / read-only members               | MEDIUM   | Fixed (acceptance round)           |
+| KQA-020 | CRM contacts list performance            | LOW      | Fixed (acceptance round)           |
+| KQA-021 | Local environment / port conflicts       | LOW      | Fixed (acceptance round)           |
+| KQA-022 | Desktop / hidden window suspended        | HIGH     | Fixed (acceptance round)           |
 
 ---
 
@@ -164,3 +171,89 @@ Kept for history; details in `docs/desktop/KIKO-LOCAL-TEST-ENVIRONMENT.md` §9.
 - **Fix:** card label colour; `aria-label` on each control (commit `e9e47d2` and follow-up).
 - **Regression test:** `apps/web/e2e/dashboard-quality-sweep.spec.ts` — 21 screens, desktop and
   mobile: no findings.
+
+---
+
+## Acceptance round (2026-11-20)
+
+Second pass during owner acceptance testing, with temporary accounts for every role
+(`kiko-local.sh accounts`) and a new role sweep (`kiko-local.sh role-matrix`).
+
+### KQA-016 — Viewers could change the workspace
+
+- **Severity:** HIGH (a read-only member could create commands and conversations, which start
+  AI work, create projects and milestones, cancel actions and comment on approvals).
+- **Reproduction:** `role-matrix` before the fix: viewer, active in the shared workspace →
+  12 of 78 write operations answered 2xx (`POST /commands`, `/commands/{id}/cancel|duplicate|restore`,
+  `/conversations`, `/conversations/{id}/messages`, `/projects`, `/projects/{id}/milestones`,
+  `/actions/{id}/cancel`, `/approvals/{id}/comments`, …).
+- **Root cause:** the viewer check existed only in the CRM, marketing, automations, client and
+  knowledge routes; every other workspace router accepted any member.
+- **Fix:** `require_workspace_editor` (`app/api/dependencies/workspace_role.py`) applied at router
+  level to all workspace-scoped routers: writes from a viewer of the active workspace → 403
+  "Workspace edit permission is required"; reads unchanged.
+- **Regression tests:** `tests/test_workspace_roles.py::test_viewer_is_read_only_and_member_can_edit`
+  (fails without the fix: 6× 2xx); live `role-matrix`: viewer 76 writes probed, 0 allowed;
+  member and manager refused all workspace administration (8/8).
+
+### KQA-017 — Invited members locked out by the company-setup onboarding
+
+- **Severity:** HIGH (every invited user, of any role, was sent to "Set up your company
+  workspace" and could not leave it: saving needs owner/admin rights, so the form failed and the
+  dashboard stayed unreachable).
+- **Reproduction:** invite a member, accept, sign in on the web → `/onboarding`; submitting returns
+  403 and the page stays on onboarding.
+- **Root cause:** onboarding completion is per user, but the form always submits the company
+  profile, which only managers of the workspace may change; accepting an invitation neither
+  completed onboarding nor opened the joined workspace.
+- **Fix:** accepting an invitation makes the joined workspace active and completes the invitee's
+  onboarding; non-managers may finish onboarding when they resubmit the profile unchanged
+  (unblocks members who joined before the fix). Changing the profile still needs owner/admin.
+- **Regression tests:** `test_invitee_lands_in_the_team_workspace_without_company_setup`,
+  `test_member_can_finish_onboarding_without_changing_the_company`; live: new viewer and manager
+  land on `/dashboard`; a previously stuck member finished onboarding from the web.
+
+### KQA-018 — Desktop build broke the local web dev server (fixed in #35)
+
+- **Severity:** MEDIUM (emailed verification links stayed on "Verifying your email…").
+- **Root cause / fix:** `next build` for the desktop UI rewrote `.next`, used by `next dev`; the
+  local dev server now uses `.next-dev`. Verified by building while the dev server runs.
+
+### KQA-019 — Read-only members saw edit forms and misleading errors
+
+- **Severity:** MEDIUM (UX). A viewer could fill in "New project" and got "The project could not
+  be created. Check the details and retry."
+- **Fix:** the dashboard navigation shows the active workspace and role, and viewers get a
+  read-only notice explaining that edits need an owner or admin. Forms are still shown (the
+  server refuses the write); hiding each control per role is listed as an improvement.
+- **Verification:** Playwright as viewer (screenshot); quality sweep 21 screens × 2: no findings.
+
+### KQA-020 — CRM contact list ran three queries per contact
+
+- **Severity:** LOW (performance; `/crm/contacts` p50 8.9 ms vs ~2 ms for other lists, 301
+  queries for 100 contacts).
+- **Fix:** methods, addresses and tags are loaded in three batched queries for the whole page.
+- **Regression test:** `tests/test_crm_api.py::test_contact_list_matches_contact_details` (list
+  output identical to the per-contact detail).
+
+### KQA-021 — Local PostgreSQL port could not be changed for an existing cluster
+
+- **Severity:** LOW (local environment). Another project's container took port 55432; the port
+  was fixed in `postgresql.conf` at cluster creation, so `KIKO_LOCAL_PG_PORT` had no effect.
+- **Fix:** `pg_ctl -o "-p $PG_PORT"` and a persistent `~/.kiko-local/ports.env`.
+
+### KQA-022 — Desktop page suspended while Kiko is behind other windows
+
+- **Severity:** HIGH. With the Kiko window hidden or behind other apps, WebKit (macOS 27.2.1,
+  installed 2026-11-16) suspends the page after a few seconds: the notification poller stops (no
+  native notifications while Kiko is in the background) and a Supervisor plan being generated
+  is never shown — the server answers, the page never processes the answer. Found because the
+  desktop journey, which runs the window in the background, started to time out in the
+  `local-ai` phase (it passed on 2026-11-15, before the OS update).
+- **Diagnosis:** the API answered `201` in ~46 s; native threads idle (process sample); a probe
+  in the hidden window showed `visibilityState=hidden` and a 25 s `setTimeout` that never fired,
+  while a 5 s one did. The same plan generation in the web client showed the plan after 47 s.
+- **Fix:** the main window uses `BackgroundThrottlingPolicy::Throttle` (WebKit limits a hidden
+  page's work but does not suspend it).
+- **Verification:** the hidden-window probe fires the 25 s timer; full desktop journey with the
+  real local model passes (see QA report addendum).

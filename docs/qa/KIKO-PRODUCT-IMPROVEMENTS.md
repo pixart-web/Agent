@@ -26,20 +26,22 @@ defect register where one exists.
 
 ## C. UX improvements
 
-| #   | Item                                                                                                                                           |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | Show progress while the local model works (≈ 35–65 s): the Supervisor button only disables today                                               |
-| C2  | Explain "Local AI runtime is not reachable" with a recovery hint in the UI (start Ollama / contact admin)                                      |
-| C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program) |
-| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                           |
+| #   | Item                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C1  | Show progress while the local model works (≈ 35–65 s): the Supervisor button only disables today                                                 |
+| C2  | Explain "Local AI runtime is not reachable" with a recovery hint in the UI (start Ollama / contact admin)                                        |
+| C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program)   |
+| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                             |
+| C5  | Hide or disable create/edit controls per role (viewers get a read-only notice today, KQA-019) and show API error details instead of generic text |
+| C6  | Onboarding page for invited non-admins: show the company profile read-only instead of an editable form                                           |
 
 ## D. Performance improvements
 
-| #   | Item                                                                         | Measurement                                                                                             |
-| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| D1  | AI generation latency                                                        | p50 43.5 s, max 75.7 s on M4; a GPU server or a smaller validated model would cut this                  |
-| D2  | AI concurrency                                                               | Ollama serves one generation per model at a time; queue or `OLLAMA_NUM_PARALLEL` for multi-user servers |
-| D3  | `/crm/contacts` is the slowest list endpoint (p50 8.7 ms vs ~2 ms elsewhere) | Not a problem at current scale; check for per-row queries before large tenants                          |
+| #   | Item                                | Measurement                                                                                             |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| D1  | AI generation latency               | p50 43.5 s, max 75.7 s on M4; a GPU server or a smaller validated model would cut this                  |
+| D2  | AI concurrency                      | Ollama serves one generation per model at a time; queue or `OLLAMA_NUM_PARALLEL` for multi-user servers |
+| D3  | ~~`/crm/contacts` per-row queries~~ | Fixed in the acceptance round (KQA-020): batched loading                                                |
 
 ## E. Architectural improvements
 

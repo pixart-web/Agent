@@ -163,6 +163,12 @@ class WorkspaceService:
         invitation.status = "accepted"
         invitation.accepted_at = now
         invitation.accepted_by_user_id = user.id
+        # The invitee joins a workspace its admins already set up: open it and skip the
+        # company-setup onboarding, which only owners and admins may fill in.
+        user.active_workspace_id = invitation.workspace_id
+        if user.onboarding_completed_at is None:
+            user.onboarding_step = 8
+            user.onboarding_completed_at = now
         try:
             self.session.commit()
         except IntegrityError as error:
@@ -290,11 +296,7 @@ class WorkspaceService:
     def update_onboarding(self, user: User, value: OnboardingUpdate) -> OnboardingRead:
         workspace = self._active_workspace(user)
         membership = self._membership(workspace.id, user.id)
-        if membership.role not in MANAGE_ROLES and (
-            value.company_name is not None
-            or value.company_description is not None
-            or value.primary_objectives is not None
-        ):
+        if membership.role not in MANAGE_ROLES and _changes_company_profile(workspace, value):
             raise WorkspacePermissionError("Insufficient workspace permission")
         if value.company_name is not None:
             workspace.name = value.company_name
@@ -362,3 +364,22 @@ class WorkspaceService:
             company_description=workspace.description,
             primary_objectives=workspace.primary_objectives,
         )
+
+
+def _changes_company_profile(workspace: Workspace, value: OnboardingUpdate) -> bool:
+    """True when the update would change the company profile (owners/admins only).
+
+    Members finishing onboarding resubmit the profile the form was prefilled with; that is
+    not a change and must not lock them out of the workspace.
+    """
+    return (
+        (value.company_name is not None and value.company_name != workspace.name)
+        or (
+            value.company_description is not None
+            and value.company_description != (workspace.description or "")
+        )
+        or (
+            value.primary_objectives is not None
+            and list(value.primary_objectives) != list(workspace.primary_objectives or [])
+        )
+    )
