@@ -15,6 +15,7 @@ class Command(Base):
         Index(
             "ix_commands_workspace_archived_created", "workspace_id", "archived_at", "created_at"
         ),
+        Index("ix_commands_workspace_created", "workspace_id", "created_at", "id"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

@@ -27,6 +27,7 @@ from app.integrations.email.schemas import (
 from app.integrations.email.service import EmailService
 from app.main import app
 from app.models.workflow_enums import RiskLevel
+from tests.workspaces import workspace_for
 
 
 def email_settings(**overrides: object) -> Settings:
@@ -322,6 +323,7 @@ def test_email_accounts_endpoint_is_owned_and_never_returns_credentials(client, 
     ):
         db_session.add(
             IntegrationAccount(
+                workspace_id=workspace_for(db_session, owner.id),
                 user_id=owner.id,
                 provider="gmail",
                 account_type=IntegrationAccountType.PERSONAL,
@@ -397,6 +399,7 @@ def test_email_worker_write_is_fingerprinted_idempotent_and_never_blindly_retrie
     settings = email_settings(email_send_enabled=True)
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())
     account = IntegrationAccount(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         provider="gmail",
         account_type=IntegrationAccountType.PERSONAL,

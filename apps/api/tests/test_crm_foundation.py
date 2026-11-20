@@ -45,6 +45,7 @@ from app.services.approval_service import ApprovalService
 from app.services.execution_service import ExecutionService
 from tests.test_execution_engine import register
 from tests.test_specialized_agents import ready_task
+from tests.workspaces import workspace_for
 
 
 def crm_settings() -> Settings:
@@ -220,6 +221,7 @@ def test_crm_does_not_merge_similar_names_or_shared_methods(db_session) -> None:
     db_session.flush()
     contacts = [
         CrmContact(
+            workspace_id=workspace_for(db_session, user.id),
             user_id=user.id,
             full_name=name,
             normalized_name="joao sponsor demo",
@@ -257,6 +259,7 @@ def test_crm_contact_endpoint_prevents_cross_user_access(client, db_session) -> 
     register(client, "crm-api-other@example.com")
     users = {item.email: item for item in db_session.query(User).all()}
     contact = CrmContact(
+        workspace_id=workspace_for(db_session, users["crm-api-other@example.com"].id),
         user_id=users["crm-api-other@example.com"].id,
         full_name="Other User Contact",
         normalized_name="other user contact",
@@ -280,6 +283,7 @@ def test_crm_link_email_rejects_reference_owned_by_another_user(client, db_sessi
     db_session.add(other)
     db_session.flush()
     contact = CrmContact(
+        workspace_id=workspace_for(db_session, owner.id),
         user_id=owner.id,
         full_name="Owned Contact",
         normalized_name="owned contact",
@@ -287,6 +291,7 @@ def test_crm_link_email_rejects_reference_owned_by_another_user(client, db_sessi
         source="test",
     )
     account = IntegrationAccount(
+        workspace_id=workspace_for(db_session, other.id),
         user_id=other.id,
         provider="gmail",
         account_type=IntegrationAccountType.PERSONAL,
@@ -336,7 +341,10 @@ def test_crm_partial_update_preserves_omitted_organization_and_job_title(
     db_session,
 ) -> None:
     user = User(email="crm-partial@example.com", password_hash="not-used", full_name="Partial")
+    db_session.add(user)
+    db_session.flush()
     organization = CrmOrganization(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         name="Sporting CP Demo",
         normalized_name="sporting cp demo",
@@ -349,6 +357,7 @@ def test_crm_partial_update_preserves_omitted_organization_and_job_title(
     db_session.add(organization)
     db_session.flush()
     contact = CrmContact(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         organization_id=organization.id,
         full_name="João Sponsor Demo",

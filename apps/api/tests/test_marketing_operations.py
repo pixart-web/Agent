@@ -36,6 +36,7 @@ from app.models.user import User
 from app.models.workflow_enums import ActorType, RiskLevel, TaskActionStatus
 from tests.test_execution_engine import register
 from tests.test_specialized_agents import ready_task
+from tests.workspaces import workspace_for
 
 
 def settings() -> Settings:
@@ -374,6 +375,7 @@ def test_marketing_endpoint_hides_another_users_campaign(client, db_session) -> 
     from app.models.marketing import MarketingCampaign
 
     campaign = MarketingCampaign(
+        workspace_id=workspace_for(db_session, users["marketing-api-other@example.com"].id),
         user_id=users["marketing-api-other@example.com"].id,
         owner_user_id=users["marketing-api-other@example.com"].id,
         name="Other Campaign",

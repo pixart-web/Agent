@@ -16,6 +16,15 @@ target_metadata = Base.metadata
 _ = Agent
 
 
+# Indexes that exist only in migrations because the models cannot express them portably
+# (the test schema is built from the models on SQLite too). `alembic check` ignores them.
+MIGRATION_ONLY_INDEXES = frozenset({"ix_knowledge_items_fts"})  # PostgreSQL GIN full-text
+
+
+def include_object(obj, name, type_, reflected, compare_to) -> bool:  # noqa: ANN001
+    return not (type_ == "index" and name in MIGRATION_ONLY_INDEXES)
+
+
 def get_database_url() -> str:
     return get_settings().database_url
 
@@ -27,6 +36,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -45,6 +55,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

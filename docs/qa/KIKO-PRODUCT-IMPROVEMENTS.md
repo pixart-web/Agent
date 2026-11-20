@@ -15,14 +15,14 @@ defect register where one exists.
 
 ## B. Functional defects / gaps
 
-| #   | Item                                                                                  | Notes                                                                                                         |
-| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| B1  | ORM models drift from migrations (KQA-010)                                            | Align `workspace_id` nullability, unique constraints and indexes; fix ~20 fixtures; add `alembic check` to CI |
-| B2  | Specialist agents can only use tools that need ids when the task text contains ids    | Safe by design today; a "search then act" two-step loop would let agents act on records they find             |
-| B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                    |
-| B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                          |
-| B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                    |
-| B6  | ~~Desktop AI timeout client-side only~~                                               | Done: Supervisor plans and specialist agent runs both run in the background (E1)                              |
+| #   | Item                                                                                  | Notes                                                                                                                  |
+| --- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| B1  | ~~ORM models drift from migrations (KQA-010)~~                                        | Done: models aligned, duplicate constraints dropped (migration `20261120_0036`), fixtures fixed, `alembic check` in CI |
+| B2  | Specialist agents can only use tools that need ids when the task text contains ids    | Safe by design today; a "search then act" two-step loop would let agents act on records they find                      |
+| B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                             |
+| B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                                   |
+| B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                             |
+| B6  | ~~Desktop AI timeout client-side only~~                                               | Done: Supervisor plans and specialist agent runs both run in the background (E1)                                       |
 
 ## C. UX improvements
 
