@@ -2547,3 +2547,14 @@ html[data-platform='desktop'] .dashboard-nav .nav-user {
   color: var(--muted);
   cursor: default;
 }
+
+.ai-error-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: inherit;
+}
+
+.workflow-alert > p,
+.plan-review-error > p {
+  margin: 0;
+}

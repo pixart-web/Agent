@@ -598,6 +598,57 @@ export function listAgentRuns(taskId: string): Promise<AgentRun[]> {
   return request('/api/v1/tasks/' + taskId + '/agent-runs');
 }
 
+/**
+ * Run the task's agent in the background (answers at once with the running run). A task
+ * that already ran is re-run; feedback tells the agent what to change.
+ */
+export function startAgentRun(
+  taskId: string,
+  feedback?: string,
+): Promise<AgentRun> {
+  return request(
+    `/api/v1/tasks/${taskId}/agent-runs`,
+    jsonRequest('POST', feedback ? { feedback } : {}),
+  );
+}
+
+export function isAgentRunActive(run: AgentRun): boolean {
+  return run.status === 'running' || run.status === 'pending';
+}
+
+/** Polls a background agent run until it has finished and returns it. */
+export async function waitForAgentRun(
+  taskId: string,
+  runId: string,
+  {
+    intervalMs = 2500,
+    timeoutMs = 20 * 60_000,
+    isCancelled = () => false,
+    sleep = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  }: {
+    intervalMs?: number;
+    timeoutMs?: number;
+    isCancelled?: () => boolean;
+    sleep?: (ms: number) => Promise<void>;
+  } = {},
+): Promise<AgentRun | null> {
+  const started = Date.now();
+  while (!isCancelled()) {
+    const run = (await listAgentRuns(taskId)).find((item) => item.id === runId);
+    if (!run) return null;
+    if (!isAgentRunActive(run)) return run;
+    if (Date.now() - started > timeoutMs) {
+      throw new WorkflowApiError(
+        'O agente está a demorar mais do que o esperado. Volta a esta página mais tarde.',
+        504,
+      );
+    }
+    await sleep(intervalMs);
+  }
+  return null;
+}
+
 export function getAgentOverview(agentId: string): Promise<AgentOverview> {
   return request('/api/v1/agents/' + agentId + '/overview');
 }

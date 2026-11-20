@@ -139,6 +139,9 @@ AUTH_COOKIE_SECURE=false
 AUTH_COOKIE_SAMESITE=lax
 AUTH_REQUIRE_EMAIL_VERIFICATION=true
 AUTH_RATE_LIMIT_ENABLED=true
+# Production keeps 10 per minute; one person on this Mac running the test suites back to
+# back needs more. The limit stays on, so the 429 path is still exercised.
+AUTH_RATE_LIMIT_REQUESTS=${KIKO_LOCAL_AUTH_RATE_LIMIT:-60}
 PUBLIC_WEB_URL=http://localhost:$WEB_PORT
 TRANSACTIONAL_EMAIL_ENABLED=true
 TRANSACTIONAL_EMAIL_FROM=kiko-local@example.com

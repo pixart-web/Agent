@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.workflow_enums import AgentRunStatus, RiskLevel
 from app.schemas.execution import TaskActionRead
@@ -32,6 +32,23 @@ class AgentProposal(BaseModel):
 
 class AgentRunRequest(BaseModel):
     feedback: str | None = None
+
+
+class AgentRunStart(BaseModel):
+    """Start an agent run in the background. A task that already ran is re-run; feedback
+    tells the agent what to change."""
+
+    feedback: str | None = Field(default=None, min_length=1, max_length=5_000)
+
+    @field_validator("feedback")
+    @classmethod
+    def normalize_feedback(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("Feedback cannot be empty")
+        return value
 
 
 class AgentRunRead(BaseModel):

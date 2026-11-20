@@ -22,14 +22,14 @@ defect register where one exists.
 | B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                    |
 | B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                          |
 | B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                    |
-| B6  | ~~Desktop AI timeout client-side only~~                                               | Done for Supervisor plans (background runs, E1); specialist agent runs are still synchronous                  |
+| B6  | ~~Desktop AI timeout client-side only~~                                               | Done: Supervisor plans and specialist agent runs both run in the background (E1)                              |
 
 ## C. UX improvements
 
 | #   | Item                                                                                                                                                                                |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C1  | ~~Show progress while the local model works~~ — done: elapsed time, explanation and "you can leave this page" for Supervisor plans; elapsed time for agent runs                     |
-| C2  | Explain "Local AI runtime is not reachable" with a recovery hint in the UI (start Ollama / contact admin)                                                                           |
+| C2  | ~~Explain "Local AI runtime is not reachable" with a recovery hint~~ — done: hints for runtime down, model missing, timeout and worker down (`lib/ai-errors.ts`)                    |
 | C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program)                                      |
 | C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                                                                |
 | C5  | ~~Hide or disable create/edit controls per role~~ — done: `CanEdit`/`EditFieldset` on every dashboard screen; settings disabled for non-admins; subscription cancel for owners only |
@@ -45,12 +45,12 @@ defect register where one exists.
 
 ## E. Architectural improvements
 
-| #   | Item                                                                                                                                                              | Justification                                                                                                   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| E1  | ~~Background Supervisor generation with status polling~~ — done (`POST /commands/{id}/supervisor-runs` + Celery worker); specialist agent runs remain synchronous | Same pattern can be applied to `run-agent` when needed                                                          |
-| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                                                                                                     | Parallel slots and grammar control; no domain change needed                                                     |
-| E3  | Celery soft time limits locally (`--pool=solo` ignores them)                                                                                                      | Production prefork on Linux is unaffected; document or use threads pool locally                                 |
-| E4  | Auth rate limit is per IP and shared by all auth actions                                                                                                          | Correct for production; makes automated test bursts hit 429 — use a test-only allowance in CI-like environments |
+| #   | Item                                                                                                                                                     | Justification                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| E1  | ~~Background AI generation with status polling~~ — done for plans (`POST /commands/{id}/supervisor-runs`) and agent runs (`POST /tasks/{id}/agent-runs`) | Both resume after the page is left; abandoned runs are marked `stale_run`       |
+| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                                                                                            | Parallel slots and grammar control; no domain change needed                     |
+| E3  | Celery soft time limits locally (`--pool=solo` ignores them)                                                                                             | Production prefork on Linux is unaffected; document or use threads pool locally |
+| E4  | ~~Auth rate limit hit by local test bursts~~ — done: the local environment allows 60/min (`KIKO_LOCAL_AUTH_RATE_LIMIT`); production keeps 10/min         | Limit stays enabled locally so the 429 path is still exercised                  |
 
 ## F. Future features (not required for the macOS release)
 

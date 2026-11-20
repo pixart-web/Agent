@@ -1,25 +1,41 @@
 'use client';
 
 import type { AgentRun, TaskAction, TaskDetail } from '@agent/shared';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  isAgentRunActive,
   listAgentRuns,
-  rerunAgent,
-  runAgent,
+  listTaskActions,
+  startAgentRun,
+  waitForAgentRun,
   WorkflowApiError,
 } from '../lib/workflow-client';
+import { AiErrorNotice } from './ai-error-notice';
 import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
 
-export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
+/**
+ * Agents run in the background: starting one answers at once, the panel follows the run
+ * (also after the page is left and opened again) and shows the proposed actions when it
+ * finishes. `onFinished` lets the page reload what the run changed.
+ */
+export function TaskAgentPanel({
+  tasks,
+  onFinished,
+}: {
+  tasks: TaskDetail[];
+  onFinished?: () => void;
+}) {
   const [runs, setRuns] = useState<Record<string, AgentRun[]>>({});
   const [proposals, setProposals] = useState<Record<string, TaskAction[]>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState('');
-  const [busySince, setBusySince] = useState(0);
+  const [starting, setStarting] = useState('');
   const [error, setError] = useState('');
+  // Kept in a ref so a new callback from the page does not restart the pollers.
+  const finishedRef = useRef(onFinished);
+  finishedRef.current = onFinished;
 
   const load = useCallback(async () => {
     const pairs = await Promise.all(
@@ -34,17 +50,65 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
     void load().catch(() => setError('Unable to load agent runs.'));
   }, [load]);
 
-  async function execute(task: TaskDetail, isRerun: boolean) {
-    setBusy(task.id);
-    setBusySince(Date.now());
+  // Follow every run that is still working, one poller per run.
+  const activeKey = Object.entries(runs)
+    .map(([taskId, history]) =>
+      history[0] && isAgentRunActive(history[0])
+        ? `${taskId}:${history[0].id}`
+        : '',
+    )
+    .filter(Boolean)
+    .join(',');
+
+  useEffect(() => {
+    if (!activeKey) return;
+    let cancelled = false;
+    for (const pair of activeKey.split(',')) {
+      const [taskId, runId] = pair.split(':');
+      void waitForAgentRun(taskId, runId, { isCancelled: () => cancelled })
+        .then(async (finished) => {
+          if (cancelled || !finished) return;
+          if (finished.status === 'completed') {
+            const actions = await listTaskActions(taskId);
+            setProposals((current) => ({
+              ...current,
+              [taskId]: actions.filter(
+                (action) =>
+                  Date.parse(action.created_at) >=
+                  Date.parse(finished.created_at),
+              ),
+            }));
+          } else if (finished.error_message) {
+            setError(finished.error_message);
+          }
+          await load();
+          finishedRef.current?.();
+        })
+        .catch((pollError) => {
+          if (!cancelled)
+            setError(
+              pollError instanceof WorkflowApiError
+                ? pollError.message
+                : 'Unable to follow the agent run.',
+            );
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [activeKey, load]);
+
+  async function execute(task: TaskDetail) {
+    setStarting(task.id);
     setError('');
     try {
-      const result = isRerun
-        ? await rerunAgent(task.id, feedback[task.id] || undefined)
-        : await runAgent(task.id);
-      setProposals((current) => ({ ...current, [task.id]: result.actions }));
+      const run = await startAgentRun(task.id, feedback[task.id] || undefined);
       setFeedback((current) => ({ ...current, [task.id]: '' }));
-      await load();
+      setProposals((current) => ({ ...current, [task.id]: [] }));
+      setRuns((current) => ({
+        ...current,
+        [task.id]: [run, ...(current[task.id] ?? [])],
+      }));
     } catch (runError) {
       setError(
         runError instanceof WorkflowApiError
@@ -52,7 +116,7 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
           : 'Unable to run agent.',
       );
     } finally {
-      setBusy('');
+      setStarting('');
     }
   }
 
@@ -64,10 +128,12 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
           <h2>Agent analysis and action proposals</h2>
         </div>
       </div>
-      {error && <p className="workflow-alert">{error}</p>}
+      {error && <AiErrorNotice message={error} />}
       {tasks.map((task) => {
         const history = runs[task.id] ?? [];
         const latest = history[0];
+        const working = Boolean(latest && isAgentRunActive(latest));
+        const busy = working || starting === task.id;
         const actions = proposals[task.id] ?? [];
         return (
           <article className="workflow-panel agent-run-card" key={task.id}>
@@ -84,17 +150,17 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
                 <div className="agent-run-controls">
                   <button
                     className="primary-button"
-                    disabled={busy === task.id}
-                    onClick={() => void execute(task, Boolean(latest))}
+                    disabled={busy}
+                    onClick={() => void execute(task)}
                     type="button"
                   >
-                    {busy === task.id
+                    {busy
                       ? 'Analyzing…'
                       : latest
                         ? 'Run agent again'
                         : 'Ask agent to prepare actions'}
                   </button>
-                  {latest && (
+                  {latest && !working && (
                     <input
                       maxLength={5000}
                       placeholder="Optional feedback"
@@ -110,13 +176,14 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
                 </div>
               )}
             </CanEdit>
-            {busy === task.id && (
+            {working && latest && (
               <AiProgress
-                since={busySince}
+                since={Date.parse(latest.created_at)}
                 label="O agente está a analisar a tarefa…"
+                canLeave
               />
             )}
-            {latest && (
+            {latest && !working && (
               <dl className="execution-meta">
                 <div>
                   <dt>Model</dt>

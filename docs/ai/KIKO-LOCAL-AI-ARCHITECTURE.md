@@ -103,7 +103,17 @@ time, and resume following the run when the page is opened again. With `feedback
 body the current draft plan is revised. A run still active after the model's whole time
 budget (`AI_REQUEST_TIMEOUT_SECONDS × (AI_MAX_RETRIES + 1)` + 2 min) is marked `stale_run`
 so a dead worker never blocks planning. The synchronous `generate-plan`/`regenerate-plan`
-endpoints remain for API clients. Specialist agent runs are still synchronous.
+endpoints remain for API clients.
+
+Specialist agent runs follow the same pattern: `POST /tasks/{id}/agent-runs` (optional
+`feedback`; a task that already ran is re-run, keeping the history) answers `202` with the
+running run, the worker task `app.services.agent_run_tasks.complete_agent_run` stores the
+proposed actions, and clients poll `GET /tasks/{id}/agent-runs`. Agent runs may call the
+model twice (one repair round), so their stale limit is twice the planning budget. The
+synchronous `run-agent`/`rerun-agent` endpoints remain for API clients.
+
+Known local AI failures (runtime not reachable, model not installed, timeout, worker not
+answering) are shown in the web and desktop UI with a recovery hint (`lib/ai-errors.ts`).
 
 On a single local worker (`--pool=solo`) a plan generation occupies the worker for about a
 minute; production workers run with concurrency.

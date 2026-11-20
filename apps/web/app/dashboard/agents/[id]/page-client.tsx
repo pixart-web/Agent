@@ -11,6 +11,7 @@ import {
   updateAgentConfiguration,
 } from '../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+import { aiErrorHint } from '../../../../lib/ai-errors';
 
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,12 @@ export default function AgentDetailPage() {
           >
             {overview.operational_message}
           </p>
+          {overview.operational_status === 'unavailable' &&
+            aiErrorHint(overview.operational_message) && (
+              <p className="ai-error-hint">
+                {aiErrorHint(overview.operational_message)}
+              </p>
+            )}
         </div>
       </section>
       <section className="workflow-panel">

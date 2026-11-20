@@ -275,3 +275,13 @@ Second pass during owner acceptance testing, with temporary accounts for every r
 
 - **Severity:** LOW. A long word in the large title forced the card past 390 px.
 - **Fix:** the card can shrink and the title wraps. Verified at 390 px: no horizontal overflow.
+
+## Background agents round (2026-11-20)
+
+### KQA-025 — An abandoned agent run blocked its task forever
+
+- **Severity:** MEDIUM. Same cause as KQA-023 for specialist agents: a run left `running` by a
+  stopped API or worker made every later attempt answer "An agent run is already active".
+- **Fix:** agent runs older than twice the model's time budget plus 2 minutes are marked failed
+  (`stale_run`) before a new run starts; the next start counts as a re-run.
+- **Regression test:** `tests/test_agent_runs_background.py::test_a_run_abandoned_by_a_dead_worker_no_longer_blocks_the_task`.
