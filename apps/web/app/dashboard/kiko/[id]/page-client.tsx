@@ -18,6 +18,43 @@ import {
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
 import { CanEdit } from '../../../../lib/workspace-access';
+import { KikoWorkspaceMode } from '../../../../components/kiko/kiko-workspace';
+import type { KikoState } from '../../../../lib/kiko-state';
+
+/** Kiko's state in a conversation, from the request in flight and its operations. */
+export function conversationStage(
+  detail: ConversationDetail | null,
+  submitting: boolean,
+  error: string,
+): { state: KikoState; detail: string } {
+  if (submitting)
+    return {
+      state: 'thinking',
+      detail: 'A preparar a resposta com a IA local…',
+    };
+  if (error) return { state: 'error', detail: error };
+  const operations = detail?.operations ?? [];
+  if (operations.some((item) => item.supervisor_status === 'running'))
+    return {
+      state: 'planning',
+      detail: 'O Supervisor está a preparar um plano para este pedido.',
+    };
+  const approvals = operations.reduce(
+    (sum, item) => sum + item.pending_approvals,
+    0,
+  );
+  if (approvals > 0)
+    return {
+      state: 'waiting_approval',
+      detail: `${approvals} ${approvals === 1 ? 'ação espera' : 'ações esperam'} pela tua aprovação.`,
+    };
+  if (operations.some((item) => item.latest_error))
+    return {
+      state: 'error',
+      detail: 'Uma das operações desta conversa falhou. Vê os detalhes abaixo.',
+    };
+  return { state: 'idle', detail: 'Escreve o próximo pedido quando quiseres.' };
+}
 
 export default function ConversationPage() {
   const params = useParams<{ id: string }>();
@@ -89,6 +126,10 @@ export default function ConversationPage() {
   return (
     <main>
       <DashboardNav user={user} />
+      <KikoWorkspaceMode
+        mode="conversation"
+        {...conversationStage(detail, submitting, error)}
+      />
       <section className="conversation-shell">
         <div className="conversation-header">
           <div>

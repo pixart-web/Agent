@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
+import { KikoWorkspaceMode } from '../../../components/kiko/kiko-workspace';
 import {
   getOperationsAnalytics,
   type OperationsAnalytics,
@@ -41,6 +42,16 @@ export default function AnalyticsPage() {
   return (
     <main>
       <DashboardNav user={user} />
+      <KikoWorkspaceMode
+        mode="analysis"
+        state={error ? 'error' : report ? 'idle' : 'thinking'}
+        detail={
+          error ||
+          (report
+            ? `Atividade dos últimos ${days} dias, calculada a partir dos registos guardados.`
+            : 'A recolher os registos…')
+        }
+      />
       <section className="section-heading">
         <div>
           <p className="eyebrow">Measured operations</p>

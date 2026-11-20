@@ -29,35 +29,35 @@ export const PALETTE_DESTINATIONS: {
   route: string;
   keywords: string;
 }[] = [
-  { label: 'Home', route: '/dashboard/', keywords: 'overview dashboard' },
+  { label: 'Início', route: '/dashboard/', keywords: 'overview dashboard' },
   {
-    label: 'Kiko AI',
+    label: 'Conversas com o Kiko',
     route: '/dashboard/kiko/',
     keywords: 'chat conversation ask',
   },
   {
-    label: 'New command',
+    label: 'Novo comando',
     route: '/dashboard/commands/new/',
     keywords: 'create request',
   },
   {
-    label: 'Commands',
+    label: 'Comandos',
     route: '/dashboard/commands/',
     keywords: 'requests plans',
   },
-  { label: 'Tasks', route: '/dashboard/tasks/', keywords: 'work board' },
-  { label: 'Projects', route: '/dashboard/projects/', keywords: '' },
+  { label: 'Tarefas', route: '/dashboard/tasks/', keywords: 'work board' },
+  { label: 'Projetos', route: '/dashboard/projects/', keywords: '' },
   {
-    label: 'Approvals',
+    label: 'Aprovações',
     route: '/dashboard/approvals/',
     keywords: 'review governance',
   },
   {
-    label: 'Executions',
+    label: 'Execuções',
     route: '/dashboard/executions/',
     keywords: 'runs progress',
   },
-  { label: 'Agents', route: '/dashboard/agents/', keywords: 'specialists' },
+  { label: 'Agentes', route: '/dashboard/agents/', keywords: 'specialists' },
   {
     label: 'CRM',
     route: '/dashboard/crm/',
@@ -69,44 +69,51 @@ export const PALETTE_DESTINATIONS: {
     keywords: 'campaigns content',
   },
   {
-    label: 'Calendar',
+    label: 'Calendário',
     route: '/dashboard/calendar/',
     keywords: 'events meetings',
   },
   { label: 'Email', route: '/dashboard/email/', keywords: 'inbox messages' },
   {
-    label: 'Automations',
+    label: 'Automatizações',
     route: '/dashboard/automations/',
     keywords: 'triggers',
   },
-  { label: 'Knowledge', route: '/dashboard/knowledge/', keywords: 'documents' },
   {
-    label: 'Integrations',
+    label: 'Conhecimento',
+    route: '/dashboard/knowledge/',
+    keywords: 'documents',
+  },
+  {
+    label: 'Integrações',
     route: '/dashboard/integrations/',
     keywords: 'connections github gmail',
   },
-  { label: 'Analytics', route: '/dashboard/analytics/', keywords: 'metrics' },
+  { label: 'Relatórios', route: '/dashboard/analytics/', keywords: 'metrics' },
   {
-    label: 'Notifications',
+    label: 'Notificações',
     route: '/dashboard/notifications/',
     keywords: 'alerts',
   },
   {
-    label: 'Settings',
+    label: 'Definições',
     route: '/dashboard/settings/',
     keywords: 'team workspace profile',
   },
   {
-    label: 'Subscription',
+    label: 'Subscrição',
     route: '/dashboard/subscription/',
     keywords: 'plan billing',
   },
   {
-    label: 'Server connection',
+    label: 'Ligação ao servidor',
     route: '/desktop/connection/',
     keywords: 'server url',
   },
 ];
+
+/** Opens the command palette (the shell's search button sends it; ⌘K on macOS too). */
+export const PALETTE_EVENT = 'kiko:palette';
 
 export function filterDestinations(query: string) {
   const needle = query.trim().toLowerCase();
@@ -121,7 +128,7 @@ export function isExternalHref(href: string): boolean {
   return /^(https?:|mailto:)/i.test(href);
 }
 
-function CommandPalette({ onClose }: { onClose: () => void }) {
+export function CommandPalette({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -155,13 +162,13 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
         className="desktop-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label="Pesquisar no Kiko"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <input
           ref={inputRef}
           className="desktop-palette__input"
-          placeholder="Go to…"
+          placeholder="Ir para…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={handleKey}
@@ -191,7 +198,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
             </li>
           ))}
           {results.length === 0 ? (
-            <li className="desktop-palette__empty">No matching screen</li>
+            <li className="desktop-palette__empty">Nenhum ecrã encontrado</li>
           ) : null}
         </ul>
       </div>
@@ -254,9 +261,12 @@ export function DesktopShell() {
       event.preventDefault();
       void openExternal(anchor.href);
     }
+    const openPalette = () => setPaletteOpen(true);
     window.addEventListener(CONNECTIVITY_EVENT, handleConnectivity);
+    window.addEventListener(PALETTE_EVENT, openPalette);
     document.addEventListener('click', handleClick, true);
     return () => {
+      window.removeEventListener(PALETTE_EVENT, openPalette);
       window.removeEventListener(CONNECTIVITY_EVENT, handleConnectivity);
       document.removeEventListener('click', handleClick, true);
     };

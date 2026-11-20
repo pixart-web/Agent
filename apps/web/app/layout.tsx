@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { DesktopShell } from '../components/desktop-shell';
 import { KIKO_PLATFORM, isDesktop } from '../lib/platform';
 import './globals.css';
+import './kiko-alive.css';
 
 export const metadata: Metadata = {
   title: 'Kiko | Pixart AI Operating System',
@@ -15,7 +16,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" data-platform={KIKO_PLATFORM}>
+    <html lang="pt-PT" data-platform={KIKO_PLATFORM}>
       <body>
         {children}
         {isDesktop ? <DesktopShell /> : null}

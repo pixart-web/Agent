@@ -18,6 +18,11 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { TaskAgentPanel } from '../../../../components/task-agent-panel';
 
 import { CommandDetail } from '../../../../components/command-detail';
+import {
+  COMMAND_STEPS,
+  commandStage,
+  KikoWorkspaceMode,
+} from '../../../../components/kiko/kiko-workspace';
 import { DashboardNav } from '../../../../components/dashboard-nav';
 import { SupervisorPlanReview } from '../../../../components/supervisor-plan-review';
 import { TaskExecutionPanel } from '../../../../components/task-execution-panel';
@@ -292,6 +297,10 @@ export default function CommandDetailPage() {
       )}
       {command ? (
         <>
+          <KikoWorkspaceMode
+            {...commandStage(command, plan, tasks, activeRun !== null)}
+            steps={COMMAND_STEPS}
+          />
           <CommandDetail
             command={command}
             plan={null}
