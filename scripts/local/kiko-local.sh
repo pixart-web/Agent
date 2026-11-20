@@ -29,6 +29,8 @@
 #   idor-sweep        cross-tenant authorization sweep over every API operation with an id
 #   perf              bounded latency/concurrency probe of the main API endpoints
 #   open-link <url>   open an emailed http://localhost:3000/... link in the Kiko macOS app
+#   accounts          create temporary acceptance accounts (owner + every role) -> ~/.kiko-local/test-accounts.txt
+#   role-matrix       role permission sweep (viewer read-only, members cannot administer)
 #   psql              open psql on the Kiko local database
 #   env               print the non-secret configuration
 set -euo pipefail
@@ -37,6 +39,9 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 API_DIR="$REPO/apps/api"
 WEB_DIR="$REPO/apps/web"
 H="${KIKO_LOCAL_HOME:-$HOME/.kiko-local}"
+# Persistent port choices (e.g. KIKO_LOCAL_PG_PORT=55433 when another project uses 55432).
+# shellcheck disable=SC1091
+[ -f "$H/ports.env" ] && { set -a; . "$H/ports.env"; set +a; }
 PG_BIN="${KIKO_LOCAL_PG_BIN:-/opt/homebrew/opt/postgresql@16/bin}"
 PY="${KIKO_LOCAL_PYTHON:-$REPO/.venv/bin/python}"
 PG_PORT="${KIKO_LOCAL_PG_PORT:-55432}"
@@ -193,8 +198,9 @@ start_bg() { # name logfile command...
 start_postgres() {
   init_postgres
   if "$PG_BIN/pg_ctl" -D "$H/postgres" status >/dev/null 2>&1; then say "postgres: already running"; return; fi
-  port_busy "$PG_PORT" && die "port $PG_PORT is used by another process; set KIKO_LOCAL_PG_PORT"
-  LC_ALL=C LANG=C "$PG_BIN/pg_ctl" -D "$H/postgres" -l "$LOGS/postgres.log" -w -t 30 start > /dev/null
+  port_busy "$PG_PORT" && die "port $PG_PORT is used by another process; choose another with KIKO_LOCAL_PG_PORT=<port> in $H/ports.env"
+  # -p overrides the port written into postgresql.conf when the cluster was created.
+  LC_ALL=C LANG=C "$PG_BIN/pg_ctl" -D "$H/postgres" -l "$LOGS/postgres.log" -o "-p $PG_PORT" -w -t 30 start > /dev/null
   pg_env
   if ! "$PG_BIN/psql" -h 127.0.0.1 -p "$PG_PORT" -U kiko_local -d postgres -tAc \
       "select 1 from pg_database where datname='kiko_local'" | grep -q 1; then
@@ -413,6 +419,19 @@ cmd_test() {
     --state "$H/smoke" --pg-bin "$PG_BIN" "$@"
 }
 
+cmd_accounts() {
+  init_home; write_api_env
+  with_api_env "$PY" "$REPO/scripts/local/kiko_local_accounts.py" \
+    --api "http://127.0.0.1:$API_PORT" --mailpit "http://127.0.0.1:$MAIL_UI_PORT" --state "$H" --pg-bin "$PG_BIN"
+}
+
+cmd_role_matrix() {
+  init_home; write_api_env
+  [ -f "$H/test-accounts.txt" ] || die "create the accounts first: $0 accounts"
+  with_api_env "$PY" "$REPO/scripts/local/kiko_local_role_matrix.py" \
+    --api "http://127.0.0.1:$API_PORT" --accounts "$H/test-accounts.txt" --state "$H/security"
+}
+
 cmd_ai_eval() {
   init_home; write_api_env
   local pids
@@ -480,6 +499,8 @@ case "${1:-}" in
   test) shift; cmd_test "$@" ;;
   test-persisted) shift; cmd_test --persisted "$@" ;;
   desktop-e2e) cmd_desktop_e2e ;;
+  accounts) cmd_accounts ;;
+  role-matrix) cmd_role_matrix ;;
   ai-eval) cmd_ai_eval ;;
   idor-sweep) cmd_idor_sweep ;;
   perf) cmd_perf ;;

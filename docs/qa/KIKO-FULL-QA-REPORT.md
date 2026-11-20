@@ -201,3 +201,36 @@ confirmed CRITICAL/HIGH findings are fixed with regression tests, multi-tenant i
 authentication, persistence and recovery are verified, and CI is green. It is **not** classified
 as ready for deployment preparation because the deployment blockers above depend on owner
 decisions and external accounts; nothing was deployed and Hetzner was not touched.
+
+## 26. Addendum — acceptance round (2026-11-20)
+
+Second pass during owner acceptance testing, branch `qa/kiko-acceptance-hardening`, on
+macOS 27.2.1 (updated 2026-11-16, after the first pass).
+
+**Temporary accounts.** `kiko-local.sh accounts` created an owner, one account per role (admin,
+manager, member, viewer) and a platform administrator in a "Pixart Acceptance" workspace on the
+Business plan; credentials only in `~/.kiko-local/test-accounts.txt` (mode 600).
+
+**Results (after fixes)**
+
+| Check                                       | Result                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------- |
+| Backend tests (SQLite)                      | 291 passed, 6 skipped (integration tests, need their own databases)     |
+| Backend tests (PostgreSQL + integration)    | 297/297                                                                 |
+| Web (Vitest, typecheck, ESLint, Prettier)   | 64/64, clean                                                            |
+| Rust (tests, rustfmt, clippy `-D warnings`) | 21/21, clean                                                            |
+| Smoke (`test`)                              | 20/20                                                                   |
+| Role sweep (`role-matrix`, new)             | viewer: 76 writes probed, 0 allowed · member/manager: 8/8 admin refused |
+| IDOR sweep                                  | 93 operations, 0 cross-tenant leaks                                     |
+| AI evaluation (real local model)            | 25/25 · Supervisor p50 54 s, max 111 s (ran alongside other checks)     |
+| Performance probe                           | 12/12 · 792 req/s at concurrency 10, p95 17 ms                          |
+| Dashboard quality sweep                     | 21 screens × desktop/mobile: no findings                                |
+| Desktop journey (real app, local AI)        | all phases passed (after KQA-022)                                       |
+| Installed 0.2.1 in /Applications            | cold-start `kiko://verify-email` link verified the account              |
+
+**Defects found and fixed:** KQA-016 (viewers could write — HIGH), KQA-017 (invited members
+locked in onboarding — HIGH), KQA-018 (local web dev server, #35), KQA-019 (read-only UX),
+KQA-020 (CRM list N+1), KQA-021 (local port), KQA-022 (hidden desktop window suspended by
+WebKit — HIGH). Details and regression tests: `KIKO-FULL-DEFECT-REGISTER.md`.
+
+**Decision unchanged:** READY FOR OWNER ACCEPTANCE TESTING, now with Kiko for macOS 0.2.1.

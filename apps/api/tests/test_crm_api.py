@@ -167,3 +167,34 @@ def test_crm_import_preview_confirm_and_safe_export(client: TestClient) -> None:
     )
     assert invalid.status_code == 200
     assert invalid.json()["invalid_rows"] == 1
+
+
+def test_contact_list_matches_contact_details(client: TestClient) -> None:
+    headers = register(client, "crm-list@example.com")
+    created = []
+    for index, tags in enumerate((["vip", "retail"], [], ["lead"])):
+        response = client.post(
+            "/api/v1/crm/contacts",
+            headers=headers,
+            json={
+                "full_name": f"Contact {index}",
+                "methods": [
+                    {"method_type": "email", "value": f"c{index}@example.com", "is_primary": True},
+                    {"method_type": "phone", "value": f"+35191000000{index}"},
+                ]
+                if index != 1
+                else [],
+                "tags": tags,
+            },
+        )
+        assert response.status_code == 201, response.text
+        created.append(response.json())
+
+    listed = client.get("/api/v1/crm/contacts", headers=headers)
+    assert listed.status_code == 200
+    by_id = {item["id"]: item for item in listed.json()["contacts"]}
+    for contact in created:
+        detail = client.get(f"/api/v1/crm/contacts/{contact['id']}", headers=headers).json()
+        assert by_id[contact["id"]] == detail
+    assert by_id[created[0]["id"]]["tags"] == ["retail", "vip"]
+    assert by_id[created[1]["id"]]["methods"] == []

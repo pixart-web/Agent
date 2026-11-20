@@ -95,7 +95,7 @@ class CrmService:
                 query = query.where(CrmContact.status == value.status)
             contacts = list(session.scalars(query))
             return CrmContactsOutput(
-                contacts=[self._contact_output(session, item) for item in contacts],
+                contacts=self._contact_outputs(session, contacts),
                 limit=value.limit,
                 offset=value.offset,
             )
@@ -614,6 +614,38 @@ class CrmService:
             country_code=value.country_code.upper(),
         )
 
+    def _contact_outputs(
+        self, session: Session, contacts: Sequence[CrmContact]
+    ) -> list[CrmContactOutput]:
+        """Build list outputs with three batched queries instead of three per contact."""
+        if not contacts:
+            return []
+        ids = [contact.id for contact in contacts]
+        methods: dict[UUID, list[CrmContactMethod]] = {item: [] for item in ids}
+        for method in session.scalars(
+            select(CrmContactMethod)
+            .where(CrmContactMethod.contact_id.in_(ids))
+            .order_by(CrmContactMethod.is_primary.desc(), CrmContactMethod.id)
+        ):
+            methods[method.contact_id].append(method)
+        addresses: dict[UUID, list[CrmAddress]] = {item: [] for item in ids}
+        for address in session.scalars(select(CrmAddress).where(CrmAddress.contact_id.in_(ids))):
+            addresses[address.contact_id].append(address)
+        tags: dict[UUID, list[str]] = {item: [] for item in ids}
+        for contact_id, name in session.execute(
+            select(CrmContactTag.contact_id, CrmTag.name)
+            .join(CrmTag, CrmContactTag.tag_id == CrmTag.id)
+            .where(CrmContactTag.contact_id.in_(ids))
+            .order_by(CrmTag.name)
+        ):
+            tags[contact_id].append(name)
+        return [
+            self._build_contact_output(
+                contact, methods[contact.id], addresses[contact.id], tags[contact.id]
+            )
+            for contact in contacts
+        ]
+
     def _contact_output(self, session: Session, contact: CrmContact) -> CrmContactOutput:
         methods = list(
             session.scalars(
@@ -641,6 +673,15 @@ class CrmService:
                 .order_by(CrmTag.name)
             )
         )
+        return self._build_contact_output(contact, methods, addresses, tags)
+
+    def _build_contact_output(
+        self,
+        contact: CrmContact,
+        methods: Sequence[CrmContactMethod],
+        addresses: Sequence[CrmAddress],
+        tags: Sequence[str],
+    ) -> CrmContactOutput:
         return CrmContactOutput(
             id=contact.id,
             organization_id=contact.organization_id,
@@ -651,7 +692,7 @@ class CrmService:
             source=contact.source,
             methods=[self._method_output(item) for item in methods],
             addresses=[self._address_output(item) for item in addresses],
-            tags=tags,
+            tags=list(tags),
             created_at=contact.created_at,
             updated_at=contact.updated_at,
         )

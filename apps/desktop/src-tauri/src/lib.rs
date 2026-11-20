@@ -15,6 +15,7 @@ pub mod protocol;
 pub mod smoke;
 
 use tauri::http::{header, Response, StatusCode};
+use tauri::utils::config::BackgroundThrottlingPolicy;
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_deep_link::DeepLinkExt;
 
@@ -174,6 +175,10 @@ pub fn run() {
                 .hidden_title(true)
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .disable_drag_drop_handler()
+                // WebKit suspends a hidden window's page by default (macOS 27.2.1 does so after
+                // a few seconds): the notification poller stopped and a plan being generated
+                // was never shown while Kiko was behind other windows. Throttle, don't suspend.
+                .background_throttling(BackgroundThrottlingPolicy::Throttle)
                 .on_navigation(|url| url.scheme() == UI_SCHEME)
                 .on_page_load(|_webview, _payload| {
                     #[cfg(debug_assertions)]

@@ -35,7 +35,10 @@ Homebrew PostgreSQL or any other project's database, Redis or volumes.
 All listeners are bound to `127.0.0.1`. State directory: `~/.kiko-local` (`chmod 700`)
 
 - `secrets.env` — generated once (PostgreSQL password, Redis password, `AUTH_SECRET_KEY`), mode 600.
-- `overrides.env` — your local overrides (AI key etc.), mode 600, read after the defaults.
+- `overrides.env` — your local overrides (AI model etc.), mode 600, read after the defaults.
+- `ports.env` — optional persistent port choices, e.g. `KIKO_LOCAL_PG_PORT=55433` when another
+  project already uses 55432 (read before the defaults; PostgreSQL is started on that port).
+- `test-accounts.txt` — acceptance accounts created by `accounts` (mode 600).
 - `run/` — pid files, generated `api.env` and `redis.conf`.
 - `logs/` — one log per service.
 
@@ -58,6 +61,11 @@ scripts/local/kiko-local.sh logs api -f      # follow one log (api, worker, outb
 scripts/local/kiko-local.sh migrate          # alembic upgrade head + seed built-in agents
 scripts/local/kiko-local.sh test             # backend smoke test (20 checks, fictitious data)
 scripts/local/kiko-local.sh test-persisted   # after a restart: sign in again with the last test account
+scripts/local/kiko-local.sh accounts         # temporary acceptance accounts: owner, admin, manager, member, viewer + platform admin
+scripts/local/kiko-local.sh role-matrix      # role sweep: viewer read-only, members/managers cannot administer
+scripts/local/kiko-local.sh ai-eval          # every AI flow with the real local model + egress check
+scripts/local/kiko-local.sh idor-sweep       # cross-tenant authorization sweep (every operation with an id)
+scripts/local/kiko-local.sh perf             # latency/concurrency probe of the main endpoints
 scripts/local/kiko-local.sh desktop-e2e      # real macOS app journey (debug build) against this backend
 scripts/local/kiko-local.sh open-link URL    # open an emailed http://localhost:3000/... link in the app
 scripts/local/kiko-local.sh psql             # psql on the kiko_local database
@@ -66,7 +74,17 @@ scripts/local/kiko-local.sh env              # print the non-secret configuratio
 
 Ports can be changed with `KIKO_LOCAL_PG_PORT`, `KIKO_LOCAL_REDIS_PORT`, `KIKO_LOCAL_SMTP_PORT`,
 `KIKO_LOCAL_MAIL_UI_PORT`, `KIKO_LOCAL_API_PORT`, `KIKO_LOCAL_WEB_PORT`; the state directory with
-`KIKO_LOCAL_HOME`. `start` refuses to run when a port is held by another process.
+`KIKO_LOCAL_HOME`. Put them in `~/.kiko-local/ports.env` to make them permanent. `start` refuses
+to run when a port is held by another process.
+
+### Acceptance accounts
+
+`accounts` registers a fictitious owner (`accept-owner-<stamp>@example.com`), verifies it through
+Mailpit, completes onboarding (company "Pixart Acceptance"), invites one account per role
+(admin, manager, member, viewer) which register, verify and accept, and creates a platform
+administrator (`is_superuser`). The workspace is moved to the Business plan in the local
+database, because the trial allows 3 seats and there is no billing API yet. Passwords are random
+and written only to `~/.kiko-local/test-accounts.txt` (mode 600). Run it again for a fresh set.
 
 There is no command that removes data. To start from scratch, stop the services and move
 `~/.kiko-local` aside yourself.
@@ -198,7 +216,8 @@ spaced 60 s apart all passed.
 | No email in Mailpit                                                                         | `logs mailer` (dispatcher) and `logs mailpit`. The dispatcher retries with back-off.                                                                                                                                          |
 | App shows “can’t reach the server”                                                          | `status`; the API must answer `http://localhost:8000/health`. Check **Kiko → Server Connection…** shows `http://localhost:8000`.                                                                                              |
 | `migration failed`                                                                          | `logs migrate`.                                                                                                                                                                                                               |
-| Kiko AI / Supervisor say AI unavailable                                                     | Expected without `OPENAI_API_KEY` (section 6).                                                                                                                                                                                |
+| Kiko AI / Supervisor say AI unavailable                                                     | Ollama must be running with the configured model (section 6): `curl http://127.0.0.1:11434/api/tags`.                                                                                                                         |
+| Web page stuck on “Verifying your email…” / JS chunk 404s                                   | Fixed in #35: the dev server now uses `apps/web/.next-dev`, so desktop builds (`next build` into `.next`) no longer break it. If it happens, `restart web`.                                                                   |
 
 ## 9. App defects found and fixed while preparing this environment
 

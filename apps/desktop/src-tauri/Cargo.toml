@@ -1,6 +1,6 @@
 [package]
 name = "kiko-desktop"
-version = "0.2.0"
+version = "0.2.1"
 description = "Kiko — Pixart AI Operating System (desktop client)"
 authors = ["Pixart"]
 edition = "2021"

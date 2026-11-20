@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.api.dependencies.workspace_role import require_workspace_editor
 from app.api.routes import (
     agents,
     auth,
@@ -31,30 +32,35 @@ from app.api.routes import (
 )
 
 api_router = APIRouter()
+
+# Workspace-scoped routers: viewers (read-only members) cannot write. Routers left out
+# either act on the caller's own account (auth, notifications), check roles per operation
+# (workspaces, knowledge, commercial, data portability), or are platform-wide.
+EDITOR = [Depends(require_workspace_editor)]
 api_router.include_router(health.router)
 api_router.include_router(auth.router, prefix="/api/v1")
-api_router.include_router(agents.router, prefix="/api/v1")
-api_router.include_router(automations.router, prefix="/api/v1")
-api_router.include_router(commands.router, prefix="/api/v1")
-api_router.include_router(conversations.router, prefix="/api/v1")
-api_router.include_router(client_management.router, prefix="/api/v1")
-api_router.include_router(crm.router, prefix="/api/v1")
+api_router.include_router(agents.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(automations.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(commands.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(conversations.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(client_management.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(crm.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(data_portability.router, prefix="/api/v1")
-api_router.include_router(calendar.router, prefix="/api/v1")
-api_router.include_router(codex.router, prefix="/api/v1")
+api_router.include_router(calendar.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(codex.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(commercial.router, prefix="/api/v1")
-api_router.include_router(email.router, prefix="/api/v1")
-api_router.include_router(plans.router, prefix="/api/v1")
-api_router.include_router(projects.router, prefix="/api/v1")
-api_router.include_router(supervisor.router, prefix="/api/v1")
-api_router.include_router(tasks.router, prefix="/api/v1")
-api_router.include_router(execution.router, prefix="/api/v1")
-api_router.include_router(specialized_agents.router, prefix="/api/v1")
-api_router.include_router(integrations.router, prefix="/api/v1")
+api_router.include_router(email.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(plans.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(projects.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(supervisor.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(tasks.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(execution.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(specialized_agents.router, prefix="/api/v1", dependencies=EDITOR)
+api_router.include_router(integrations.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(knowledge.router, prefix="/api/v1")
 api_router.include_router(workspaces.router, prefix="/api/v1")
-api_router.include_router(marketing.router, prefix="/api/v1")
+api_router.include_router(marketing.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(notifications.router, prefix="/api/v1")
-api_router.include_router(operations.router, prefix="/api/v1")
+api_router.include_router(operations.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(platform_admin.router, prefix="/api/v1")
 api_router.include_router(metrics.router)
