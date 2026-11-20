@@ -11,8 +11,10 @@ import {
   type Subscription,
 } from '../../../lib/commercial-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { useWorkspaceAccess } from '../../../lib/workspace-access';
 
 export default function SubscriptionPage() {
+  const { role } = useWorkspaceAccess();
   const { user, loading } = useAuthenticatedUser();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<CommercialPlan[]>([]);
@@ -63,7 +65,7 @@ export default function SubscriptionPage() {
             Billing provider:{' '}
             {subscription.billing_configuration_status.replaceAll('_', ' ')}.
           </p>
-          {!subscription.cancel_at_period_end && (
+          {!subscription.cancel_at_period_end && role === 'owner' && (
             <button
               className="secondary-button"
               onClick={() => void cancelSubscription().then(setSubscription)}

@@ -166,3 +166,36 @@ def test_member_can_finish_onboarding_without_changing_the_company(client, db_se
     assert same.status_code == 200
     assert same.json()["completed_at"] is not None
     assert same.json()["company_name"] == "Profile Company"
+
+
+def test_onboarding_tells_members_the_profile_is_read_only(client, db_session) -> None:
+    owner_body, _ = register(client, email="readonly-owner@example.com")
+    owner = bearer(owner_body["access_token"])
+    profile = {
+        "company_name": "Readonly Company",
+        "company_description": "Configured by the owner.",
+        "primary_objectives": ["Organize business tasks"],
+    }
+    completed = client.patch(
+        "/api/v1/workspaces/onboarding",
+        headers=owner,
+        json={"step": 8, **profile, "complete": True},
+    ).json()
+    assert completed["can_edit_company"] is True
+    member = _join(
+        client,
+        db_session,
+        owner,
+        completed["workspace_id"],
+        "readonly-member@example.com",
+        "member",
+    )
+    state = client.get("/api/v1/workspaces/onboarding", headers=member).json()
+    assert state["can_edit_company"] is False
+    assert state["company_name"] == "Readonly Company"
+    # The read-only page finishes with no profile fields at all.
+    finished = client.patch(
+        "/api/v1/workspaces/onboarding", headers=member, json={"step": 8, "complete": True}
+    )
+    assert finished.status_code == 200
+    assert finished.json()["completed_at"] is not None

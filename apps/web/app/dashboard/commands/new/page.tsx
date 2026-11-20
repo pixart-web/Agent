@@ -9,6 +9,7 @@ import {
   createCommand,
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
+import { CanEdit } from '../../../../lib/workspace-access';
 
 export default function NewCommandPage() {
   const router = useRouter();
@@ -49,32 +50,42 @@ export default function NewCommandPage() {
       <section className="workflow-panel workflow-form-panel">
         <p className="eyebrow">New command</p>
         <h1 className="workflow-page-title">O que queres que o Agent faça?</h1>
-        <form className="workflow-form" onSubmit={handleSubmit}>
-          <label htmlFor="command-input">Operational instruction</label>
-          <textarea
-            id="command-input"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            rows={9}
-            maxLength={10000}
-            placeholder="Create a campaign to sell websites to restaurants."
-          />
-          <p className="form-hint">
-            Não incluas palavras-passe, chaves API ou outros segredos no pedido.
-          </p>
-          {error && (
-            <p className="form-message" role="alert">
-              {error}
+        <CanEdit
+          fallback={
+            <p className="form-hint">
+              Tens acesso só de leitura a este workspace. Um dono ou admin pode
+              dar-te acesso de edição para criares comandos.
             </p>
-          )}
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={submitting}
-          >
-            {submitting ? 'A criar…' : 'Criar comando'}
-          </button>
-        </form>
+          }
+        >
+          <form className="workflow-form" onSubmit={handleSubmit}>
+            <label htmlFor="command-input">Operational instruction</label>
+            <textarea
+              id="command-input"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              rows={9}
+              maxLength={10000}
+              placeholder="Create a campaign to sell websites to restaurants."
+            />
+            <p className="form-hint">
+              Não incluas palavras-passe, chaves API ou outros segredos no
+              pedido.
+            </p>
+            {error && (
+              <p className="form-message" role="alert">
+                {error}
+              </p>
+            )}
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={submitting}
+            >
+              {submitting ? 'A criar…' : 'Criar comando'}
+            </button>
+          </form>
+        </CanEdit>
       </section>
     </main>
   );

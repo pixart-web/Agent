@@ -88,6 +88,22 @@ class PlanFeedback(BaseModel):
         return value.strip()
 
 
+class SupervisorRunStart(BaseModel):
+    """Start background planning; with feedback, the current draft plan is revised."""
+
+    feedback: str | None = Field(default=None, min_length=1, max_length=5_000)
+
+    @field_validator("feedback")
+    @classmethod
+    def normalize_feedback(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("Feedback cannot be empty")
+        return value
+
+
 class RegeneratePlanRequest(BaseModel):
     feedback: str = Field(min_length=1, max_length=5_000)
 

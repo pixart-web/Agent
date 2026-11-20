@@ -11,6 +11,7 @@ import {
   getEmailMessage,
 } from '../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../../lib/workspace-access';
 
 export default function EmailMessagePage() {
   const { user, loading } = useAuthenticatedUser();
@@ -56,20 +57,22 @@ export default function EmailMessagePage() {
               <p>From: {message.sender.name || message.sender.address}</p>
             </div>
             <div>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => void handToKiko('Analyze')}
-              >
-                Analyze with Kiko
-              </button>
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void handToKiko('Prepare a reply to')}
-              >
-                Prepare reply
-              </button>
+              <CanEdit>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void handToKiko('Analyze')}
+                >
+                  Analyze with Kiko
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void handToKiko('Prepare a reply to')}
+                >
+                  Prepare reply
+                </button>
+              </CanEdit>
             </div>
           </section>
           <section className="workflow-panel">

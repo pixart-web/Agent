@@ -2,7 +2,9 @@ import type { Plan, SupervisorRun, WorkflowTask } from '@agent/shared';
 import React from 'react';
 
 import type { Agent } from '../lib/workflow-client';
+import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
+import { CanEdit } from '../lib/workspace-access';
 
 type Props = {
   plan: Plan | null;
@@ -11,6 +13,8 @@ type Props = {
   run: SupervisorRun | null;
   agents: Agent[];
   planning: boolean;
+  /** Start of the background run being followed, to show progress. */
+  planningSince?: string;
   error: string;
   feedback: string;
   onFeedbackChange: (value: string) => void;
@@ -26,6 +30,7 @@ export function SupervisorPlanReview({
   run,
   agents,
   planning,
+  planningSince,
   error,
   feedback,
   onFeedbackChange,
@@ -33,6 +38,17 @@ export function SupervisorPlanReview({
   onApprove,
   onRegenerate,
 }: Props) {
+  const progress = planningSince ? (
+    <AiProgress
+      since={planningSince}
+      label={
+        plan
+          ? 'O Supervisor está a rever o plano…'
+          : 'O Supervisor está a preparar o plano…'
+      }
+      canLeave
+    />
+  ) : null;
   const agentNames = Object.fromEntries(
     agents.map((agent) => [agent.id, agent.name]),
   );
@@ -47,16 +63,25 @@ export function SupervisorPlanReview({
           executa qualquer ação externa.
         </p>
         {error && <p role="alert">{error}</p>}
-        <button
-          className="primary-button"
-          type="button"
-          disabled={planning}
-          onClick={onGenerate}
+        {progress}
+        <CanEdit
+          fallback={
+            <p className="form-hint">
+              Só membros com acesso de edição podem gerar planos.
+            </p>
+          }
         >
-          {planning
-            ? 'Supervisor está a preparar o plano…'
-            : 'Gerar plano com Supervisor'}
-        </button>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={planning}
+            onClick={onGenerate}
+          >
+            {planning
+              ? 'Supervisor está a preparar o plano…'
+              : 'Gerar plano com Supervisor'}
+          </button>
+        </CanEdit>
       </section>
     );
   }
@@ -114,35 +139,38 @@ export function SupervisorPlanReview({
         </dl>
       )}
 
-      {plan.is_current && plan.status === 'draft' && (
-        <div className="supervisor-review-actions">
-          <button
-            className="primary-button"
-            type="button"
-            disabled={planning}
-            onClick={onApprove}
-          >
-            Aprovar plano
-          </button>
-          <label>
-            O que queres alterar?
-            <textarea
-              rows={4}
-              maxLength={5000}
-              value={feedback}
-              onChange={(event) => onFeedbackChange(event.target.value)}
-            />
-          </label>
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={planning || !feedback.trim()}
-            onClick={onRegenerate}
-          >
-            {planning ? 'A replanear…' : 'Pedir alterações'}
-          </button>
-        </div>
-      )}
+      {progress}
+      <CanEdit>
+        {plan.is_current && plan.status === 'draft' && (
+          <div className="supervisor-review-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={planning}
+              onClick={onApprove}
+            >
+              Aprovar plano
+            </button>
+            <label>
+              O que queres alterar?
+              <textarea
+                rows={4}
+                maxLength={5000}
+                value={feedback}
+                onChange={(event) => onFeedbackChange(event.target.value)}
+              />
+            </label>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={planning || !feedback.trim()}
+              onClick={onRegenerate}
+            >
+              {planning ? 'A replanear…' : 'Pedir alterações'}
+            </button>
+          </div>
+        )}
+      </CanEdit>
 
       {error && <p role="alert">{error}</p>}
 

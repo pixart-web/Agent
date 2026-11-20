@@ -19,6 +19,7 @@ import {
   updateProject,
   updateProjectMilestone,
 } from '../../../../lib/workflow-client';
+import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -139,65 +140,71 @@ export default function ProjectPage() {
       <div className="project-detail-grid">
         <section>
           <h2>Milestones</h2>
-          <form className="inline-form" onSubmit={createMilestone}>
-            <label>
-              New milestone
-              <input
-                required
-                value={milestone}
-                onChange={(event) => setMilestone(event.target.value)}
-              />
-            </label>
-            <button className="secondary-button">Add</button>
-          </form>
-          <div className="project-stack">
-            {project.milestones.map((item) => (
-              <article key={item.id}>
-                <button
-                  className="status-toggle"
-                  onClick={() =>
-                    void updateProjectMilestone(id, item.id, {
-                      status:
-                        item.status === 'completed' ? 'pending' : 'completed',
-                    }).then(load)
-                  }
-                  aria-label={`Mark ${item.title} ${item.status === 'completed' ? 'pending' : 'completed'}`}
-                >
-                  {item.status === 'completed' ? '✓' : '○'}
-                </button>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.due_on || 'No deadline'}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <CanEdit>
+            <form className="inline-form" onSubmit={createMilestone}>
+              <label>
+                New milestone
+                <input
+                  required
+                  value={milestone}
+                  onChange={(event) => setMilestone(event.target.value)}
+                />
+              </label>
+              <button className="secondary-button">Add</button>
+            </form>
+          </CanEdit>
+          <EditFieldset>
+            <div className="project-stack">
+              {project.milestones.map((item) => (
+                <article key={item.id}>
+                  <button
+                    className="status-toggle"
+                    onClick={() =>
+                      void updateProjectMilestone(id, item.id, {
+                        status:
+                          item.status === 'completed' ? 'pending' : 'completed',
+                      }).then(load)
+                    }
+                    aria-label={`Mark ${item.title} ${item.status === 'completed' ? 'pending' : 'completed'}`}
+                  >
+                    {item.status === 'completed' ? '✓' : '○'}
+                  </button>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.due_on || 'No deadline'}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </EditFieldset>
         </section>
         <section>
           <h2>Linked work</h2>
-          <form className="inline-form" onSubmit={linkResource}>
-            <label>
-              Resource
-              <select
-                value={resourceKind}
-                onChange={(event) =>
-                  setResourceKind(event.target.value as 'tasks' | 'commands')
-                }
-              >
-                <option value="tasks">Task</option>
-                <option value="commands">Command</option>
-              </select>
-            </label>
-            <label>
-              ID
-              <input
-                required
-                value={resourceId}
-                onChange={(event) => setResourceId(event.target.value)}
-              />
-            </label>
-            <button className="secondary-button">Link</button>
-          </form>
+          <CanEdit>
+            <form className="inline-form" onSubmit={linkResource}>
+              <label>
+                Resource
+                <select
+                  value={resourceKind}
+                  onChange={(event) =>
+                    setResourceKind(event.target.value as 'tasks' | 'commands')
+                  }
+                >
+                  <option value="tasks">Task</option>
+                  <option value="commands">Command</option>
+                </select>
+              </label>
+              <label>
+                ID
+                <input
+                  required
+                  value={resourceId}
+                  onChange={(event) => setResourceId(event.target.value)}
+                />
+              </label>
+              <button className="secondary-button">Link</button>
+            </form>
+          </CanEdit>
           <div className="project-stack">
             {project.tasks.map((task) => (
               <article key={task.id}>

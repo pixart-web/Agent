@@ -66,6 +66,8 @@ class OnboardingRead(StrictWorkspaceModel):
     company_name: str
     company_description: str | None
     primary_objectives: list[str]
+    # False for members who joined someone else's workspace: they see the profile read-only.
+    can_edit_company: bool
 
 
 class InvitationRead(StrictWorkspaceModel):

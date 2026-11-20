@@ -3,6 +3,7 @@ import Link from 'next/link';
 import React from 'react';
 
 import { StatusBadge } from './status-badge';
+import { CanEdit } from '../lib/workspace-access';
 
 export type CommandProgress = { completed: number; total: number };
 
@@ -50,39 +51,41 @@ export function CommandList({
                   {commandProgress.completed}/{commandProgress.total} tasks
                 </span>
               )}
-              <div className="command-row__actions">
-                {onDuplicate && (
-                  <button
-                    type="button"
-                    disabled={busyCommandId === command.id}
-                    onClick={() => onDuplicate(command)}
-                  >
-                    Duplicate
-                  </button>
-                )}
-                {command.archived_at
-                  ? onRestore && (
-                      <button
-                        type="button"
-                        disabled={busyCommandId === command.id}
-                        onClick={() => onRestore(command)}
-                      >
-                        Restore
-                      </button>
-                    )
-                  : onArchive &&
-                    ['completed', 'failed', 'cancelled'].includes(
-                      command.status,
-                    ) && (
-                      <button
-                        type="button"
-                        disabled={busyCommandId === command.id}
-                        onClick={() => onArchive(command)}
-                      >
-                        Archive
-                      </button>
-                    )}
-              </div>
+              <CanEdit>
+                <div className="command-row__actions">
+                  {onDuplicate && (
+                    <button
+                      type="button"
+                      disabled={busyCommandId === command.id}
+                      onClick={() => onDuplicate(command)}
+                    >
+                      Duplicate
+                    </button>
+                  )}
+                  {command.archived_at
+                    ? onRestore && (
+                        <button
+                          type="button"
+                          disabled={busyCommandId === command.id}
+                          onClick={() => onRestore(command)}
+                        >
+                          Restore
+                        </button>
+                      )
+                    : onArchive &&
+                      ['completed', 'failed', 'cancelled'].includes(
+                        command.status,
+                      ) && (
+                        <button
+                          type="button"
+                          disabled={busyCommandId === command.id}
+                          onClick={() => onArchive(command)}
+                        >
+                          Archive
+                        </button>
+                      )}
+                </div>
+              </CanEdit>
             </div>
           </article>
         );

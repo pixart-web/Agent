@@ -11,6 +11,7 @@ import {
   listMarketingContentCalendar,
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../lib/workspace-access';
 
 export default function MarketingPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -81,45 +82,47 @@ export default function MarketingPage() {
         </form>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
-      <section className="workflow-panel">
-        <h2>Create campaign</h2>
-        <form
-          className="workflow-form"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setSaving(true);
-            setError('');
-            try {
-              await createMarketingCampaign({ name, objective });
-              setName('');
-              setObjective('');
-              await refresh(query.trim());
-            } catch {
-              setError('Unable to create this campaign.');
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          <label>
-            Campaign name
-            <input
-              required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            Objective
-            <textarea
-              required
-              value={objective}
-              onChange={(event) => setObjective(event.target.value)}
-            />
-          </label>
-          <button disabled={saving}>Create campaign</button>
-        </form>
-      </section>
+      <CanEdit>
+        <section className="workflow-panel">
+          <h2>Create campaign</h2>
+          <form
+            className="workflow-form"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setSaving(true);
+              setError('');
+              try {
+                await createMarketingCampaign({ name, objective });
+                setName('');
+                setObjective('');
+                await refresh(query.trim());
+              } catch {
+                setError('Unable to create this campaign.');
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            <label>
+              Campaign name
+              <input
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Objective
+              <textarea
+                required
+                value={objective}
+                onChange={(event) => setObjective(event.target.value)}
+              />
+            </label>
+            <button disabled={saving}>Create campaign</button>
+          </form>
+        </section>
+      </CanEdit>
       <section className="workflow-panel">
         <h2>Campaigns</h2>
         <div className="agent-grid">

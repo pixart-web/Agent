@@ -13,6 +13,7 @@ import {
 import { confirmAction } from '../../../../lib/confirm';
 import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../../lib/workspace-access';
 
 export default function EmailIntegrationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -65,14 +66,16 @@ export default function EmailIntegrationPage() {
             reach the browser.
           </p>
         </div>
-        <button
-          className="primary-button"
-          type="button"
-          disabled={!integration?.enabled}
-          onClick={() => void handleConnect()}
-        >
-          Connect Google account
-        </button>
+        <CanEdit>
+          <button
+            className="primary-button"
+            type="button"
+            disabled={!integration?.enabled}
+            onClick={() => void handleConnect()}
+          >
+            Connect Google account
+          </button>
+        </CanEdit>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
       {integration && (
@@ -120,13 +123,15 @@ export default function EmailIntegrationPage() {
                 <h3>{account.email_address}</h3>
                 <p>Status: {account.status}</p>
                 <p>Scopes: {account.scopes.join(', ')}</p>
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => void handleDisconnect(account.id)}
-                >
-                  Disconnect
-                </button>
+                <CanEdit>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void handleDisconnect(account.id)}
+                  >
+                    Disconnect
+                  </button>
+                </CanEdit>
               </article>
             ))}
           </div>

@@ -18,6 +18,7 @@ import {
   updateAutomation,
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../lib/workspace-access';
 
 export default function AutomationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -126,88 +127,92 @@ export default function AutomationsPage() {
       </section>
       {error && <p className="workflow-alert">{error}</p>}
       {notice && <p className="workflow-success">{notice}</p>}
-      <section className="workflow-panel">
-        <h2>Build an automation</h2>
-        <form className="workflow-form" onSubmit={handleCreate}>
-          <label>
-            Name
-            <input
-              required
-              maxLength={255}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            Trigger
-            <select
-              value={triggerType}
-              onChange={(event) =>
-                setTriggerType(event.target.value as Automation['trigger_type'])
-              }
-            >
-              <option value="manual">Manual</option>
-              <option value="schedule">Schedule</option>
-              <option value="email_received">Email received</option>
-              <option value="calendar_event">Calendar event</option>
-              <option value="crm_change">CRM change</option>
-              <option value="task_state">Task state</option>
-              <option value="webhook">Webhook</option>
-            </select>
-          </label>
-          {triggerType !== 'manual' && (
+      <CanEdit>
+        <section className="workflow-panel">
+          <h2>Build an automation</h2>
+          <form className="workflow-form" onSubmit={handleCreate}>
             <label>
-              {triggerType === 'schedule'
-                ? 'Interval in minutes'
-                : triggerType === 'email_received'
-                  ? 'Connected account UUID'
-                  : triggerType === 'calendar_event'
-                    ? 'Account UUID, calendar ID'
-                    : triggerType === 'webhook'
-                      ? 'Webhook source'
-                      : 'Comma-separated values'}
+              Name
               <input
                 required
-                value={triggerValue}
-                onChange={(event) => setTriggerValue(event.target.value)}
+                maxLength={255}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
               />
             </label>
-          )}
-          <label>
-            Optional condition field
-            <input
-              value={conditionField}
-              placeholder="payload.status"
-              onChange={(event) => setConditionField(event.target.value)}
-            />
-          </label>
-          {conditionField && (
             <label>
-              Equals
+              Trigger
+              <select
+                value={triggerType}
+                onChange={(event) =>
+                  setTriggerType(
+                    event.target.value as Automation['trigger_type'],
+                  )
+                }
+              >
+                <option value="manual">Manual</option>
+                <option value="schedule">Schedule</option>
+                <option value="email_received">Email received</option>
+                <option value="calendar_event">Calendar event</option>
+                <option value="crm_change">CRM change</option>
+                <option value="task_state">Task state</option>
+                <option value="webhook">Webhook</option>
+              </select>
+            </label>
+            {triggerType !== 'manual' && (
+              <label>
+                {triggerType === 'schedule'
+                  ? 'Interval in minutes'
+                  : triggerType === 'email_received'
+                    ? 'Connected account UUID'
+                    : triggerType === 'calendar_event'
+                      ? 'Account UUID, calendar ID'
+                      : triggerType === 'webhook'
+                        ? 'Webhook source'
+                        : 'Comma-separated values'}
+                <input
+                  required
+                  value={triggerValue}
+                  onChange={(event) => setTriggerValue(event.target.value)}
+                />
+              </label>
+            )}
+            <label>
+              Optional condition field
               <input
-                value={conditionValue}
-                onChange={(event) => setConditionValue(event.target.value)}
+                value={conditionField}
+                placeholder="payload.status"
+                onChange={(event) => setConditionField(event.target.value)}
               />
             </label>
-          )}
-          <label>
-            Static command
-            <textarea
-              required
-              maxLength={20000}
-              value={commandTemplate}
-              onChange={(event) => setCommandTemplate(event.target.value)}
-            />
-          </label>
-          <p>
-            Event payloads are stored as untrusted audit data and are never
-            interpolated into this command.
-          </p>
-          <button disabled={busy} type="submit">
-            Create automation
-          </button>
-        </form>
-      </section>
+            {conditionField && (
+              <label>
+                Equals
+                <input
+                  value={conditionValue}
+                  onChange={(event) => setConditionValue(event.target.value)}
+                />
+              </label>
+            )}
+            <label>
+              Static command
+              <textarea
+                required
+                maxLength={20000}
+                value={commandTemplate}
+                onChange={(event) => setCommandTemplate(event.target.value)}
+              />
+            </label>
+            <p>
+              Event payloads are stored as untrusted audit data and are never
+              interpolated into this command.
+            </p>
+            <button disabled={busy} type="submit">
+              Create automation
+            </button>
+          </form>
+        </section>
+      </CanEdit>
       <section className="workflow-panel">
         <h2>Configured automations</h2>
         <div className="agent-grid">
@@ -223,67 +228,70 @@ export default function AutomationsPage() {
                 Depth {automation.max_depth} · {automation.max_runs_per_window}{' '}
                 runs / {automation.window_seconds}s
               </p>
-              <div className="button-row">
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  type="button"
-                  onClick={() => {
-                    const updated = window.prompt(
-                      'Static command for this automation',
-                      automation.command_template,
-                    );
-                    if (!updated || updated === automation.command_template)
-                      return;
-                    void act(
-                      () =>
-                        updateAutomation(automation.id, {
-                          command_template: updated,
-                        }),
-                      'Automation command updated.',
-                    );
-                  }}
-                >
-                  Edit command
-                </button>
-                <button
-                  className="secondary-button"
-                  disabled={busy}
-                  type="button"
-                  onClick={() =>
-                    void act(
-                      () =>
-                        setAutomationEnabled(
-                          automation.id,
-                          !automation.enabled,
-                        ),
-                      automation.enabled
-                        ? 'Automation paused.'
-                        : 'Automation resumed.',
-                    )
-                  }
-                >
-                  {automation.enabled ? 'Pause' : 'Resume'}
-                </button>
-                {automation.trigger_type === 'manual' && automation.enabled && (
+              <CanEdit>
+                <div className="button-row">
                   <button
+                    className="text-button"
+                    disabled={busy}
+                    type="button"
+                    onClick={() => {
+                      const updated = window.prompt(
+                        'Static command for this automation',
+                        automation.command_template,
+                      );
+                      if (!updated || updated === automation.command_template)
+                        return;
+                      void act(
+                        () =>
+                          updateAutomation(automation.id, {
+                            command_template: updated,
+                          }),
+                        'Automation command updated.',
+                      );
+                    }}
+                  >
+                    Edit command
+                  </button>
+                  <button
+                    className="secondary-button"
                     disabled={busy}
                     type="button"
                     onClick={() =>
                       void act(
                         () =>
-                          triggerManualAutomation(
+                          setAutomationEnabled(
                             automation.id,
-                            `manual/${Date.now()}`,
+                            !automation.enabled,
                           ),
-                        'A correlated command was created.',
+                        automation.enabled
+                          ? 'Automation paused.'
+                          : 'Automation resumed.',
                       )
                     }
                   >
-                    Trigger
+                    {automation.enabled ? 'Pause' : 'Resume'}
                   </button>
-                )}
-              </div>
+                  {automation.trigger_type === 'manual' &&
+                    automation.enabled && (
+                      <button
+                        disabled={busy}
+                        type="button"
+                        onClick={() =>
+                          void act(
+                            () =>
+                              triggerManualAutomation(
+                                automation.id,
+                                `manual/${Date.now()}`,
+                              ),
+                            'A correlated command was created.',
+                          )
+                        }
+                      >
+                        Trigger
+                      </button>
+                    )}
+                </div>
+              </CanEdit>
             </article>
           ))}
         </div>
@@ -297,21 +305,23 @@ export default function AutomationsPage() {
           {runs.map((run) => (
             <article className="activity-item" key={run.id}>
               <AutomationRunSummary run={run} />
-              {run.status === 'failed' && (
-                <button
-                  className="secondary-button"
-                  disabled={busy}
-                  type="button"
-                  onClick={() =>
-                    void act(
-                      () => recoverAutomationRun(run.id),
-                      'Recovery created one bounded retry run.',
-                    )
-                  }
-                >
-                  Recover
-                </button>
-              )}
+              <CanEdit>
+                {run.status === 'failed' && (
+                  <button
+                    className="secondary-button"
+                    disabled={busy}
+                    type="button"
+                    onClick={() =>
+                      void act(
+                        () => recoverAutomationRun(run.id),
+                        'Recovery created one bounded retry run.',
+                      )
+                    }
+                  >
+                    Recover
+                  </button>
+                )}
+              </CanEdit>
             </article>
           ))}
         </div>

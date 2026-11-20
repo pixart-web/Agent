@@ -18,6 +18,7 @@ import {
   rejectAction,
   WorkflowApiError,
 } from '../../../lib/workflow-client';
+import { CanEdit } from '../../../lib/workspace-access';
 
 export default function ApprovalsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -183,58 +184,61 @@ export default function ApprovalsPage() {
                 <dd>{new Date(approval.requested_at).toLocaleString()}</dd>
               </div>
             </dl>
-            {approval.status === 'pending' && approval.risk_level === 'red' && (
-              <label className="risk-confirmation">
-                <input
-                  type="checkbox"
-                  checked={confirmations[approval.id] ?? false}
-                  onChange={(event) =>
-                    setConfirmations((current) => ({
-                      ...current,
-                      [approval.id]: event.target.checked,
-                    }))
-                  }
-                />
-                Compreendo que esta ação é de risco elevado.
-              </label>
-            )}
-            {approval.status === 'pending' && (
-              <label>
-                Decision note
-                <textarea
-                  rows={3}
-                  value={reasons[approval.id] ?? ''}
-                  onChange={(event) =>
-                    setReasons((current) => ({
-                      ...current,
-                      [approval.id]: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            )}
-            {approval.status === 'pending' && (
-              <div className="approval-actions">
-                <button
-                  className="primary-button"
-                  type="button"
-                  disabled={
-                    approval.risk_level === 'red' &&
-                    !(confirmations[approval.id] ?? false)
-                  }
-                  onClick={() => void decide(approval, true)}
-                >
-                  Aprovar
-                </button>
-                <button
-                  className="danger-button"
-                  type="button"
-                  onClick={() => void decide(approval, false)}
-                >
-                  Rejeitar
-                </button>
-              </div>
-            )}
+            <CanEdit>
+              {approval.status === 'pending' &&
+                approval.risk_level === 'red' && (
+                  <label className="risk-confirmation">
+                    <input
+                      type="checkbox"
+                      checked={confirmations[approval.id] ?? false}
+                      onChange={(event) =>
+                        setConfirmations((current) => ({
+                          ...current,
+                          [approval.id]: event.target.checked,
+                        }))
+                      }
+                    />
+                    Compreendo que esta ação é de risco elevado.
+                  </label>
+                )}
+              {approval.status === 'pending' && (
+                <label>
+                  Decision note
+                  <textarea
+                    rows={3}
+                    value={reasons[approval.id] ?? ''}
+                    onChange={(event) =>
+                      setReasons((current) => ({
+                        ...current,
+                        [approval.id]: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              )}
+              {approval.status === 'pending' && (
+                <div className="approval-actions">
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={
+                      approval.risk_level === 'red' &&
+                      !(confirmations[approval.id] ?? false)
+                    }
+                    onClick={() => void decide(approval, true)}
+                  >
+                    Aprovar
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => void decide(approval, false)}
+                  >
+                    Rejeitar
+                  </button>
+                </div>
+              )}
+            </CanEdit>
             <div className="approval-comments">
               <h3>Discussion & history</h3>
               {details[approval.id]?.comments.map((item) => (
@@ -251,28 +255,30 @@ export default function ApprovalsPage() {
                   {new Date(item.created_at).toLocaleString()}
                 </p>
               ))}
-              <label>
-                Add comment
-                <textarea
-                  rows={2}
-                  maxLength={2000}
-                  value={comments[approval.id] ?? ''}
-                  onChange={(event) =>
-                    setComments((current) => ({
-                      ...current,
-                      [approval.id]: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={!comments[approval.id]?.trim()}
-                onClick={() => void comment(approval.id)}
-              >
-                Comment
-              </button>
+              <CanEdit>
+                <label>
+                  Add comment
+                  <textarea
+                    rows={2}
+                    maxLength={2000}
+                    value={comments[approval.id] ?? ''}
+                    onChange={(event) =>
+                      setComments((current) => ({
+                        ...current,
+                        [approval.id]: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!comments[approval.id]?.trim()}
+                  onClick={() => void comment(approval.id)}
+                >
+                  Comment
+                </button>
+              </CanEdit>
             </div>
           </article>
         ))}

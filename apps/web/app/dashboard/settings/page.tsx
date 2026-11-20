@@ -179,105 +179,115 @@ export default function SettingsPage() {
             setMessage('Workspace settings updated.');
           }}
         >
-          <div className="workflow-panel__heading">
-            <h2>Workspace</h2>
-          </div>
-          <label>
-            Name
-            <input
-              value={workspace.name}
-              onChange={(event) =>
-                setWorkspace({ ...workspace, name: event.target.value })
-              }
-            />
-          </label>
-          <label>
-            Description
-            <textarea
-              value={workspace.description ?? ''}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  description: event.target.value || null,
-                })
-              }
-            />
-          </label>
-          <label>
-            Sector
-            <input
-              value={workspace.sector ?? ''}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  sector: event.target.value || null,
-                })
-              }
-            />
-          </label>
-          <label>
-            Country code
-            <input
-              maxLength={2}
-              value={workspace.country ?? ''}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  country: event.target.value.toUpperCase() || null,
-                })
-              }
-            />
-          </label>
-          <label>
-            Website
-            <input
-              type="url"
-              value={workspace.website ?? ''}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  website: event.target.value || null,
-                })
-              }
-            />
-          </label>
-          <label>
-            Data retention (days)
-            <input
-              type="number"
-              min={30}
-              max={3650}
-              value={workspace.retention_days}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  retention_days: Number(event.target.value),
-                })
-              }
-            />
-          </label>
-          <label>
-            Monthly AI token limit
-            <input
-              type="number"
-              min={1000}
-              value={workspace.ai_monthly_token_limit ?? ''}
-              onChange={(event) =>
-                setWorkspace({
-                  ...workspace,
-                  ai_monthly_token_limit: event.target.value
-                    ? Number(event.target.value)
-                    : null,
-                })
-              }
-            />
-          </label>
-          <button
-            className="primary-button"
+          <fieldset
+            className="edit-fieldset"
             disabled={!['owner', 'admin'].includes(workspace.role)}
           >
-            Save workspace
-          </button>
+            <div className="workflow-panel__heading">
+              <h2>Workspace</h2>
+            </div>
+            <label>
+              Name
+              <input
+                value={workspace.name}
+                onChange={(event) =>
+                  setWorkspace({ ...workspace, name: event.target.value })
+                }
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                value={workspace.description ?? ''}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    description: event.target.value || null,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Sector
+              <input
+                value={workspace.sector ?? ''}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    sector: event.target.value || null,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Country code
+              <input
+                maxLength={2}
+                value={workspace.country ?? ''}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    country: event.target.value.toUpperCase() || null,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Website
+              <input
+                type="url"
+                value={workspace.website ?? ''}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    website: event.target.value || null,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Data retention (days)
+              <input
+                type="number"
+                min={30}
+                max={3650}
+                value={workspace.retention_days}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    retention_days: Number(event.target.value),
+                  })
+                }
+              />
+            </label>
+            <label>
+              Monthly AI token limit
+              <input
+                type="number"
+                min={1000}
+                value={workspace.ai_monthly_token_limit ?? ''}
+                onChange={(event) =>
+                  setWorkspace({
+                    ...workspace,
+                    ai_monthly_token_limit: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  })
+                }
+              />
+            </label>
+            <button
+              className="primary-button"
+              disabled={!['owner', 'admin'].includes(workspace.role)}
+            >
+              Save workspace
+            </button>
+          </fieldset>
+          {!['owner', 'admin'].includes(workspace.role) && (
+            <p className="form-hint">
+              Only owners and admins can change workspace settings.
+            </p>
+          )}
         </form>
       )}
       {workspace && (

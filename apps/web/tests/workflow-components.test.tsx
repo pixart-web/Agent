@@ -1,11 +1,18 @@
 import type { Command, Plan, SupervisorRun, WorkflowTask } from '@agent/shared';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { CommandDetail } from '../components/command-detail';
 import { CommandList } from '../components/command-list';
 import { SupervisorPlanReview } from '../components/supervisor-plan-review';
+
+// Role gating is tested in workspace-access.test.ts; render these components as an editor.
+vi.mock('../lib/workspace-access', async (original) => ({
+  ...(await original<typeof import('../lib/workspace-access')>()),
+  CanEdit: ({ children }: { children: React.ReactNode }) => children,
+  EditFieldset: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 const command: Command = {
   id: 'command-1',

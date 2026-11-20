@@ -12,6 +12,7 @@ import { DashboardNav } from '../../../components/dashboard-nav';
 import { StatusBadge } from '../../../components/status-badge';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { createProject, listProjects } from '../../../lib/workflow-client';
+import { CanEdit } from '../../../lib/workspace-access';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -148,37 +149,39 @@ export default function ProjectsPage() {
             </div>
           )}
         </section>
-        <form className="project-create" onSubmit={submit}>
-          <h2>New project</h2>
-          <label>
-            Name
-            <input
-              required
-              maxLength={255}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            Description
-            <textarea
-              maxLength={10000}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </label>
-          <label>
-            Deadline
-            <input
-              type="date"
-              value={dueOn}
-              onChange={(event) => setDueOn(event.target.value)}
-            />
-          </label>
-          <button className="primary-button" disabled={saving}>
-            {saving ? 'Creating…' : 'Create project'}
-          </button>
-        </form>
+        <CanEdit>
+          <form className="project-create" onSubmit={submit}>
+            <h2>New project</h2>
+            <label>
+              Name
+              <input
+                required
+                maxLength={255}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                maxLength={10000}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            </label>
+            <label>
+              Deadline
+              <input
+                type="date"
+                value={dueOn}
+                onChange={(event) => setDueOn(event.target.value)}
+              />
+            </label>
+            <button className="primary-button" disabled={saving}>
+              {saving ? 'Creating…' : 'Create project'}
+            </button>
+          </form>
+        </CanEdit>
       </div>
     </main>
   );

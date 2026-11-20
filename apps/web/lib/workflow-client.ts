@@ -249,6 +249,59 @@ export function rejectPlan(planId: string, reason: string): Promise<Plan> {
   );
 }
 
+/**
+ * Start Supervisor planning in the background (answers at once with the running run).
+ * With feedback, the current draft plan is revised.
+ */
+export function startSupervisorRun(
+  commandId: string,
+  feedback?: string,
+): Promise<SupervisorRun> {
+  return request(
+    `/api/v1/commands/${commandId}/supervisor-runs`,
+    jsonRequest('POST', feedback ? { feedback } : {}),
+  );
+}
+
+export function isSupervisorRunActive(run: SupervisorRun): boolean {
+  return run.status === 'running' || run.status === 'pending';
+}
+
+/** Polls a background run until it has finished and returns it. */
+export async function waitForSupervisorRun(
+  commandId: string,
+  runId: string,
+  {
+    intervalMs = 2500,
+    timeoutMs = 20 * 60_000,
+    isCancelled = () => false,
+    sleep = (ms: number) =>
+      new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  }: {
+    intervalMs?: number;
+    timeoutMs?: number;
+    isCancelled?: () => boolean;
+    sleep?: (ms: number) => Promise<void>;
+  } = {},
+): Promise<SupervisorRun | null> {
+  const started = Date.now();
+  while (!isCancelled()) {
+    const run = (await listSupervisorRuns(commandId)).find(
+      (item) => item.id === runId,
+    );
+    if (!run) return null;
+    if (!isSupervisorRunActive(run)) return run;
+    if (Date.now() - started > timeoutMs) {
+      throw new WorkflowApiError(
+        'O plano está a demorar mais do que o esperado. Volta a esta página mais tarde.',
+        504,
+      );
+    }
+    await sleep(intervalMs);
+  }
+  return null;
+}
+
 export function listSupervisorRuns(
   commandId: string,
 ): Promise<SupervisorRun[]> {

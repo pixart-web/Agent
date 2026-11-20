@@ -27,18 +27,20 @@ import {
   cancelCommand,
   createPlan,
   createTask,
-  generateSupervisorPlan,
   getCommand,
   getTask,
   listAgents,
   listPlans,
   listSupervisorRuns,
   listTasks,
-  regenerateSupervisorPlan,
+  isSupervisorRunActive,
+  startSupervisorRun,
+  waitForSupervisorRun,
   transitionTask,
   type Agent,
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
+import { CanEdit } from '../../../../lib/workspace-access';
 
 export default function CommandDetailPage() {
   const { id: commandId } = useParams<{ id: string }>();
@@ -50,6 +52,8 @@ export default function CommandDetailPage() {
     null,
   );
   const [supervisorPlanning, setSupervisorPlanning] = useState(false);
+  // A background Supervisor run being followed (also resumed after leaving the page).
+  const [activeRun, setActiveRun] = useState<SupervisorRun | null>(null);
   const [supervisorError, setSupervisorError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [tasks, setTasks] = useState<TaskDetail[]>([]);
@@ -97,6 +101,7 @@ export default function CommandDetailPage() {
       setSupervisorRun(
         runs.find((run) => run.status === 'completed') ?? runs[0] ?? null,
       );
+      setActiveRun(runs.find(isSupervisorRunActive) ?? null);
       setTasks(loadedTasks);
       if (loadedAgents[0]) setAgentId(loadedAgents[0].id);
     } catch (loadError) {
@@ -113,6 +118,38 @@ export default function CommandDetailPage() {
   useEffect(() => {
     if (user) void loadWorkflow();
   }, [loadWorkflow, user]);
+
+  const activeRunId = activeRun?.id;
+  useEffect(() => {
+    if (!activeRunId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const finished = await waitForSupervisorRun(commandId, activeRunId, {
+          isCancelled: () => cancelled,
+        });
+        if (cancelled) return;
+        if (finished?.status === 'failed') {
+          setSupervisorError(
+            finished.error_message ||
+              'Não foi possível gerar o plano. Tenta novamente.',
+          );
+        }
+        setActiveRun(null);
+        await loadWorkflow();
+      } catch (waitError) {
+        if (cancelled) return;
+        setSupervisorError(
+          waitError instanceof WorkflowApiError
+            ? waitError.message
+            : 'Não foi possível acompanhar o plano. Recarrega a página.',
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRunId, commandId, loadWorkflow]);
 
   async function handlePlanSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,8 +174,8 @@ export default function CommandDetailPage() {
     setSupervisorPlanning(true);
     setSupervisorError('');
     try {
-      await generateSupervisorPlan(commandId);
-      await loadWorkflow();
+      setActiveRun(await startSupervisorRun(commandId));
+      setCommand(await getCommand(commandId));
     } catch (generateError) {
       setSupervisorError(
         generateError instanceof WorkflowApiError
@@ -173,9 +210,9 @@ export default function CommandDetailPage() {
     setSupervisorPlanning(true);
     setSupervisorError('');
     try {
-      await regenerateSupervisorPlan(commandId, feedback.trim());
+      setActiveRun(await startSupervisorRun(commandId, feedback.trim()));
       setFeedback('');
-      await loadWorkflow();
+      setCommand(await getCommand(commandId));
     } catch (regenerateError) {
       setSupervisorError(
         regenerateError instanceof WorkflowApiError
@@ -274,7 +311,8 @@ export default function CommandDetailPage() {
             versions={planVersions}
             run={supervisorRun}
             agents={agents}
-            planning={supervisorPlanning}
+            planning={supervisorPlanning || activeRun !== null}
+            planningSince={activeRun?.created_at}
             error={supervisorError}
             feedback={feedback}
             onFeedbackChange={setFeedback}
@@ -288,126 +326,134 @@ export default function CommandDetailPage() {
           {plan?.status !== 'draft' && tasks.length > 0 && (
             <TaskExecutionPanel commandId={commandId} tasks={tasks} />
           )}
-          {!['completed', 'cancelled'].includes(command.status) && (
-            <button
-              className="danger-button"
-              type="button"
-              onClick={handleCancelCommand}
-            >
-              Cancel command
-            </button>
-          )}
+          <CanEdit>
+            {!['completed', 'cancelled'].includes(command.status) && (
+              <button
+                className="danger-button"
+                type="button"
+                onClick={handleCancelCommand}
+              >
+                Cancel command
+              </button>
+            )}
+          </CanEdit>
         </>
       ) : (
         <p className="empty-state">Command unavailable.</p>
       )}
 
-      {command && !plan && (
-        <details className="workflow-panel workflow-form-panel">
-          <summary>Create a plan manually</summary>
-          <form className="workflow-form" onSubmit={handlePlanSubmit}>
-            <label>
-              Title
-              <input
-                required
-                value={planTitle}
-                onChange={(event) => setPlanTitle(event.target.value)}
-              />
-            </label>
-            <label>
-              Objective
-              <textarea
-                required
-                rows={5}
-                value={planObjective}
-                onChange={(event) => setPlanObjective(event.target.value)}
-              />
-            </label>
-            <button className="primary-button" type="submit">
-              Create plan
-            </button>
-          </form>
-        </details>
-      )}
+      <CanEdit>
+        {command && !plan && (
+          <details className="workflow-panel workflow-form-panel">
+            <summary>Create a plan manually</summary>
+            <form className="workflow-form" onSubmit={handlePlanSubmit}>
+              <label>
+                Title
+                <input
+                  required
+                  value={planTitle}
+                  onChange={(event) => setPlanTitle(event.target.value)}
+                />
+              </label>
+              <label>
+                Objective
+                <textarea
+                  required
+                  rows={5}
+                  value={planObjective}
+                  onChange={(event) => setPlanObjective(event.target.value)}
+                />
+              </label>
+              <button className="primary-button" type="submit">
+                Create plan
+              </button>
+            </form>
+          </details>
+        )}
+      </CanEdit>
 
-      {plan?.status === 'draft' && (
-        <section className="workflow-panel workflow-form-panel">
-          <h2>Add a task</h2>
-          <form
-            className="workflow-form workflow-form--grid"
-            onSubmit={handleTaskSubmit}
-          >
-            <label>
-              Title
-              <input
-                required
-                value={taskTitle}
-                onChange={(event) => setTaskTitle(event.target.value)}
-              />
-            </label>
-            <label>
-              Agent
-              <select
-                value={agentId}
-                onChange={(event) => setAgentId(event.target.value as AgentId)}
-              >
-                {agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="workflow-form__wide">
-              Instructions
-              <textarea
-                required
-                rows={5}
-                value={taskInstructions}
-                onChange={(event) => setTaskInstructions(event.target.value)}
-              />
-            </label>
-            <label>
-              Priority
-              <select
-                value={priority}
-                onChange={(event) =>
-                  setPriority(event.target.value as TaskPriority)
-                }
-              >
-                {TASK_PRIORITIES.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Risk
-              <select
-                value={riskLevel}
-                onChange={(event) =>
-                  setRiskLevel(event.target.value as RiskLevel)
-                }
-              >
-                {RISK_LEVELS.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Sequence
-              <input
-                type="number"
-                min={1}
-                value={sequence}
-                onChange={(event) => setSequence(Number(event.target.value))}
-              />
-            </label>
-            <button className="primary-button" type="submit">
-              Add task
-            </button>
-          </form>
-        </section>
-      )}
+      <CanEdit>
+        {plan?.status === 'draft' && (
+          <section className="workflow-panel workflow-form-panel">
+            <h2>Add a task</h2>
+            <form
+              className="workflow-form workflow-form--grid"
+              onSubmit={handleTaskSubmit}
+            >
+              <label>
+                Title
+                <input
+                  required
+                  value={taskTitle}
+                  onChange={(event) => setTaskTitle(event.target.value)}
+                />
+              </label>
+              <label>
+                Agent
+                <select
+                  value={agentId}
+                  onChange={(event) =>
+                    setAgentId(event.target.value as AgentId)
+                  }
+                >
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="workflow-form__wide">
+                Instructions
+                <textarea
+                  required
+                  rows={5}
+                  value={taskInstructions}
+                  onChange={(event) => setTaskInstructions(event.target.value)}
+                />
+              </label>
+              <label>
+                Priority
+                <select
+                  value={priority}
+                  onChange={(event) =>
+                    setPriority(event.target.value as TaskPriority)
+                  }
+                >
+                  {TASK_PRIORITIES.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Risk
+                <select
+                  value={riskLevel}
+                  onChange={(event) =>
+                    setRiskLevel(event.target.value as RiskLevel)
+                  }
+                >
+                  {RISK_LEVELS.map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Sequence
+                <input
+                  type="number"
+                  min={1}
+                  value={sequence}
+                  onChange={(event) => setSequence(Number(event.target.value))}
+                />
+              </label>
+              <button className="primary-button" type="submit">
+                Add task
+              </button>
+            </form>
+          </section>
+        )}
+      </CanEdit>
 
       {tasks.map((task) => {
         const transitions = TASK_TRANSITIONS[task.status];
@@ -417,42 +463,44 @@ export default function CommandDetailPage() {
               <strong>{task.title}</strong>
               <span>{task.history.length} status changes</span>
             </div>
-            {transitions.length > 0 && (
-              <div className="task-control__actions">
-                <select
-                  aria-label={`Next status for ${task.title}`}
-                  value={transitionStatus[task.id] ?? transitions[0]}
-                  onChange={(event) =>
-                    setTransitionStatus((current) => ({
-                      ...current,
-                      [task.id]: event.target.value as TaskStatus,
-                    }))
-                  }
-                >
-                  {transitions.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-                <input
-                  aria-label={`Reason for ${task.title}`}
-                  placeholder="Reason (optional)"
-                  value={transitionReason[task.id] ?? ''}
-                  onChange={(event) =>
-                    setTransitionReason((current) => ({
-                      ...current,
-                      [task.id]: event.target.value,
-                    }))
-                  }
-                />
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => handleTransition(task)}
-                >
-                  Change status
-                </button>
-              </div>
-            )}
+            <CanEdit>
+              {transitions.length > 0 && (
+                <div className="task-control__actions">
+                  <select
+                    aria-label={`Next status for ${task.title}`}
+                    value={transitionStatus[task.id] ?? transitions[0]}
+                    onChange={(event) =>
+                      setTransitionStatus((current) => ({
+                        ...current,
+                        [task.id]: event.target.value as TaskStatus,
+                      }))
+                    }
+                  >
+                    {transitions.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label={`Reason for ${task.title}`}
+                    placeholder="Reason (optional)"
+                    value={transitionReason[task.id] ?? ''}
+                    onChange={(event) =>
+                      setTransitionReason((current) => ({
+                        ...current,
+                        [task.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => handleTransition(task)}
+                  >
+                    Change status
+                  </button>
+                </div>
+              )}
+            </CanEdit>
             <details>
               <summary>Status history</summary>
               <ol className="history-list">

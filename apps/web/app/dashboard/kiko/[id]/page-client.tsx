@@ -17,6 +17,7 @@ import {
   sendConversationMessage,
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
+import { CanEdit } from '../../../../lib/workspace-access';
 
 export default function ConversationPage() {
   const params = useParams<{ id: string }>();
@@ -113,32 +114,34 @@ export default function ConversationPage() {
           ))}
         </div>
 
-        <form
-          className="kiko-composer kiko-composer--compact"
-          onSubmit={handleSubmit}
-        >
-          <label htmlFor="conversation-message">Continuar conversa</label>
-          <textarea
-            id="conversation-message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            maxLength={10000}
-            rows={4}
-            placeholder="Acrescenta contexto ou faz o próximo pedido."
-          />
-          <div className="kiko-composer__actions">
-            <span>
-              Cada mensagem origina um comando operacional independente.
-            </span>
-            <button
-              className="primary-button"
-              disabled={submitting}
-              type="submit"
-            >
-              {submitting ? 'A enviar…' : 'Enviar'}
-            </button>
-          </div>
-        </form>
+        <CanEdit>
+          <form
+            className="kiko-composer kiko-composer--compact"
+            onSubmit={handleSubmit}
+          >
+            <label htmlFor="conversation-message">Continuar conversa</label>
+            <textarea
+              id="conversation-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              maxLength={10000}
+              rows={4}
+              placeholder="Acrescenta contexto ou faz o próximo pedido."
+            />
+            <div className="kiko-composer__actions">
+              <span>
+                Cada mensagem origina um comando operacional independente.
+              </span>
+              <button
+                className="primary-button"
+                disabled={submitting}
+                type="submit"
+              >
+                {submitting ? 'A enviar…' : 'Enviar'}
+              </button>
+            </div>
+          </form>
+        </CanEdit>
         {error && (
           <p className="form-message" role="alert">
             {error}

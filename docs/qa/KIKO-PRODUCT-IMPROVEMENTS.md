@@ -15,25 +15,25 @@ defect register where one exists.
 
 ## B. Functional defects / gaps
 
-| #   | Item                                                                                  | Notes                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | ORM models drift from migrations (KQA-010)                                            | Align `workspace_id` nullability, unique constraints and indexes; fix ~20 fixtures; add `alembic check` to CI                                     |
-| B2  | Specialist agents can only use tools that need ids when the task text contains ids    | Safe by design today; a "search then act" two-step loop would let agents act on records they find                                                 |
-| B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                                                        |
-| B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                                                              |
-| B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                                                        |
-| B6  | `AI` desktop timeout is client-side only                                              | Long generations hold an API worker thread for up to `AI_REQUEST_TIMEOUT_SECONDS × (retries+1)`; consider async generation with progress (see E1) |
+| #   | Item                                                                                  | Notes                                                                                                         |
+| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| B1  | ORM models drift from migrations (KQA-010)                                            | Align `workspace_id` nullability, unique constraints and indexes; fix ~20 fixtures; add `alembic check` to CI |
+| B2  | Specialist agents can only use tools that need ids when the task text contains ids    | Safe by design today; a "search then act" two-step loop would let agents act on records they find             |
+| B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                    |
+| B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                          |
+| B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                    |
+| B6  | ~~Desktop AI timeout client-side only~~                                               | Done for Supervisor plans (background runs, E1); specialist agent runs are still synchronous                  |
 
 ## C. UX improvements
 
-| #   | Item                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| C1  | Show progress while the local model works (≈ 35–65 s): the Supervisor button only disables today                                                 |
-| C2  | Explain "Local AI runtime is not reachable" with a recovery hint in the UI (start Ollama / contact admin)                                        |
-| C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program)   |
-| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                             |
-| C5  | Hide or disable create/edit controls per role (viewers get a read-only notice today, KQA-019) and show API error details instead of generic text |
-| C6  | Onboarding page for invited non-admins: show the company profile read-only instead of an editable form                                           |
+| #   | Item                                                                                                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | ~~Show progress while the local model works~~ — done: elapsed time, explanation and "you can leave this page" for Supervisor plans; elapsed time for agent runs                     |
+| C2  | Explain "Local AI runtime is not reachable" with a recovery hint in the UI (start Ollama / contact admin)                                                                           |
+| C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program)                                      |
+| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                                                                |
+| C5  | ~~Hide or disable create/edit controls per role~~ — done: `CanEdit`/`EditFieldset` on every dashboard screen; settings disabled for non-admins; subscription cancel for owners only |
+| C6  | ~~Read-only onboarding for invited non-admins~~ — done: "Join <company>" page with the profile read-only                                                                            |
 
 ## D. Performance improvements
 
@@ -45,12 +45,12 @@ defect register where one exists.
 
 ## E. Architectural improvements
 
-| #   | Item                                                                                     | Justification                                                                                                   |
-| --- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| E1  | Run Supervisor/agent generation as background jobs (outbox + worker) with status polling | Removes long blocking HTTP requests; enables retries without user waiting                                       |
-| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                            | Parallel slots and grammar control; no domain change needed                                                     |
-| E3  | Celery soft time limits locally (`--pool=solo` ignores them)                             | Production prefork on Linux is unaffected; document or use threads pool locally                                 |
-| E4  | Auth rate limit is per IP and shared by all auth actions                                 | Correct for production; makes automated test bursts hit 429 — use a test-only allowance in CI-like environments |
+| #   | Item                                                                                                                                                              | Justification                                                                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| E1  | ~~Background Supervisor generation with status polling~~ — done (`POST /commands/{id}/supervisor-runs` + Celery worker); specialist agent runs remain synchronous | Same pattern can be applied to `run-agent` when needed                                                          |
+| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                                                                                                     | Parallel slots and grammar control; no domain change needed                                                     |
+| E3  | Celery soft time limits locally (`--pool=solo` ignores them)                                                                                                      | Production prefork on Linux is unaffected; document or use threads pool locally                                 |
+| E4  | Auth rate limit is per IP and shared by all auth actions                                                                                                          | Correct for production; makes automated test bursts hit 429 — use a test-only allowance in CI-like environments |
 
 ## F. Future features (not required for the macOS release)
 

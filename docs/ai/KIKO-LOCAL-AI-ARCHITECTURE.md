@@ -92,6 +92,22 @@ the four AI generation endpoints (`generate-plan`, `regenerate-plan`, `run-agent
 `rerun-agent`) and keeps 30 s for everything else (`apps/desktop/src-tauri/src/api.rs`). The
 backend bounds each model call with `AI_REQUEST_TIMEOUT_SECONDS` (default 180).
 
+### Background planning
+
+Supervisor plans run in the background. `POST /commands/{id}/supervisor-runs` opens a
+`running` run and answers `202` at once; the Celery worker
+(`app.services.supervisor_tasks.complete_supervisor_run`) calls the model and stores the
+draft plan or marks the run failed with its reason. Clients poll
+`GET /commands/{id}/supervisor-runs` (every 2.5 s in the web and desktop UI), show elapsed
+time, and resume following the run when the page is opened again. With `feedback` in the
+body the current draft plan is revised. A run still active after the model's whole time
+budget (`AI_REQUEST_TIMEOUT_SECONDS × (AI_MAX_RETRIES + 1)` + 2 min) is marked `stale_run`
+so a dead worker never blocks planning. The synchronous `generate-plan`/`regenerate-plan`
+endpoints remain for API clients. Specialist agent runs are still synchronous.
+
+On a single local worker (`--pool=solo`) a plan generation occupies the worker for about a
+minute; production workers run with concurrency.
+
 ## 6. Configuration
 
 | Variable                     | Default                  | Meaning                                 |
