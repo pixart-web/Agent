@@ -12,6 +12,7 @@ import {
   listConversations,
   WorkflowApiError,
 } from '../../../lib/workflow-client';
+import { CanEdit } from '../../../lib/workspace-access';
 
 export default function KikoPage() {
   const router = useRouter();
@@ -68,29 +69,38 @@ export default function KikoPage() {
           Conversa com Kiko. Cada pedido cria um comando rastreável, sujeito às
           mesmas regras de planeamento, execução e aprovação.
         </p>
-        <form className="kiko-composer" onSubmit={handleSubmit}>
-          <label htmlFor="kiko-message">Novo pedido</label>
-          <textarea
-            id="kiko-message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            maxLength={10000}
-            rows={5}
-            placeholder="Prepara o lançamento do nosso novo serviço para clientes B2B."
-          />
-          <div className="kiko-composer__actions">
-            <span>
-              Não incluas palavras-passe, chaves API ou outros segredos.
-            </span>
-            <button
-              className="primary-button"
-              disabled={submitting}
-              type="submit"
-            >
-              {submitting ? 'A criar…' : 'Enviar para Kiko'}
-            </button>
-          </div>
-        </form>
+        <CanEdit
+          fallback={
+            <p className="form-hint">
+              Tens acesso só de leitura a este workspace. Um dono ou admin pode
+              dar-te acesso de edição.
+            </p>
+          }
+        >
+          <form className="kiko-composer" onSubmit={handleSubmit}>
+            <label htmlFor="kiko-message">Novo pedido</label>
+            <textarea
+              id="kiko-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              maxLength={10000}
+              rows={5}
+              placeholder="Prepara o lançamento do nosso novo serviço para clientes B2B."
+            />
+            <div className="kiko-composer__actions">
+              <span>
+                Não incluas palavras-passe, chaves API ou outros segredos.
+              </span>
+              <button
+                className="primary-button"
+                disabled={submitting}
+                type="submit"
+              >
+                {submitting ? 'A criar…' : 'Enviar para Kiko'}
+              </button>
+            </div>
+          </form>
+        </CanEdit>
         {error && (
           <p className="form-message" role="alert">
             {error}

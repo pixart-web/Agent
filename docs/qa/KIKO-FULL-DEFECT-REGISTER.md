@@ -28,6 +28,8 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-020 | CRM contacts list performance            | LOW      | Fixed (acceptance round)           |
 | KQA-021 | Local environment / port conflicts       | LOW      | Fixed (acceptance round)           |
 | KQA-022 | Desktop / hidden window suspended        | HIGH     | Fixed (acceptance round)           |
+| KQA-023 | Supervisor / abandoned planning runs     | MEDIUM   | Fixed (improvements round)         |
+| KQA-024 | Onboarding / phone width overflow        | LOW      | Fixed (improvements round)         |
 
 ---
 
@@ -257,3 +259,19 @@ Second pass during owner acceptance testing, with temporary accounts for every r
   page's work but does not suspend it).
 - **Verification:** the hidden-window probe fires the 25 s timer; full desktop journey with the
   real local model passes (see QA report addendum).
+
+## Improvements round (2026-11-20)
+
+### KQA-023 — An abandoned planning run blocked the command forever
+
+- **Severity:** MEDIUM. If the API (or, with background planning, the worker) stopped during a
+  Supervisor generation, the run stayed `running` and every later attempt answered "Supervisor
+  planning is already in progress".
+- **Fix:** runs still active after the model's whole time budget plus 2 minutes are marked
+  failed (`stale_run`) before a new run starts.
+- **Regression test:** `tests/test_supervisor_background.py::test_a_run_abandoned_by_a_dead_process_no_longer_blocks_planning`.
+
+### KQA-024 — Onboarding card wider than a phone screen with long company names
+
+- **Severity:** LOW. A long word in the large title forced the card past 390 px.
+- **Fix:** the card can shrink and the title wraps. Verified at 390 px: no horizontal overflow.

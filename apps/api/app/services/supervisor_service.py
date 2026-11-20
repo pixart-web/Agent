@@ -1,5 +1,6 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
@@ -40,6 +41,11 @@ from app.services.workflow_errors import WorkflowConflictError, WorkflowNotFound
 logger = logging.getLogger(__name__)
 
 
+# A worker or API process that died mid-run leaves the run active; after the model's whole
+# time budget plus this margin it is marked failed so the command can be planned again.
+STALE_RUN_MARGIN_SECONDS = 120
+
+
 @dataclass(frozen=True)
 class SupervisorPlanningResult:
     plan: Plan
@@ -54,6 +60,21 @@ class PlanningContext:
     agents: list[AvailableAgent]
     previous_plan_summary: str | None
     feedback: str | None
+
+    def to_payload(self) -> dict[str, object]:
+        payload = asdict(self)
+        payload["run_id"] = str(self.run_id)
+        return payload
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, object]) -> "PlanningContext":
+        return cls(
+            run_id=UUID(str(payload["run_id"])),
+            command_input=str(payload["command_input"]),
+            agents=[AvailableAgent(**agent) for agent in payload["agents"]],  # type: ignore[arg-type,union-attr]
+            previous_plan_summary=payload.get("previous_plan_summary"),  # type: ignore[arg-type]
+            feedback=payload.get("feedback"),  # type: ignore[arg-type]
+        )
 
 
 class SupervisorService:
@@ -90,6 +111,44 @@ class SupervisorService:
         context = self._start(command_id, user_id, feedback=feedback, regenerate=True)
         return self._call_and_persist(context, command_id, user_id)
 
+    def start(
+        self,
+        command_id: UUID,
+        user_id: UUID,
+        feedback: str | None = None,
+    ) -> PlanningContext:
+        """Open a planning run without calling the model; `complete` finishes it later.
+
+        Used for background generation: the API answers at once and a worker runs the model.
+        Feedback means "revise the current draft plan".
+        """
+        if feedback is not None and len(feedback) > self.settings.supervisor_max_feedback_chars:
+            raise WorkflowConflictError("Feedback exceeds the configured limit")
+        return self._start(command_id, user_id, feedback=feedback, regenerate=feedback is not None)
+
+    def complete(
+        self,
+        context: PlanningContext,
+        command_id: UUID,
+        user_id: UUID,
+    ) -> SupervisorPlanningResult | None:
+        """Run the model for a started run. Returns None when the run is no longer running
+        (a redelivered task, or a run cancelled or failed meanwhile)."""
+        run = self.runs.get_owned_for_update(context.run_id, user_id)
+        still_running = run is not None and run.status == SupervisorRunStatus.RUNNING
+        self.session.rollback()  # release the row lock before the (long) model call
+        if not still_running:
+            return None
+        return self._call_and_persist(context, command_id, user_id)
+
+    def fail(self, run_id: UUID, command_id: UUID, user_id: UUID, error: Exception) -> None:
+        self._mark_failed(run_id, command_id, user_id, error)
+
+    def stale_cutoff(self) -> datetime:
+        """Runs still active after the longest possible model call are abandoned."""
+        budget = self.settings.ai_request_timeout_seconds * (self.settings.ai_max_retries + 1)
+        return utc_now() - timedelta(seconds=budget + STALE_RUN_MARGIN_SECONDS)
+
     def _start(
         self,
         command_id: UUID,
@@ -106,6 +165,7 @@ class SupervisorService:
                 raise WorkflowConflictError("A terminal command cannot be planned")
             if len(command.input) > self.settings.supervisor_max_command_chars:
                 raise WorkflowConflictError("Command exceeds the configured AI input limit")
+            self.runs.fail_stale_for_command(command_id, self.stale_cutoff())
             if self.runs.has_active_for_command(command_id):
                 raise WorkflowConflictError("Supervisor planning is already in progress")
 

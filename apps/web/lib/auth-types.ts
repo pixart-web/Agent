@@ -22,6 +22,8 @@ export type OnboardingState = {
   company_name: string;
   company_description: string | null;
   primary_objectives: string[];
+  /** False for members of someone else's workspace: the profile is shown read-only. */
+  can_edit_company: boolean;
 };
 
 export type AuthResponse = {

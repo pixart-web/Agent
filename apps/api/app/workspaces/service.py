@@ -240,7 +240,7 @@ class WorkspaceService:
 
     def onboarding(self, user: User) -> OnboardingRead:
         workspace = self._active_workspace(user)
-        return self._onboarding_read(user, workspace)
+        return self._onboarding_read(user, workspace, self._membership(workspace.id, user.id))
 
     def get_workspace_settings(self, user: User) -> WorkspaceSettingsRead:
         workspace = self._active_workspace(user)
@@ -315,7 +315,7 @@ class WorkspaceService:
         self.session.commit()
         self.session.refresh(user)
         self.session.refresh(workspace)
-        return self._onboarding_read(user, workspace)
+        return self._onboarding_read(user, workspace, membership)
 
     def _active_workspace(self, user: User) -> Workspace:
         if user.active_workspace_id is None:
@@ -355,8 +355,11 @@ class WorkspaceService:
         return InvitationRead.model_validate(item, from_attributes=True)
 
     @staticmethod
-    def _onboarding_read(user: User, workspace: Workspace) -> OnboardingRead:
+    def _onboarding_read(
+        user: User, workspace: Workspace, membership: WorkspaceMember
+    ) -> OnboardingRead:
         return OnboardingRead(
+            can_edit_company=membership.role in MANAGE_ROLES,
             step=user.onboarding_step,
             completed_at=user.onboarding_completed_at,
             workspace_id=workspace.id,

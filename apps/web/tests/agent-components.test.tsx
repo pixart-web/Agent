@@ -5,6 +5,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { TaskAgentPanel } from '../components/task-agent-panel';
 
+// Role gating is tested in workspace-access.test.ts; render these components as an editor.
+vi.mock('../lib/workspace-access', async (original) => ({
+  ...(await original<typeof import('../lib/workspace-access')>()),
+  CanEdit: ({ children }: { children: React.ReactNode }) => children,
+  EditFieldset: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock('../lib/workflow-client', () => ({
   listAgentRuns: vi.fn().mockResolvedValue([]),
   rerunAgent: vi.fn(),

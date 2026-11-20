@@ -9,13 +9,16 @@ import {
   runAgent,
   WorkflowApiError,
 } from '../lib/workflow-client';
+import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
+import { CanEdit } from '../lib/workspace-access';
 
 export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
   const [runs, setRuns] = useState<Record<string, AgentRun[]>>({});
   const [proposals, setProposals] = useState<Record<string, TaskAction[]>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
+  const [busySince, setBusySince] = useState(0);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -33,6 +36,7 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
 
   async function execute(task: TaskDetail, isRerun: boolean) {
     setBusy(task.id);
+    setBusySince(Date.now());
     setError('');
     try {
       const result = isRerun
@@ -75,34 +79,42 @@ export function TaskAgentPanel({ tasks }: { tasks: TaskDetail[] }) {
               </div>
               {latest && <StatusBadge status={latest.status} />}
             </div>
-            {task.status === 'ready' && (
-              <div className="agent-run-controls">
-                <button
-                  className="primary-button"
-                  disabled={busy === task.id}
-                  onClick={() => void execute(task, Boolean(latest))}
-                  type="button"
-                >
-                  {busy === task.id
-                    ? 'Analyzing…'
-                    : latest
-                      ? 'Run agent again'
-                      : 'Ask agent to prepare actions'}
-                </button>
-                {latest && (
-                  <input
-                    maxLength={5000}
-                    placeholder="Optional feedback"
-                    value={feedback[task.id] ?? ''}
-                    onChange={(event) =>
-                      setFeedback((current) => ({
-                        ...current,
-                        [task.id]: event.target.value,
-                      }))
-                    }
-                  />
-                )}
-              </div>
+            <CanEdit>
+              {task.status === 'ready' && (
+                <div className="agent-run-controls">
+                  <button
+                    className="primary-button"
+                    disabled={busy === task.id}
+                    onClick={() => void execute(task, Boolean(latest))}
+                    type="button"
+                  >
+                    {busy === task.id
+                      ? 'Analyzing…'
+                      : latest
+                        ? 'Run agent again'
+                        : 'Ask agent to prepare actions'}
+                  </button>
+                  {latest && (
+                    <input
+                      maxLength={5000}
+                      placeholder="Optional feedback"
+                      value={feedback[task.id] ?? ''}
+                      onChange={(event) =>
+                        setFeedback((current) => ({
+                          ...current,
+                          [task.id]: event.target.value,
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              )}
+            </CanEdit>
+            {busy === task.id && (
+              <AiProgress
+                since={busySince}
+                label="O agente está a analisar a tarefa…"
+              />
             )}
             {latest && (
               <dl className="execution-meta">

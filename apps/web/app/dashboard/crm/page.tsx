@@ -28,6 +28,7 @@ import {
 } from '../../../lib/workflow-client';
 import type { CrmImportPreview } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { CanEdit, EditFieldset } from '../../../lib/workspace-access';
 
 export default function CrmPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -204,89 +205,99 @@ export default function CrmPage() {
         </form>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
-      <section className="workflow-panel crm-create-panel">
-        <div>
-          <h2>Create CRM record</h2>
-          <p>Manual records are tenant-scoped and added to the audit trail.</p>
-        </div>
-        <form onSubmit={createRecord}>
-          <label>
-            Record type
-            <select
-              value={createMode}
-              onChange={(event) =>
-                setCreateMode(event.target.value as 'organization' | 'contact')
-              }
-            >
-              <option value="organization">Organization & client</option>
-              <option value="contact">Contact</option>
-            </select>
-          </label>
-          <label>
-            {createMode === 'organization' ? 'Organization name' : 'Full name'}
-            <input
-              required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          {createMode === 'contact' && (
-            <>
-              <label>
-                Organization
-                <select
-                  value={organizationId}
-                  onChange={(event) => setOrganizationId(event.target.value)}
-                >
-                  <option value="">None</option>
-                  {organizations.map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Job title
-                <input
-                  value={jobTitle}
-                  onChange={(event) => setJobTitle(event.target.value)}
-                />
-              </label>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </label>
-            </>
-          )}
-          <button className="primary-button" disabled={saving}>
-            {saving ? 'Creating…' : 'Create'}
-          </button>
-        </form>
-      </section>
+      <CanEdit>
+        <section className="workflow-panel crm-create-panel">
+          <div>
+            <h2>Create CRM record</h2>
+            <p>
+              Manual records are tenant-scoped and added to the audit trail.
+            </p>
+          </div>
+          <form onSubmit={createRecord}>
+            <label>
+              Record type
+              <select
+                value={createMode}
+                onChange={(event) =>
+                  setCreateMode(
+                    event.target.value as 'organization' | 'contact',
+                  )
+                }
+              >
+                <option value="organization">Organization & client</option>
+                <option value="contact">Contact</option>
+              </select>
+            </label>
+            <label>
+              {createMode === 'organization'
+                ? 'Organization name'
+                : 'Full name'}
+              <input
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            {createMode === 'contact' && (
+              <>
+                <label>
+                  Organization
+                  <select
+                    value={organizationId}
+                    onChange={(event) => setOrganizationId(event.target.value)}
+                  >
+                    <option value="">None</option>
+                    {organizations.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Job title
+                  <input
+                    value={jobTitle}
+                    onChange={(event) => setJobTitle(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
+            <button className="primary-button" disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
+            </button>
+          </form>
+        </section>
+      </CanEdit>
       <section className="workflow-panel">
         <div className="crm-panel-heading">
           <div>
             <h2>Sales pipeline</h2>
             <p>Move opportunities between governed stages.</p>
           </div>
-          <form onSubmit={createPipeline}>
-            <label>
-              New pipeline
-              <input
-                required
-                value={pipelineName}
-                onChange={(event) => setPipelineName(event.target.value)}
-              />
-            </label>
-            <button className="secondary-button" disabled={saving}>
-              Create pipeline
-            </button>
-          </form>
+          <CanEdit>
+            <form onSubmit={createPipeline}>
+              <label>
+                New pipeline
+                <input
+                  required
+                  value={pipelineName}
+                  onChange={(event) => setPipelineName(event.target.value)}
+                />
+              </label>
+              <button className="secondary-button" disabled={saving}>
+                Create pipeline
+              </button>
+            </form>
+          </CanEdit>
         </div>
         {pipelines.length ? (
           pipelines.map((pipeline) => (
@@ -321,29 +332,31 @@ export default function CrmPage() {
                           }).format(item.amount_minor / 100)}
                         </p>
                         <span>{item.probability}%</span>
-                        <label>
-                          Stage
-                          <select
-                            value={item.stage_id}
-                            onChange={async (event) => {
-                              const nextStage = pipeline.stages.find(
-                                (value) => value.id === event.target.value,
-                              );
-                              if (!nextStage) return;
-                              await updateCrmOpportunity(item.id, {
-                                stage_id: nextStage.id,
-                                probability: nextStage.default_probability,
-                              });
-                              await refresh(query.trim());
-                            }}
-                          >
-                            {pipeline.stages.map((value) => (
-                              <option value={value.id} key={value.id}>
-                                {value.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                        <EditFieldset>
+                          <label>
+                            Stage
+                            <select
+                              value={item.stage_id}
+                              onChange={async (event) => {
+                                const nextStage = pipeline.stages.find(
+                                  (value) => value.id === event.target.value,
+                                );
+                                if (!nextStage) return;
+                                await updateCrmOpportunity(item.id, {
+                                  stage_id: nextStage.id,
+                                  probability: nextStage.default_probability,
+                                });
+                                await refresh(query.trim());
+                              }}
+                            >
+                              {pipeline.stages.map((value) => (
+                                <option value={value.id} key={value.id}>
+                                  {value.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </EditFieldset>
                       </article>
                     ))}
                 </section>
@@ -364,36 +377,40 @@ export default function CrmPage() {
             tenant data.
           </p>
         </div>
-        <label>
-          CRM CSV
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => {
-              setImportFile(event.target.files?.[0] ?? null);
-              setImportPreview(null);
-            }}
-          />
-        </label>
+        <CanEdit>
+          <label>
+            CRM CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => {
+                setImportFile(event.target.files?.[0] ?? null);
+                setImportPreview(null);
+              }}
+            />
+          </label>
+        </CanEdit>
         <div className="button-row">
-          <button
-            className="secondary-button"
-            type="button"
-            disabled={!importFile || saving}
-            onClick={() => void previewImport()}
-          >
-            Preview import
-          </button>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={
-              !importPreview || importPreview.invalid_rows > 0 || saving
-            }
-            onClick={() => void confirmImport()}
-          >
-            Confirm import
-          </button>
+          <CanEdit>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={!importFile || saving}
+              onClick={() => void previewImport()}
+            >
+              Preview import
+            </button>
+            <button
+              className="primary-button"
+              type="button"
+              disabled={
+                !importPreview || importPreview.invalid_rows > 0 || saving
+              }
+              onClick={() => void confirmImport()}
+            >
+              Confirm import
+            </button>
+          </CanEdit>
           <button
             className="text-button"
             type="button"

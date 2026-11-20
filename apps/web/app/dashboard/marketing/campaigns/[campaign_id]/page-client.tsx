@@ -13,6 +13,7 @@ import {
   updateMarketingCampaign,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../../../lib/workspace-access';
 
 export default function MarketingCampaignPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -78,55 +79,57 @@ export default function MarketingCampaignPage() {
           </label>
         </section>
       )}
-      <section className="workflow-panel">
-        <h2>Create content draft</h2>
-        <form
-          className="workflow-form"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            try {
-              await createMarketingContent({
-                campaign_id: campaignId,
-                content_type: 'social_post',
-                channel,
-                title,
-                body,
-              });
-              setTitle('');
-              setBody('');
-              setContent((await listMarketingContent(campaignId)).content);
-            } catch {
-              setError('Unable to create this content draft.');
-            }
-          }}
-        >
-          <label>
-            Channel
-            <input
-              required
-              value={channel}
-              onChange={(event) => setChannel(event.target.value)}
-            />
-          </label>
-          <label>
-            Title
-            <input
-              required
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </label>
-          <label>
-            Draft copy
-            <textarea
-              required
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-            />
-          </label>
-          <button>Create draft</button>
-        </form>
-      </section>
+      <CanEdit>
+        <section className="workflow-panel">
+          <h2>Create content draft</h2>
+          <form
+            className="workflow-form"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              try {
+                await createMarketingContent({
+                  campaign_id: campaignId,
+                  content_type: 'social_post',
+                  channel,
+                  title,
+                  body,
+                });
+                setTitle('');
+                setBody('');
+                setContent((await listMarketingContent(campaignId)).content);
+              } catch {
+                setError('Unable to create this content draft.');
+              }
+            }}
+          >
+            <label>
+              Channel
+              <input
+                required
+                value={channel}
+                onChange={(event) => setChannel(event.target.value)}
+              />
+            </label>
+            <label>
+              Title
+              <input
+                required
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+              />
+            </label>
+            <label>
+              Draft copy
+              <textarea
+                required
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+              />
+            </label>
+            <button>Create draft</button>
+          </form>
+        </section>
+      </CanEdit>
       <section className="workflow-panel">
         <h2>Content lifecycle</h2>
         <div className="agent-grid">

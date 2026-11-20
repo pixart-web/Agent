@@ -33,6 +33,7 @@ import {
   type Agent,
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
+import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
 
 function localDateTime(value: string | null): string {
   if (!value) return '';
@@ -208,123 +209,134 @@ export default function TaskDetailPage() {
           </section>
           <section className="workflow-panel workflow-form-panel">
             <h2>Task settings</h2>
-            <form className="workflow-form workflow-form--grid" onSubmit={save}>
-              <label>
-                Title
-                <input
-                  required
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                />
-              </label>
-              <label>
-                Agent
-                <select
-                  value={agentId}
-                  onChange={(event) =>
-                    setAgentId(event.target.value as AgentId)
-                  }
-                >
-                  {agents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Priority
-                <select
-                  value={priority}
-                  onChange={(event) =>
-                    setPriority(event.target.value as TaskPriority)
-                  }
-                >
-                  {TASK_PRIORITIES.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Risk
-                <select
-                  value={risk}
-                  onChange={(event) => setRisk(event.target.value as RiskLevel)}
-                >
-                  {RISK_LEVELS.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Deadline
-                <input
-                  type="datetime-local"
-                  value={dueAt}
-                  onChange={(event) => setDueAt(event.target.value)}
-                />
-              </label>
-              <label className="workflow-form__wide">
-                Instructions
-                <textarea
-                  required
-                  rows={5}
-                  value={instructions}
-                  onChange={(event) => setInstructions(event.target.value)}
-                />
-              </label>
-              <button className="primary-button" type="submit">
-                Save task
-              </button>
-            </form>
-          </section>
-          {TASK_TRANSITIONS[task.status].length > 0 && (
-            <section className="workflow-panel">
-              <h2>Change status</h2>
-              <div className="task-transition-controls">
-                <select
-                  aria-label="Next status"
-                  value={nextStatus}
-                  onChange={(event) =>
-                    setNextStatus(event.target.value as TaskStatus)
-                  }
-                >
-                  {TASK_TRANSITIONS[task.status].map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-                <input
-                  aria-label="Transition reason"
-                  value={reason}
-                  maxLength={2000}
-                  placeholder="Reason (optional)"
-                  onChange={(event) => setReason(event.target.value)}
-                />
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => void transition()}
-                >
-                  Update status
+            <EditFieldset>
+              <form
+                className="workflow-form workflow-form--grid"
+                onSubmit={save}
+              >
+                <label>
+                  Title
+                  <input
+                    required
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Agent
+                  <select
+                    value={agentId}
+                    onChange={(event) =>
+                      setAgentId(event.target.value as AgentId)
+                    }
+                  >
+                    {agents.map((agent) => (
+                      <option key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Priority
+                  <select
+                    value={priority}
+                    onChange={(event) =>
+                      setPriority(event.target.value as TaskPriority)
+                    }
+                  >
+                    {TASK_PRIORITIES.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Risk
+                  <select
+                    value={risk}
+                    onChange={(event) =>
+                      setRisk(event.target.value as RiskLevel)
+                    }
+                  >
+                    {RISK_LEVELS.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Deadline
+                  <input
+                    type="datetime-local"
+                    value={dueAt}
+                    onChange={(event) => setDueAt(event.target.value)}
+                  />
+                </label>
+                <label className="workflow-form__wide">
+                  Instructions
+                  <textarea
+                    required
+                    rows={5}
+                    value={instructions}
+                    onChange={(event) => setInstructions(event.target.value)}
+                  />
+                </label>
+                <button className="primary-button" type="submit">
+                  Save task
                 </button>
-              </div>
-            </section>
-          )}
+              </form>
+            </EditFieldset>
+          </section>
+          <CanEdit>
+            {TASK_TRANSITIONS[task.status].length > 0 && (
+              <section className="workflow-panel">
+                <h2>Change status</h2>
+                <div className="task-transition-controls">
+                  <select
+                    aria-label="Next status"
+                    value={nextStatus}
+                    onChange={(event) =>
+                      setNextStatus(event.target.value as TaskStatus)
+                    }
+                  >
+                    {TASK_TRANSITIONS[task.status].map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label="Transition reason"
+                    value={reason}
+                    maxLength={2000}
+                    placeholder="Reason (optional)"
+                    onChange={(event) => setReason(event.target.value)}
+                  />
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void transition()}
+                  >
+                    Update status
+                  </button>
+                </div>
+              </section>
+            )}
+          </CanEdit>
           <section className="workflow-panel">
             <div className="workflow-panel__heading">
               <div>
                 <p className="eyebrow">Plan graph</p>
                 <h2>Dependencies</h2>
               </div>
-              {(task.status === 'ready' || task.status === 'blocked') && (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => void schedule()}
-                >
-                  Evaluate schedule
-                </button>
-              )}
+              <CanEdit>
+                {(task.status === 'ready' || task.status === 'blocked') && (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => void schedule()}
+                  >
+                    Evaluate schedule
+                  </button>
+                )}
+              </CanEdit>
             </div>
             {dependencies.length === 0 ? (
               <p className="empty-state">No dependencies configured.</p>
@@ -344,55 +356,61 @@ export default function TaskDetailPage() {
                       <StatusBadge
                         status={dependencyTask?.status ?? 'pending'}
                       />
-                      <button
-                        type="button"
-                        onClick={() => void removeDependency(dependency.id)}
-                      >
-                        Remove
-                      </button>
+                      <CanEdit>
+                        <button
+                          type="button"
+                          onClick={() => void removeDependency(dependency.id)}
+                        >
+                          Remove
+                        </button>
+                      </CanEdit>
                     </li>
                   );
                 })}
               </ul>
             )}
-            {planTasks.some(
-              (item) =>
-                item.id !== task.id &&
-                !dependencies.some(
-                  (dependency) => dependency.depends_on_task_id === item.id,
-                ),
-            ) && (
-              <div className="dependency-add-controls">
-                <select
-                  aria-label="Dependency task"
-                  value={dependencyTaskId}
-                  onChange={(event) => setDependencyTaskId(event.target.value)}
-                >
-                  {planTasks
-                    .filter(
-                      (item) =>
-                        item.id !== task.id &&
-                        !dependencies.some(
-                          (dependency) =>
-                            dependency.depends_on_task_id === item.id,
-                        ),
-                    )
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.title}
-                      </option>
-                    ))}
-                </select>
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={!dependencyTaskId}
-                  onClick={() => void addDependency()}
-                >
-                  Add dependency
-                </button>
-              </div>
-            )}
+            <CanEdit>
+              {planTasks.some(
+                (item) =>
+                  item.id !== task.id &&
+                  !dependencies.some(
+                    (dependency) => dependency.depends_on_task_id === item.id,
+                  ),
+              ) && (
+                <div className="dependency-add-controls">
+                  <select
+                    aria-label="Dependency task"
+                    value={dependencyTaskId}
+                    onChange={(event) =>
+                      setDependencyTaskId(event.target.value)
+                    }
+                  >
+                    {planTasks
+                      .filter(
+                        (item) =>
+                          item.id !== task.id &&
+                          !dependencies.some(
+                            (dependency) =>
+                              dependency.depends_on_task_id === item.id,
+                          ),
+                      )
+                      .map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.title}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={!dependencyTaskId}
+                    onClick={() => void addDependency()}
+                  >
+                    Add dependency
+                  </button>
+                </div>
+              )}
+            </CanEdit>
           </section>
           <section className="workflow-panel">
             <h2>History</h2>

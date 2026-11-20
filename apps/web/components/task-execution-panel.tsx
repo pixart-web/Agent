@@ -17,6 +17,7 @@ import {
   WorkflowApiError,
 } from '../lib/workflow-client';
 import { StatusBadge } from './status-badge';
+import { CanEdit } from '../lib/workspace-access';
 
 const TOOLS = [
   'internal.echo',
@@ -110,42 +111,44 @@ export function TaskExecutionPanel({
             <h3>{task.title}</h3>
             <StatusBadge status={task.status} />
           </div>
-          {task.status === 'ready' && (
-            <div className="action-composer">
-              <select
-                aria-label="Tool"
-                value={tool[task.id] ?? TOOLS[0]}
-                onChange={(event) =>
-                  setTool((current) => ({
-                    ...current,
-                    [task.id]: event.target.value,
-                  }))
-                }
-              >
-                {TOOLS.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-              <input
-                aria-label="Action input"
-                placeholder="Text or simulated action description"
-                value={text[task.id] ?? ''}
-                onChange={(event) =>
-                  setText((current) => ({
-                    ...current,
-                    [task.id]: event.target.value,
-                  }))
-                }
-              />
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void createAndDispatch(task)}
-              >
-                Create & dispatch
-              </button>
-            </div>
-          )}
+          <CanEdit>
+            {task.status === 'ready' && (
+              <div className="action-composer">
+                <select
+                  aria-label="Tool"
+                  value={tool[task.id] ?? TOOLS[0]}
+                  onChange={(event) =>
+                    setTool((current) => ({
+                      ...current,
+                      [task.id]: event.target.value,
+                    }))
+                  }
+                >
+                  {TOOLS.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+                <input
+                  aria-label="Action input"
+                  placeholder="Text or simulated action description"
+                  value={text[task.id] ?? ''}
+                  onChange={(event) =>
+                    setText((current) => ({
+                      ...current,
+                      [task.id]: event.target.value,
+                    }))
+                  }
+                />
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void createAndDispatch(task)}
+                >
+                  Create & dispatch
+                </button>
+              </div>
+            )}
+          </CanEdit>
           {(actions[task.id] ?? []).map((action) => (
             <div className="action-row" key={action.id}>
               <div>

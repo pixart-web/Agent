@@ -63,15 +63,20 @@ export default function OnboardingPage() {
     event.preventDefault();
     setSaving(true);
     setMessage('');
+    const readOnly = state ? !state.can_edit_company : false;
     try {
-      await updateOnboarding({
-        step: 8,
-        company_name: name.trim(),
-        company_description: description.trim(),
-        primary_objectives: objectives,
-        complete: true,
-      });
-      router.replace('/dashboard/commands/new');
+      await updateOnboarding(
+        readOnly
+          ? { step: 8, complete: true }
+          : {
+              step: 8,
+              company_name: name.trim(),
+              company_description: description.trim(),
+              primary_objectives: objectives,
+              complete: true,
+            },
+      );
+      router.replace(readOnly ? '/dashboard' : '/dashboard/commands/new');
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
@@ -85,6 +90,55 @@ export default function OnboardingPage() {
 
   if (loading || !user || !state) {
     return <main className="loading-page">Preparing your workspace…</main>;
+  }
+
+  if (!state.can_edit_company) {
+    return (
+      <main className="onboarding-shell">
+        <section className="onboarding-card">
+          <p className="eyebrow">Welcome to Kiko</p>
+          <h1>Join {state.company_name}</h1>
+          <p className="lede">
+            Your team has already set up this workspace. Only owners and admins
+            can change the company profile.
+          </p>
+          <dl className="onboarding-profile">
+            <dt>Company</dt>
+            <dd>{state.company_name}</dd>
+            <dt>What the company does</dt>
+            <dd>{state.company_description || 'Not filled in yet.'}</dd>
+            <dt>Primary objectives</dt>
+            <dd>
+              {state.primary_objectives.length > 0 ? (
+                <ul>
+                  {state.primary_objectives.map((objective) => (
+                    <li key={objective}>{objective}</li>
+                  ))}
+                </ul>
+              ) : (
+                'Not filled in yet.'
+              )}
+            </dd>
+          </dl>
+          <form className="auth-form" onSubmit={complete}>
+            <div className="onboarding-actions">
+              <button
+                className="primary-button"
+                disabled={saving}
+                type="submit"
+              >
+                {saving ? 'Opening…' : 'Continue to the workspace'}
+              </button>
+            </div>
+          </form>
+          {message && (
+            <p className="form-message" role="status">
+              {message}
+            </p>
+          )}
+        </section>
+      </main>
+    );
   }
 
   return (

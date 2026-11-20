@@ -11,6 +11,7 @@ import {
   transitionMarketingContent,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
+import { CanEdit } from '../../../../../lib/workspace-access';
 
 export default function MarketingContentPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -66,64 +67,68 @@ export default function MarketingContentPage() {
             <h2>Draft copy</h2>
             <p className="eyebrow">Untrusted draft · never auto-published</p>
             <p>{detail.content.body}</p>
-            <div className="button-row">
-              {['idea', 'review', 'approved'].includes(
-                detail.content.lifecycle_status,
-              ) && (
-                <button
-                  className="secondary-button"
-                  onClick={() => void transition('draft')}
+            <CanEdit>
+              <div className="button-row">
+                {['idea', 'review', 'approved'].includes(
+                  detail.content.lifecycle_status,
+                ) && (
+                  <button
+                    className="secondary-button"
+                    onClick={() => void transition('draft')}
+                  >
+                    Return to draft
+                  </button>
+                )}
+                {detail.content.lifecycle_status === 'draft' && (
+                  <button onClick={() => void transition('review')}>
+                    Submit for review
+                  </button>
+                )}
+                {detail.content.lifecycle_status === 'review' && (
+                  <button onClick={() => void transition('approved')}>
+                    Approve content
+                  </button>
+                )}
+                {detail.content.lifecycle_status !== 'archived' && (
+                  <button
+                    className="text-button"
+                    onClick={() => void transition('archived')}
+                  >
+                    Archive
+                  </button>
+                )}
+              </div>
+            </CanEdit>
+            <CanEdit>
+              {detail.content.lifecycle_status === 'approved' && (
+                <form
+                  className="workflow-form"
+                  onSubmit={async (event) => {
+                    event.preventDefault();
+                    try {
+                      await scheduleMarketingContent(
+                        contentId,
+                        new Date(scheduledFor).toISOString(),
+                      );
+                      setDetail(await getMarketingContent(contentId));
+                    } catch {
+                      setError('Unable to schedule this approved content.');
+                    }
+                  }}
                 >
-                  Return to draft
-                </button>
+                  <label>
+                    Schedule for
+                    <input
+                      required
+                      type="datetime-local"
+                      value={scheduledFor}
+                      onChange={(event) => setScheduledFor(event.target.value)}
+                    />
+                  </label>
+                  <button>Schedule</button>
+                </form>
               )}
-              {detail.content.lifecycle_status === 'draft' && (
-                <button onClick={() => void transition('review')}>
-                  Submit for review
-                </button>
-              )}
-              {detail.content.lifecycle_status === 'review' && (
-                <button onClick={() => void transition('approved')}>
-                  Approve content
-                </button>
-              )}
-              {detail.content.lifecycle_status !== 'archived' && (
-                <button
-                  className="text-button"
-                  onClick={() => void transition('archived')}
-                >
-                  Archive
-                </button>
-              )}
-            </div>
-            {detail.content.lifecycle_status === 'approved' && (
-              <form
-                className="workflow-form"
-                onSubmit={async (event) => {
-                  event.preventDefault();
-                  try {
-                    await scheduleMarketingContent(
-                      contentId,
-                      new Date(scheduledFor).toISOString(),
-                    );
-                    setDetail(await getMarketingContent(contentId));
-                  } catch {
-                    setError('Unable to schedule this approved content.');
-                  }
-                }}
-              >
-                <label>
-                  Schedule for
-                  <input
-                    required
-                    type="datetime-local"
-                    value={scheduledFor}
-                    onChange={(event) => setScheduledFor(event.target.value)}
-                  />
-                </label>
-                <button>Schedule</button>
-              </form>
-            )}
+            </CanEdit>
           </section>
           <section className="workflow-panel">
             <h2>Lifecycle history</h2>
