@@ -1628,8 +1628,10 @@ h1 {
 }
 
 .reasoning-summary {
-  padding-left: 14px;
-  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
 }
 
@@ -2122,7 +2124,7 @@ h1 {
   margin-left: 16px;
 }
 .integration-health {
-  border-left: 4px solid var(--text);
+  border: 1px solid var(--kiko-line-strong);
 }
 .integration-health h2 {
   text-transform: capitalize;
