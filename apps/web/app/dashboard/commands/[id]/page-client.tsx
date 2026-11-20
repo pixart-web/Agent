@@ -321,7 +321,10 @@ export default function CommandDetailPage() {
             onRegenerate={() => void handleRegeneratePlan()}
           />
           {plan?.status !== 'draft' && tasks.length > 0 && (
-            <TaskAgentPanel tasks={tasks} />
+            <TaskAgentPanel
+              tasks={tasks}
+              onFinished={() => void loadWorkflow()}
+            />
           )}
           {plan?.status !== 'draft' && tasks.length > 0 && (
             <TaskExecutionPanel commandId={commandId} tasks={tasks} />

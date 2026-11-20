@@ -14,8 +14,10 @@ vi.mock('../lib/workspace-access', async (original) => ({
 
 vi.mock('../lib/workflow-client', () => ({
   listAgentRuns: vi.fn().mockResolvedValue([]),
-  rerunAgent: vi.fn(),
-  runAgent: vi.fn(),
+  isAgentRunActive: vi.fn(() => false),
+  listTaskActions: vi.fn().mockResolvedValue([]),
+  startAgentRun: vi.fn(),
+  waitForAgentRun: vi.fn(),
   WorkflowApiError: class WorkflowApiError extends Error {},
 }));
 

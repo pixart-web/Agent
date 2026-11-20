@@ -13,6 +13,7 @@ celery_app.conf.update(
         "app.execution.tasks",
         "app.automations.tasks",
         "app.services.supervisor_tasks",
+        "app.services.agent_run_tasks",
     ),
     task_acks_late=True,
     task_reject_on_worker_lost=True,

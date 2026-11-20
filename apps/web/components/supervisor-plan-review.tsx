@@ -2,6 +2,7 @@ import type { Plan, SupervisorRun, WorkflowTask } from '@agent/shared';
 import React from 'react';
 
 import type { Agent } from '../lib/workflow-client';
+import { AiErrorNotice } from './ai-error-notice';
 import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
@@ -62,7 +63,9 @@ export function SupervisorPlanReview({
           O Supervisor propõe tarefas e classifica prioridade e risco. Não
           executa qualquer ação externa.
         </p>
-        {error && <p role="alert">{error}</p>}
+        {error && (
+          <AiErrorNotice message={error} className="plan-review-error" />
+        )}
         {progress}
         <CanEdit
           fallback={
@@ -172,7 +175,7 @@ export function SupervisorPlanReview({
         )}
       </CanEdit>
 
-      {error && <p role="alert">{error}</p>}
+      {error && <AiErrorNotice message={error} className="plan-review-error" />}
 
       {versions.length > 0 && (
         <details className="plan-history">

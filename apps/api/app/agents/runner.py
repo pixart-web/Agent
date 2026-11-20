@@ -1,7 +1,7 @@
 import logging
 import re
-from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from dataclasses import asdict, dataclass, fields, replace
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
@@ -50,6 +50,33 @@ from app.workspaces.scope import active_workspace_id
 
 logger = logging.getLogger(__name__)
 MAX_TOOL_SCHEMA_CHARS = 600
+STALE_RUN_MARGIN_SECONDS = 120
+_UUID_FIELDS = {"user_id", "command_id", "correlation_id", "task_id"}
+
+
+def context_to_payload(context: AgentTaskContext) -> dict[str, object]:
+    """JSON-safe form of an agent context, for the background worker."""
+    payload = asdict(context)
+    for name in _UUID_FIELDS:
+        payload[name] = str(payload[name])
+    for name, value in payload.items():
+        if isinstance(value, tuple):
+            payload[name] = list(value)
+    return payload
+
+
+def context_from_payload(payload: dict[str, object]) -> AgentTaskContext:
+    values: dict[str, object] = {}
+    for item in fields(AgentTaskContext):
+        if item.name not in payload:
+            continue
+        value = payload[item.name]
+        if item.name in _UUID_FIELDS:
+            value = UUID(str(value))
+        elif isinstance(value, list):
+            value = tuple(value)
+        values[item.name] = value
+    return AgentTaskContext(**values)  # type: ignore[arg-type]
 
 
 @dataclass(frozen=True)
@@ -92,6 +119,42 @@ class AgentRunnerService:
         context, run_id = self._start(task_id, user_id, feedback=feedback, rerun=True)
         return self._call_and_persist(context, run_id, user_id)
 
+    def start(
+        self, task_id: UUID, user_id: UUID, feedback: str | None = None
+    ) -> tuple[AgentTaskContext, UUID]:
+        """Open an agent run without calling the model; `complete` finishes it later.
+
+        Used for background runs: the API answers at once and a worker runs the model. A task
+        that already has runs is re-run (keeping the history), which needs a failed run,
+        reset actions or feedback.
+        """
+        if feedback and len(feedback) > self.settings.agent_max_feedback_chars:
+            raise WorkflowConflictError("Feedback exceeds the configured limit")
+        rerun = bool(self.runs.list_for_task_owned(task_id, user_id))
+        self.session.rollback()
+        return self._start(task_id, user_id, feedback=feedback, rerun=rerun)
+
+    def complete(
+        self, context: AgentTaskContext, run_id: UUID, user_id: UUID
+    ) -> AgentRunnerResult | None:
+        """Run the model for a started run. Returns None when the run is no longer running
+        (a redelivered task, or a run cancelled or failed meanwhile)."""
+        run = self.runs.get_owned_for_update(run_id, user_id)
+        still_running = run is not None and run.status == AgentRunStatus.RUNNING
+        self.session.rollback()  # release the row lock before the (long) model call
+        if not still_running:
+            return None
+        return self._call_and_persist(context, run_id, user_id)
+
+    def fail(self, run_id: UUID, user_id: UUID, error: Exception) -> None:
+        self._mark_failed(run_id, user_id, error)
+
+    def stale_cutoff(self) -> datetime:
+        """Runs still active after the longest possible model work are abandoned. An agent
+        run may call the model twice (one repair round)."""
+        budget = 2 * self.settings.ai_request_timeout_seconds * (self.settings.ai_max_retries + 1)
+        return utc_now() - timedelta(seconds=budget + STALE_RUN_MARGIN_SECONDS)
+
     def _start(
         self, task_id: UUID, user_id: UUID, *, feedback: str | None, rerun: bool
     ) -> tuple[AgentTaskContext, UUID]:
@@ -99,6 +162,9 @@ class AgentRunnerService:
             task = self.tasks.get_owned_for_update(task_id, user_id)
             if task is None:
                 raise WorkflowNotFoundError("Task not found")
+            if self.runs.fail_stale_for_task(task.id, self.stale_cutoff()):
+                self.session.flush()
+                rerun = True
             if task.status != TaskStatus.READY:
                 raise WorkflowConflictError("Only a ready task can run its assigned agent")
             if not self.dependencies.satisfied(task.id):
