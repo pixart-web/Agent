@@ -43,6 +43,7 @@ from app.services.approval_service import ApprovalService
 from app.services.execution_service import ExecutionService
 from tests.test_oauth_state import bearer, register
 from tests.test_specialized_agents import ready_task
+from tests.workspaces import workspace_for
 
 
 def calendar_settings(**overrides: object) -> Settings:
@@ -175,6 +176,7 @@ def test_calendar_worker_write_is_approved_fingerprinted_and_never_retried(
     settings = calendar_settings(calendar_write_enabled=True)
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())
     account = IntegrationAccount(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         provider="google_calendar",
         account_type=IntegrationAccountType.PERSONAL,
@@ -265,6 +267,7 @@ def test_browser_event_read_creates_reference_without_nonexistent_workflow_fks(
     settings = calendar_settings()
     store = FernetSecretStore(settings.integration_encryption_key.get_secret_value())
     account = IntegrationAccount(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         provider="google_calendar",
         account_type=IntegrationAccountType.PERSONAL,

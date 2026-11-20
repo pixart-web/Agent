@@ -19,6 +19,7 @@ from app.models.outbox_event import OutboxEvent
 from app.models.user import User
 from app.models.workflow_enums import OutboxStatus
 from tests.test_execution_engine import register
+from tests.workspaces import workspace_for
 
 
 def manual_payload(**overrides):
@@ -466,6 +467,7 @@ def test_trigger_config_is_owned_matched_and_rejects_sensitive_conditions(
     register(client, "automation-config-other@example.com")
     users = {item.email: item for item in db_session.scalars(select(User))}
     account = IntegrationAccount(
+        workspace_id=workspace_for(db_session, users["automation-config-owner@example.com"].id),
         user_id=users["automation-config-owner@example.com"].id,
         provider="gmail",
         external_account_id="automation-config@example.com",

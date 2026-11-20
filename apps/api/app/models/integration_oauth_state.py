@@ -15,8 +15,8 @@ class IntegrationOAuthState(Base):
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    workspace_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True
+    workspace_id: Mapped[UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
     )
     provider: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     purpose: Mapped[str] = mapped_column(String(64), nullable=False)

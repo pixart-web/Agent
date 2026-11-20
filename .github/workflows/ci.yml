@@ -126,6 +126,9 @@ jobs:
           python -m alembic upgrade head
           python -m alembic downgrade 20261010_0020
           python -m alembic upgrade head
+      - name: Models match the migrated schema
+        working-directory: apps/api
+        run: python -m alembic check
       - name: Test locking, outbox, and Redis
         run: python -m pytest apps/api/tests/test_execution_integration.py -m integration
       - name: Create a disposable database for the full suite

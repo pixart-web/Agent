@@ -24,6 +24,7 @@ from app.repositories.integration_oauth_state_repository import (
 )
 from app.services.oauth_state_cleanup import cleanup_oauth_states
 from tests.test_email_integration import email_settings
+from tests.workspaces import workspace_for
 
 
 def register(client: TestClient, email: str) -> dict[str, object]:
@@ -62,6 +63,7 @@ def persist_state(
 ) -> tuple[str, IntegrationOAuthState]:
     expiration = expires_at or utc_now() + timedelta(minutes=10)
     nonce = IntegrationOAuthState(
+        workspace_id=workspace_for(db_session, nonce_user_id or token_user_id),
         user_id=nonce_user_id or token_user_id,
         provider=provider,
         purpose=purpose,
@@ -221,12 +223,14 @@ def test_cleanup_removes_expired_and_old_consumed_states(db_session: Session) ->
     db_session.flush()
     rows = [
         IntegrationOAuthState(
+            workspace_id=workspace_for(db_session, auth_user.id),
             user_id=auth_user.id,
             provider=OAUTH_PROVIDER,
             purpose=OAUTH_PURPOSE,
             expires_at=now - timedelta(minutes=1),
         ),
         IntegrationOAuthState(
+            workspace_id=workspace_for(db_session, auth_user.id),
             user_id=auth_user.id,
             provider=OAUTH_PROVIDER,
             purpose=OAUTH_PURPOSE,
@@ -234,12 +238,14 @@ def test_cleanup_removes_expired_and_old_consumed_states(db_session: Session) ->
             consumed_at=now - timedelta(days=8),
         ),
         IntegrationOAuthState(
+            workspace_id=workspace_for(db_session, auth_user.id),
             user_id=auth_user.id,
             provider=OAUTH_PROVIDER,
             purpose=OAUTH_PURPOSE,
             expires_at=now + timedelta(days=1),
         ),
         IntegrationOAuthState(
+            workspace_id=workspace_for(db_session, auth_user.id),
             user_id=auth_user.id,
             provider=OAUTH_PROVIDER,
             purpose=OAUTH_PURPOSE,

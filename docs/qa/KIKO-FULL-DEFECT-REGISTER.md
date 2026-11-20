@@ -15,7 +15,7 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-007 | Test infrastructure / CI                 | MEDIUM   | Fixed                              |
 | KQA-008 | Local environment script                 | MEDIUM   | Fixed                              |
 | KQA-009 | Dev dependencies                         | MEDIUM   | Fixed                              |
-| KQA-010 | Data model                               | LOW      | Open (documented)                  |
+| KQA-010 | Data model                               | LOW      | Fixed (B1)                         |
 | KQA-011 | Desktop dependencies (Linux-only crates) | LOW      | Accepted                           |
 | KQA-012 | Desktop / notifications                  | HIGH     | Fixed in #33 (before this program) |
 | KQA-013 | Desktop / deep links                     | MEDIUM   | Fixed in #33 (before this program) |
@@ -126,15 +126,22 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 
 ### KQA-010 — ORM models drift from the migrated schema
 
-- **Severity:** LOW. **Status:** open, documented.
-- **Description:** `alembic check` on a fresh database reports differences: `workspace_id` is
-  `NOT NULL` in 9 CRM/marketing/integration tables but nullable in the models; some unique
-  constraints/indexes exist only in migrations (e.g. `account_tokens.token_hash`,
-  `workspaces.slug`, knowledge FTS index).
-- **Impact:** production is stricter than the models (safe); tests build the schema from the
-  models, so they do not enforce those constraints. Aligning the models breaks ~20 test fixtures
-  that insert rows without a workspace (no application code path does).
-- **Recommendation:** align models and fixtures in a dedicated change; add `alembic check` to CI.
+- **Severity:** LOW. **Status:** fixed (B1, 2026-11-20).
+- **Description:** `alembic check` on a fresh database reported 16 differences: `workspace_id`
+  `NOT NULL` in 9 CRM/marketing/integration tables but nullable in the models; unique
+  constraints duplicated by unique indexes (`account_tokens.token_hash`, `workspaces.slug`,
+  `codex_runs.task_action_id`); `ix_commands_workspace_created` missing from the model; the
+  PostgreSQL full-text index `ix_knowledge_items_fts`.
+- **Impact:** production was stricter than the models (safe), but tests built the schema from
+  the models and did not enforce those constraints.
+- **Fix:** the 9 models declare `workspace_id` required; migration `20261120_0036` drops the
+  duplicate constraints and keeps one unique index per column; the model declares the commands
+  index; the full-text index is listed as migration-only in `alembic/env.py` (it cannot be
+  expressed for the SQLite test schema). 23 test fixtures now set the workspace
+  (`tests/workspaces.py`).
+- **Regression check:** `alembic check` runs in CI after the migration round trip (job
+  "PostgreSQL and Redis integration"); verified locally on a fresh database and on the local
+  environment's database.
 
 ### KQA-011 — Unmaintained/unsound crates in the Tauri Linux stack
 

@@ -28,6 +28,7 @@ from app.models.user import User
 from app.models.workflow_enums import ActorType, RiskLevel, TaskActionStatus
 from tests.test_execution_engine import register
 from tests.test_specialized_agents import ready_task
+from tests.workspaces import workspace_for
 
 
 def settings() -> Settings:
@@ -87,6 +88,7 @@ def test_client_360_aggregates_owned_business_context_and_labels_facts(client, d
     _headers, _command, task_data = ready_task(client, db_session, "sales", email=email)
     user = db_session.scalar(select(User).where(User.email == email))
     organization = CrmOrganization(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         name="Sporting CP Demo",
         normalized_name="sporting cp demo",
@@ -97,6 +99,7 @@ def test_client_360_aggregates_owned_business_context_and_labels_facts(client, d
     db_session.add(organization)
     db_session.flush()
     contact = CrmContact(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         organization_id=organization.id,
         full_name="João Sponsor Demo",
@@ -254,6 +257,7 @@ def test_client_360_endpoint_hides_another_users_client(client, db_session) -> N
     register(client, "client-other@example.com")
     users = {item.email: item for item in db_session.query(User).all()}
     organization = CrmOrganization(
+        workspace_id=workspace_for(db_session, users["client-other@example.com"].id),
         user_id=users["client-other@example.com"].id,
         name="Other Client",
         normalized_name="other client",
@@ -263,6 +267,7 @@ def test_client_360_endpoint_hides_another_users_client(client, db_session) -> N
     db_session.add(organization)
     db_session.flush()
     crm_client = CrmClient(
+        workspace_id=workspace_for(db_session, users["client-other@example.com"].id),
         user_id=users["client-other@example.com"].id,
         organization_id=organization.id,
         owner_user_id=users["client-other@example.com"].id,
@@ -286,6 +291,7 @@ def test_opportunity_rejects_contact_from_another_client(client, db_session) -> 
     user = db_session.scalar(select(User).where(User.email == email))
     organizations = [
         CrmOrganization(
+            workspace_id=workspace_for(db_session, user.id),
             user_id=user.id,
             name=name,
             normalized_name=name.casefold(),
@@ -297,6 +303,7 @@ def test_opportunity_rejects_contact_from_another_client(client, db_session) -> 
     db_session.add_all(organizations)
     db_session.flush()
     foreign_contact = CrmContact(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         organization_id=organizations[1].id,
         full_name="Different Client Contact",
@@ -366,6 +373,7 @@ def test_client_mutations_write_record_history(client, db_session) -> None:
     _headers, _command, task_data = ready_task(client, db_session, "sales", email=email)
     user = db_session.scalar(select(User).where(User.email == email))
     organization = CrmOrganization(
+        workspace_id=workspace_for(db_session, user.id),
         user_id=user.id,
         name="History Client",
         normalized_name="history client",
