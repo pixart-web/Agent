@@ -15,14 +15,14 @@ defect register where one exists.
 
 ## B. Functional defects / gaps
 
-| #   | Item                                                                                  | Notes                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| B1  | ~~ORM models drift from migrations (KQA-010)~~                                        | Done: models aligned, duplicate constraints dropped (migration `20261120_0036`), fixtures fixed, `alembic check` in CI |
-| B2  | Specialist agents can only use tools that need ids when the task text contains ids    | Safe by design today; a "search then act" two-step loop would let agents act on records they find                      |
-| B3  | Codex development integration excluded                                                | Needs a local coding agent before development tasks can be automated again                                             |
-| B4  | Email, Calendar, GitHub integrations untested with real accounts                      | Least-privilege test accounts needed                                                                                   |
-| B5  | Projects ↔ tasks association and automations' scheduled runs not exercised end to end | Covered by unit tests only                                                                                             |
-| B6  | ~~Desktop AI timeout client-side only~~                                               | Done: Supervisor plans and specialist agent runs both run in the background (E1)                                       |
+| #   | Item                                                                                      | Notes                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| B1  | ~~ORM models drift from migrations (KQA-010)~~                                            | Done: models aligned, duplicate constraints dropped (migration `20261120_0036`), fixtures fixed, `alembic check` in CI |
+| B2  | ~~Specialist agents can only use tools that need ids when the task text contains ids~~    | Done: read-only lookup round (search, then act on the records found); see the AI architecture doc                      |
+| B3  | Codex development integration excluded                                                    | Needs a local coding agent before development tasks can be automated again                                             |
+| B4  | Email, Calendar, GitHub integrations untested with real accounts                          | Least-privilege test accounts needed                                                                                   |
+| B5  | ~~Projects ↔ tasks association and automations' scheduled runs not exercised end to end~~ | Done: `kiko-local.sh workflows`; scheduled automations now have a scheduler service (KQA-026)                          |
+| B6  | ~~Desktop AI timeout client-side only~~                                                   | Done: Supervisor plans and specialist agent runs both run in the background (E1)                                       |
 
 ## C. UX improvements
 
@@ -45,12 +45,12 @@ defect register where one exists.
 
 ## E. Architectural improvements
 
-| #   | Item                                                                                                                                                     | Justification                                                                   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| E1  | ~~Background AI generation with status polling~~ — done for plans (`POST /commands/{id}/supervisor-runs`) and agent runs (`POST /tasks/{id}/agent-runs`) | Both resume after the page is left; abandoned runs are marked `stale_run`       |
-| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                                                                                            | Parallel slots and grammar control; no domain change needed                     |
-| E3  | Celery soft time limits locally (`--pool=solo` ignores them)                                                                                             | Production prefork on Linux is unaffected; document or use threads pool locally |
-| E4  | ~~Auth rate limit hit by local test bursts~~ — done: the local environment allows 60/min (`KIKO_LOCAL_AUTH_RATE_LIMIT`); production keeps 10/min         | Limit stays enabled locally so the 429 path is still exercised                  |
+| #   | Item                                                                                                                                                     | Justification                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| E1  | ~~Background AI generation with status polling~~ — done for plans (`POST /commands/{id}/supervisor-runs`) and agent runs (`POST /tasks/{id}/agent-runs`) | Both resume after the page is left; abandoned runs are marked `stale_run` |
+| E2  | Second runtime adapter (llama.cpp server) for Linux GPU hosts                                                                                            | Parallel slots and grammar control; no domain change needed               |
+| E3  | ~~Celery soft time limits locally (`--pool=solo` ignores them)~~                                                                                         | Done: local prefork worker (3 processes) and time limits on AI tasks      |
+| E4  | ~~Auth rate limit hit by local test bursts~~ — done: the local environment allows 60/min (`KIKO_LOCAL_AUTH_RATE_LIMIT`); production keeps 10/min         | Limit stays enabled locally so the 429 path is still exercised            |
 
 ## F. Future features (not required for the macOS release)
 

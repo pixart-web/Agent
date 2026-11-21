@@ -224,6 +224,24 @@ services:
         condition: service_healthy
     stop_grace_period: 15s
 
+  automation-scheduler:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    entrypoint: []
+    command: python -m app.scripts.run_automation_scheduler
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?Set AUTH_SECRET_KEY in .env}
+      AUTOMATION_SCHEDULER_INTERVAL_SECONDS: ${AUTOMATION_SCHEDULER_INTERVAL_SECONDS:-30}
+    volumes:
+      - ./apps/api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stop_grace_period: 15s
+
   transactional-email-dispatcher:
     build:
       context: .

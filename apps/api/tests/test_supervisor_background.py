@@ -221,3 +221,22 @@ def test_viewers_cannot_start_planning(
     )
     assert refused.status_code == 403
     assert queued == []
+
+
+def test_worker_time_limit_becomes_a_clear_ai_timeout() -> None:
+    from celery.exceptions import SoftTimeLimitExceeded
+
+    from app.ai.exceptions import AIProviderTimeoutError
+
+    class Slow:
+        provider_name = "ollama"
+        model_name = "gemma4"
+
+        def generate_structured(self, **_kwargs: object) -> object:
+            raise SoftTimeLimitExceeded()
+
+    provider = supervisor_tasks.TimeBoundProvider(Slow())  # type: ignore[arg-type]
+    assert provider.model_name == "gemma4"
+    with pytest.raises(AIProviderTimeoutError, match="time limit"):
+        provider.generate_structured(system_prompt="", user_prompt="")
+    assert supervisor_tasks.model_budget_seconds(3) == 3 * supervisor_tasks.model_budget_seconds(1)

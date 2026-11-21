@@ -17,7 +17,7 @@ from app.main import app
 from app.models.agent_run import AgentRun
 from app.models.task_action import TaskAction
 from app.models.workflow_enums import AgentRunStatus
-from app.services import agent_run_tasks
+from app.services import agent_run_tasks, supervisor_tasks
 from tests.fakes import FakeLLMProvider
 from tests.test_specialized_agents import outcome, proposal, ready_task
 
@@ -50,7 +50,7 @@ def run_worker(
         yield db_session
 
     monkeypatch.setattr(agent_run_tasks, "SessionLocal", session_local)
-    monkeypatch.setattr(agent_run_tasks, "get_llm_provider", lambda: provider)
+    monkeypatch.setattr(supervisor_tasks, "get_llm_provider", lambda: provider)
     agent_run_tasks.run_agent_payload(payload)
 
 
@@ -134,7 +134,7 @@ def test_unavailable_runtime_in_the_worker_is_recorded_on_the_run(
         yield db_session
 
     monkeypatch.setattr(agent_run_tasks, "SessionLocal", session_local)
-    monkeypatch.setattr(agent_run_tasks, "get_llm_provider", unavailable)
+    monkeypatch.setattr(supervisor_tasks, "get_llm_provider", unavailable)
     agent_run_tasks.run_agent_payload(queued[0])
     run = runs(client, headers, task["id"])[0]
     assert run["status"] == "failed"

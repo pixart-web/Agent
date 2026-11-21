@@ -9,6 +9,7 @@
 #   worker    Celery execution worker
 #   outbox    outbox dispatcher
 #   mailer    transactional email dispatcher -> Mailpit
+#   scheduler runs scheduled automations when they fall due
 #   web       Next.js web client (email links)  http://localhost:3000
 #   (AI)      local models via the Ollama service  http://127.0.0.1:11434 (not managed here)
 #
@@ -31,6 +32,7 @@
 #   open-link <url>   open an emailed http://localhost:3000/... link in the Kiko macOS app
 #   accounts          create temporary acceptance accounts (owner + every role) -> ~/.kiko-local/test-accounts.txt
 #   role-matrix       role permission sweep (viewer read-only, members cannot administer)
+#   workflows         end-to-end: projects with linked tasks, scheduled automations (needs scheduler)
 #   psql              open psql on the Kiko local database
 #   env               print the non-secret configuration
 set -euo pipefail
@@ -50,7 +52,7 @@ SMTP_PORT="${KIKO_LOCAL_SMTP_PORT:-56025}"
 MAIL_UI_PORT="${KIKO_LOCAL_MAIL_UI_PORT:-58025}"
 API_PORT="${KIKO_LOCAL_API_PORT:-8000}"
 WEB_PORT="${KIKO_LOCAL_WEB_PORT:-3000}"
-ALL_SERVICES=(postgres redis mailpit api worker outbox mailer web)
+ALL_SERVICES=(postgres redis mailpit api worker outbox mailer scheduler web)
 
 RUN="$H/run"
 LOGS="$H/logs"
@@ -294,9 +296,14 @@ start_api() {
 start_worker() {
   if alive worker; then say "worker: already running"; return; fi
   write_api_env
+  # prefork (not solo): task time limits are enforced and a plan being generated does not
+  # hold up approved actions. On macOS a forked process must not touch the system proxy
+  # settings (the lookup hangs in the child): OBJC_DISABLE_INITIALIZE_FORK_SAFETY plus
+  # NO_PROXY=* (every local service, Ollama included, is on 127.0.0.1).
   start_bg worker "$LOGS/worker.log" bash -c "set -a; . '$RUN/api.env'; set +a; cd '$API_DIR'; \
-    exec '$PY' -m celery -A app.execution.celery_app:celery_app worker \
-      --loglevel=INFO --pool=solo --hostname=kiko-local@%h"
+    OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES NO_PROXY='*' no_proxy='*' FORKED_BY_MULTIPROCESSING=1 exec '$PY' -m celery -A app.execution.celery_app:celery_app worker \
+      --loglevel=INFO --pool=prefork --concurrency=${KIKO_LOCAL_WORKER_CONCURRENCY:-3} \
+      --hostname=kiko-local@%h"
   local i log_start
   log_start=$(wc -l < "$LOGS/worker.log" 2>/dev/null || echo 0)
   for ((i = 0; i < 60; i++)); do
@@ -328,6 +335,14 @@ start_mailer() {
   say "mailer: started"
 }
 
+start_scheduler() {
+  if alive scheduler; then say "scheduler: already running"; return; fi
+  write_api_env
+  start_bg scheduler "$LOGS/scheduler.log" bash -c "set -a; . '$RUN/api.env'; set +a; cd '$API_DIR'; \
+    exec '$PY' -m app.scripts.run_automation_scheduler"
+  say "scheduler: started"
+}
+
 start_web() {
   if alive web; then say "web: already running"; return; fi
   port_busy "$WEB_PORT" && die "port $WEB_PORT is used by another process; set KIKO_LOCAL_WEB_PORT"
@@ -354,7 +369,7 @@ start_one() {
   case "$1" in
     postgres) start_postgres ;; redis) start_redis ;; mailpit) start_mailpit ;;
     api) start_api ;; worker) start_worker ;; outbox) start_outbox ;;
-    mailer) start_mailer ;; web) start_web ;;
+    mailer) start_mailer ;; scheduler) start_scheduler ;; web) start_web ;;
     *) die "unknown service: $1 (one of: ${ALL_SERVICES[*]})" ;;
   esac
 }
@@ -364,7 +379,8 @@ stop_one() {
     postgres) stop_postgres ;; redis) stop_redis ;;
     mailpit) stop_process mailpit 5 ;; api) stop_process api 15 ;;
     worker) stop_process worker 30 ;; outbox) stop_process outbox 15 ;;
-    mailer) stop_process mailer 15 ;; web) stop_process web 10 ;;
+    mailer) stop_process mailer 15 ;; scheduler) stop_process scheduler 15 ;;
+    web) stop_process web 10 ;;
     *) die "unknown service: $1 (one of: ${ALL_SERVICES[*]})" ;;
   esac
 }
@@ -374,7 +390,7 @@ cmd_start() {
   local services=("$@")
   if [ ${#services[@]} -eq 0 ]; then
     start_postgres; start_redis; start_mailpit; migrate
-    start_api; start_worker; start_outbox; start_mailer; start_web
+    start_api; start_worker; start_outbox; start_mailer; start_scheduler; start_web
     say ""; say "Kiko local API: http://localhost:$API_PORT   (Kiko → Server Connection…)"
     say "Email inbox:    http://127.0.0.1:$MAIL_UI_PORT"
   else
@@ -433,6 +449,14 @@ cmd_role_matrix() {
   [ -f "$H/test-accounts.txt" ] || die "create the accounts first: $0 accounts"
   with_api_env "$PY" "$REPO/scripts/local/kiko_local_role_matrix.py" \
     --api "http://127.0.0.1:$API_PORT" --accounts "$H/test-accounts.txt" --state "$H/security"
+}
+
+cmd_workflows() {
+  init_home; write_api_env
+  [ -f "$H/test-accounts.txt" ] || die "create the accounts first: $0 accounts"
+  alive scheduler || die "the automation scheduler is not running: $0 start scheduler"
+  "$PY" "$REPO/scripts/local/kiko_local_workflows.py" \
+    --api "http://127.0.0.1:$API_PORT" --accounts "$H/test-accounts.txt"
 }
 
 cmd_ai_eval() {
@@ -504,6 +528,7 @@ case "${1:-}" in
   desktop-e2e) cmd_desktop_e2e ;;
   accounts) cmd_accounts ;;
   role-matrix) cmd_role_matrix ;;
+  workflows) cmd_workflows ;;
   ai-eval) cmd_ai_eval ;;
   idor-sweep) cmd_idor_sweep ;;
   perf) cmd_perf ;;
