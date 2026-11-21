@@ -9,6 +9,7 @@ import {
   resendVerification,
   verifyEmail,
 } from '../../lib/auth-client';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 function VerificationContent() {
   const search = useSearchParams();
@@ -58,6 +59,7 @@ function VerificationContent() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="verify-title">
+        <KikoLogo />
         <p className="eyebrow">Secure identity</p>
         <h1 id="verify-title" className="auth-title">
           Verify your email

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useState } from 'react';
 
 import { AuthClientError, confirmPasswordReset } from '../../lib/auth-client';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 function ResetContent() {
   const token = useSearchParams().get('token') ?? '';
@@ -36,6 +37,7 @@ function ResetContent() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="reset-title">
+        <KikoLogo />
         <p className="eyebrow">Account recovery</p>
         <h1 id="reset-title" className="auth-title">
           Choose a new password

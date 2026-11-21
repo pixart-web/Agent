@@ -8,7 +8,7 @@ phase('persistence-and-logout', async () => {
     await seeText('Desktop launch', 20000);
   });
   await step('log out', async () => {
-    await click('Log out');
+    await click('Terminar sessão');
     await atPath('/login');
   });
 });

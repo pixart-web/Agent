@@ -6,6 +6,7 @@ import { FormEvent, useState } from 'react';
 
 import { AuthClientError, login } from '../../lib/auth-client';
 import { validateLoginForm } from '../../lib/form-validation';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,9 +46,10 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="login-title">
-        <p className="eyebrow">Pixart operations</p>
+        <KikoLogo />
+        <p className="eyebrow">PIXART Ecosystem</p>
         <h1 id="login-title" className="auth-title">
-          Sign in to Agent
+          Sign in to Kiko
         </h1>
         <p className="auth-intro">
           Continue to the Pixart AI Operating System.
@@ -98,7 +100,7 @@ export default function LoginPage() {
         </form>
 
         <p className="auth-switch">
-          New to Agent? <Link href="/register">Create an account</Link>
+          New to Kiko? <Link href="/register">Create an account</Link>
         </p>
         <p className="auth-switch">
           <Link href="/forgot-password">Forgot your password?</Link>

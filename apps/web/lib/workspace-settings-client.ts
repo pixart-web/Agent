@@ -74,3 +74,14 @@ export async function downloadWorkspaceExport(
     `kiko-workspace-export.${format}`;
   await saveDownload(await response.blob(), filename);
 }
+
+/** Make another workspace the active one for this account. */
+export async function switchWorkspace(workspaceId: string): Promise<void> {
+  const response = await authFetch('/api/v1/workspaces/switch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspace_id: workspaceId }),
+  });
+  if (!response.ok)
+    throw new Error(`Workspace switch failed (${response.status})`);
+}

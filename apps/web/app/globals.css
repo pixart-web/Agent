@@ -1,14 +1,33 @@
 :root {
-  --background: #f4f6f8;
-  --surface: rgba(255, 255, 255, 0.88);
-  --ink: #172026;
-  --muted: #66737d;
-  --line: #dce2e6;
-  --accent: #155e75;
-  --accent-soft: #dff3f7;
-  --healthy: #16845b;
-  --warning: #be7b16;
-  --offline: #b54545;
+  /* Kiko Alive tokens (see docs/design/KIKO-ALIVE-DESIGN-SYSTEM.md). The older names below
+     are aliases so every existing screen picks up the new theme. */
+  --kiko-midnight: #090914;
+  --kiko-surface: #151422;
+  --kiko-surface-2: #1d1b2e;
+  --kiko-surface-3: #262339;
+  --kiko-amber: #ff995f;
+  --kiko-violet: #8b5cf6;
+  --kiko-blue: #6b8cff;
+  --kiko-text: #f7f5ff;
+  --kiko-text-2: #a8a5b8;
+  --kiko-line: rgba(255, 255, 255, 0.09);
+  --kiko-line-strong: rgba(255, 255, 255, 0.16);
+  --kiko-success: #34d399;
+  --kiko-warning: #fbbf24;
+  --kiko-danger: #f87171;
+
+  --background: var(--kiko-midnight);
+  --surface: rgba(21, 20, 34, 0.86);
+  --surface-raised: var(--kiko-surface-2);
+  --ink: var(--kiko-text);
+  --muted: var(--kiko-text-2);
+  --line: var(--kiko-line);
+  --accent: var(--kiko-amber);
+  --accent-soft: rgba(255, 153, 95, 0.14);
+  --healthy: var(--kiko-success);
+  --warning: var(--kiko-warning);
+  --offline: var(--kiko-danger);
+  color-scheme: dark;
 }
 
 * {
@@ -26,10 +45,10 @@ body {
   background:
     radial-gradient(
       circle at 85% 5%,
-      rgba(21, 94, 117, 0.12),
-      transparent 28rem
+      rgba(139, 92, 246, 0.14),
+      transparent 32rem
     ),
-    linear-gradient(180deg, #f8fafb 0%, var(--background) 100%);
+    linear-gradient(180deg, #0c0b1a 0%, var(--background) 100%);
   font-family:
     Inter,
     ui-sans-serif,
@@ -563,7 +582,7 @@ h1 {
 
 .agent-card:hover {
   transform: translateY(-3px);
-  border-color: #aec4cc;
+  border-color: var(--kiko-line-strong);
 }
 
 .agent-card:first-child {
@@ -658,7 +677,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--ink);
-  background: white;
+  background: var(--surface-raised);
   font: inherit;
 }
 
@@ -1026,7 +1045,7 @@ h1 {
   margin-top: 12px;
   padding: 14px;
   border-radius: 12px;
-  background: #f3f7f8;
+  background: var(--surface-raised);
 }
 
 .conversation-operation__plan span {
@@ -1085,8 +1104,8 @@ h1 {
   display: inline-flex;
   padding: 6px 10px;
   border-radius: 999px;
-  color: #33505d;
-  background: #e8eef1;
+  color: var(--kiko-text-2);
+  background: rgba(255, 255, 255, 0.07);
   font-size: 0.7rem;
   font-weight: 850;
   letter-spacing: 0.06em;
@@ -1096,22 +1115,22 @@ h1 {
 .workflow-badge--ready,
 .workflow-badge--completed,
 .workflow-badge--approved {
-  color: #0e6846;
-  background: #dff4ea;
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.14);
 }
 
 .workflow-badge--running,
 .workflow-badge--planning,
 .workflow-badge--waiting_approval {
-  color: #155e75;
-  background: var(--accent-soft);
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.18);
 }
 
 .workflow-badge--failed,
 .workflow-badge--cancelled,
 .workflow-badge--blocked {
-  color: #8f3030;
-  background: #f8e4e4;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.14);
 }
 
 .command-list,
@@ -1135,7 +1154,7 @@ h1 {
 
 .command-row:hover {
   transform: translateY(-2px);
-  border-color: #aec4cc;
+  border-color: var(--kiko-line-strong);
 }
 
 .command-row p {
@@ -1181,7 +1200,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 7px;
   color: var(--accent);
-  background: white;
+  background: var(--surface-raised);
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
@@ -1505,7 +1524,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 10px;
   color: var(--ink);
-  background: white;
+  background: var(--surface-raised);
   font: inherit;
 }
 
@@ -1528,10 +1547,10 @@ h1 {
 
 .danger-button {
   padding: 11px 15px;
-  border: 1px solid #e0baba;
+  border: 1px solid rgba(248, 113, 113, 0.4);
   border-radius: 10px;
-  color: #8f3030;
-  background: #fff4f4;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
   font: inherit;
   font-weight: 750;
   cursor: pointer;
@@ -1541,7 +1560,7 @@ h1 {
   margin-bottom: 24px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #fff0f0;
+  background: rgba(248, 113, 113, 0.1);
 }
 
 .task-control {
@@ -1609,8 +1628,10 @@ h1 {
 }
 
 .reasoning-summary {
-  padding-left: 14px;
-  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
 }
 
@@ -1781,20 +1802,20 @@ h1 {
 }
 
 .approval-card--yellow {
-  border-color: #e7bd62;
-  background: linear-gradient(145deg, #fff8e8, var(--surface));
+  border-color: rgba(251, 191, 36, 0.5);
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.1), var(--surface));
 }
 
 .approval-card--red {
-  border-color: #df7777;
-  background: linear-gradient(145deg, #fff0f0, var(--surface));
+  border-color: rgba(248, 113, 113, 0.5);
+  background: linear-gradient(145deg, rgba(248, 113, 113, 0.1), var(--surface));
 }
 
 .high-risk-warning {
   padding: 12px;
   border-radius: 10px;
-  color: #862f2f;
-  background: #ffe0e0;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.14);
   font-weight: 750;
 }
 
@@ -1887,28 +1908,28 @@ h1 {
 .workflow-badge--yellow,
 .workflow-badge--waiting_approval,
 .workflow-badge--retry_scheduled {
-  color: #77520b;
-  background: #fff0bf;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.14);
 }
 
 .workflow-badge--red,
 .workflow-badge--failed {
-  color: #8f3030;
-  background: #ffe0e0;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.14);
 }
 
 .workflow-badge--succeeded,
 .workflow-badge--completed,
 .workflow-badge--approved {
-  color: #246141;
-  background: #ddf6e8;
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.14);
 }
 
 .workflow-badge--running,
 .workflow-badge--queued,
 .workflow-badge--processing {
-  color: #284ca0;
-  background: #e5ecff;
+  color: #a5b4fc;
+  background: rgba(107, 140, 255, 0.16);
 }
 
 @media (max-width: 640px) {
@@ -1984,14 +2005,14 @@ h1 {
   font-size: 0.82rem;
 }
 .agent-operational--operational {
-  color: #166534;
+  color: #6ee7b7;
 }
 .agent-operational--sandbox {
-  color: #854d0e;
+  color: #fcd34d;
 }
 .agent-operational--unavailable,
 .agent-operational--disabled {
-  color: #991b1b;
+  color: #fca5a5;
 }
 .agent-config-grid {
   display: grid;
@@ -2103,7 +2124,7 @@ h1 {
   margin-left: 16px;
 }
 .integration-health {
-  border-left: 4px solid var(--text);
+  border: 1px solid var(--kiko-line-strong);
 }
 .integration-health h2 {
   text-transform: capitalize;
@@ -2489,7 +2510,7 @@ html[data-platform='desktop'] .dashboard-nav .nav-user {
   border: 1px solid color-mix(in srgb, var(--offline) 35%, transparent);
   border-radius: 12px;
   color: var(--ink);
-  background: white;
+  background: var(--surface-raised);
   box-shadow: 0 12px 32px rgba(23, 32, 38, 0.16);
   font-size: 0.9rem;
 }
@@ -2510,7 +2531,7 @@ html[data-platform='desktop'] .dashboard-nav .nav-user {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: white;
+  background: var(--surface-raised);
   box-shadow: 0 24px 64px rgba(23, 32, 38, 0.24);
 }
 

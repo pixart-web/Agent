@@ -10,6 +10,7 @@ import {
   getCurrentUser,
 } from '../../lib/auth-client';
 import type { User } from '../../lib/auth-types';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 function InviteContent() {
   const token = useSearchParams().get('token') ?? '';
@@ -43,6 +44,7 @@ function InviteContent() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="invite-title">
+        <KikoLogo />
         <p className="eyebrow">Workspace invitation</p>
         <h1 id="invite-title" className="auth-title">
           Join your team on Kiko
