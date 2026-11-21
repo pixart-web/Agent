@@ -92,6 +92,25 @@ the four AI generation endpoints (`generate-plan`, `regenerate-plan`, `run-agent
 `rerun-agent`) and keeps 30 s for everything else (`apps/desktop/src-tauri/src/api.rs`). The
 backend bounds each model call with `AI_REQUEST_TIMEOUT_SECONDS` (default 180).
 
+### Lookup round (search, then act)
+
+When a task names no records (no identifiers in its text), tools that need an id are hidden
+from the agent, so it starts with read-only lookups. If its whole proposal is lookups on
+internal data (`crm.*`, `marketing.*`, `knowledge.*` list/search/get tools, green, no approval;
+external accounts such as email are never auto-run), the runner executes up to three of them,
+records `agent_lookup_performed` in the audit log, and asks the agent once more with the
+results (each truncated to 1,500 characters). The found identifiers unlock the id tools, and the
+second proposal is validated and governed as usual. If the second answer is unusable, the lookup
+proposal is kept. `AGENT_LOOKUP_ROUND_ENABLED=false` turns it off. Agent runs may therefore call
+the model three times; their worker time limit and stale-run cut-off allow for that.
+
+### Worker time limits
+
+The Celery tasks for plans and agent runs have soft time limits equal to the model's whole time
+budget plus 60 s (`AI_REQUEST_TIMEOUT_SECONDS × (AI_MAX_RETRIES + 1)` per model call). When the
+limit is reached the provider raises a normal AI timeout, so the run is marked failed with
+"The local AI did not finish within the time limit".
+
 ### Background planning
 
 Supervisor plans run in the background. `POST /commands/{id}/supervisor-runs` opens a

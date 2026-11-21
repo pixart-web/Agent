@@ -21,16 +21,17 @@ Homebrew PostgreSQL or any other project's database, Redis or volumes.
 
 ## 2. Services and addresses
 
-| Service    | What runs                                                               | Address                                                  | Data                     |
-| ---------- | ----------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------ |
-| `postgres` | dedicated PostgreSQL **16** cluster (Homebrew `postgresql@16` binaries) | `127.0.0.1:55432`, db/user `kiko_local`                  | `~/.kiko-local/postgres` |
-| `redis`    | dedicated Redis, password protected, AOF on                             | `127.0.0.1:56379` (db 0 app, db 1 Celery broker)         | `~/.kiko-local/redis`    |
-| `mailpit`  | email capture, nothing is relayed                                       | SMTP `127.0.0.1:56025`, inbox **http://127.0.0.1:58025** | `~/.kiko-local/mailpit`  |
-| `api`      | FastAPI (uvicorn), migrations applied on start                          | **http://localhost:8000**                                | —                        |
-| `worker`   | Celery execution worker (`--pool=solo`)                                 | Redis db 1                                               | —                        |
-| `outbox`   | outbox dispatcher (`app.scripts.run_outbox_dispatcher`)                 | —                                                        | —                        |
-| `mailer`   | transactional email dispatcher → Mailpit                                | —                                                        | —                        |
-| `web`      | Next.js web client (target of emailed links)                            | http://localhost:3000                                    | —                        |
+| Service     | What runs                                                                 | Address                                                  | Data                     |
+| ----------- | ------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------ |
+| `postgres`  | dedicated PostgreSQL **16** cluster (Homebrew `postgresql@16` binaries)   | `127.0.0.1:55432`, db/user `kiko_local`                  | `~/.kiko-local/postgres` |
+| `redis`     | dedicated Redis, password protected, AOF on                               | `127.0.0.1:56379` (db 0 app, db 1 Celery broker)         | `~/.kiko-local/redis`    |
+| `mailpit`   | email capture, nothing is relayed                                         | SMTP `127.0.0.1:56025`, inbox **http://127.0.0.1:58025** | `~/.kiko-local/mailpit`  |
+| `api`       | FastAPI (uvicorn), migrations applied on start                            | **http://localhost:8000**                                | —                        |
+| `worker`    | Celery worker, 3 processes (`--pool=prefork`, macOS spawn start)          | Redis db 1                                               | —                        |
+| `scheduler` | automation scheduler (`app.scripts.run_automation_scheduler`, every 30 s) | —                                                        | —                        |
+| `outbox`    | outbox dispatcher (`app.scripts.run_outbox_dispatcher`)                   | —                                                        | —                        |
+| `mailer`    | transactional email dispatcher → Mailpit                                  | —                                                        | —                        |
+| `web`       | Next.js web client (target of emailed links)                              | http://localhost:3000                                    | —                        |
 
 All listeners are bound to `127.0.0.1`. State directory: `~/.kiko-local` (`chmod 700`)
 
@@ -63,6 +64,7 @@ scripts/local/kiko-local.sh test             # backend smoke test (20 checks, fi
 scripts/local/kiko-local.sh test-persisted   # after a restart: sign in again with the last test account
 scripts/local/kiko-local.sh accounts         # temporary acceptance accounts: owner, admin, manager, member, viewer + platform admin
 scripts/local/kiko-local.sh role-matrix      # role sweep: viewer read-only, members/managers cannot administer
+scripts/local/kiko-local.sh workflows        # end-to-end: projects with linked tasks, scheduled automations
 scripts/local/kiko-local.sh ai-eval          # every AI flow with the real local model + egress check
 scripts/local/kiko-local.sh idor-sweep       # cross-tenant authorization sweep (every operation with an id)
 scripts/local/kiko-local.sh perf             # latency/concurrency probe of the main endpoints
@@ -241,14 +243,18 @@ them. Install the DMG rebuilt from this branch to get them.
 
 ## 10. Known limitations
 
-1. **Auth rate limit applies locally.** Many sign-ins/relaunches within a minute from the same
-   IP get `429` (seen when running the desktop journey repeatedly). Wait a minute.
+1. **Auth rate limit applies locally** (60 per minute here, 10 in production). Running many
+   journeys back to back can still reach it; wait a minute.
 2. **No real AI**: without an OpenAI key the Supervisor and Kiko AI answers are unavailable
    (section 6).
 3. **Email, calendar, GitHub and Codex integrations are disabled** (they need real Google/GitHub
    OAuth credentials, which must not be used here).
-4. **Celery runs `--pool=solo`**: one task at a time, and Celery soft time limits do not
-   interrupt a running task (prefork-only feature). Production (Linux containers) is unaffected.
+4. **Worker on macOS.** The worker uses three processes (`--pool=prefork`; Python on macOS
+   starts them with _spawn_). It needs `FORKED_BY_MULTIPROCESSING=1` (otherwise every task fails
+   with "not enough values to unpack"), `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` and
+   `NO_PROXY=*`; `kiko-local.sh` sets all three. Task time limits are enforced, and a plan
+   being generated no longer holds up approved actions. `KIKO_LOCAL_WORKER_CONCURRENCY`
+   changes the number of processes.
 5. **Emailed links point to the web client**, not to `kiko://`. Use `open-link` to finish them
    in the app.
 6. Native UI interaction in the release app (clicking through Server Connection by hand) was

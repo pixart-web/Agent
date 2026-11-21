@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from dataclasses import asdict, dataclass, fields, replace
@@ -16,11 +17,13 @@ from app.ai.base import LLMProvider, LLMResult
 from app.ai.exceptions import AIError
 from app.core.config import Settings, get_settings
 from app.core.time import utc_now
+from app.execution.context import ExecutionContext
 from app.execution.context_safety import sanitize_execution_payload
 from app.execution.exceptions import ToolInputValidationError
 from app.execution.policies import ExecutionRiskPolicy, action_fingerprint, maximum_risk
 from app.execution.registry import ToolRegistry
 from app.execution.tools.registry import build_tool_registry
+from app.integrations.credentials import EnvironmentCredentialProvider
 from app.models.agent_configuration import AgentConfiguration
 from app.models.agent_run import AgentRun
 from app.models.command import Command
@@ -51,6 +54,11 @@ from app.workspaces.scope import active_workspace_id
 logger = logging.getLogger(__name__)
 MAX_TOOL_SCHEMA_CHARS = 600
 STALE_RUN_MARGIN_SECONDS = 120
+# Read-only internal tools an agent may run before proposing actions (the lookup round).
+LOOKUP_NAMESPACES = ("crm.", "marketing.", "knowledge.")
+LOOKUP_OPERATIONS = ("list_", "search", "get_")
+MAX_LOOKUPS = 3
+LOOKUP_RESULT_CHARS = 1_500
 _UUID_FIELDS = {"user_id", "command_id", "correlation_id", "task_id"}
 
 
@@ -151,8 +159,8 @@ class AgentRunnerService:
 
     def stale_cutoff(self) -> datetime:
         """Runs still active after the longest possible model work are abandoned. An agent
-        run may call the model twice (one repair round)."""
-        budget = 2 * self.settings.ai_request_timeout_seconds * (self.settings.ai_max_retries + 1)
+        run may call the model three times (proposal, one repair, one lookup round)."""
+        budget = 3 * self.settings.ai_request_timeout_seconds * (self.settings.ai_max_retries + 1)
         return utc_now() - timedelta(seconds=budget + STALE_RUN_MARGIN_SECONDS)
 
     def _start(
@@ -314,12 +322,101 @@ class AgentRunnerService:
                     context=retry_context, provider=self.provider, response_model=response_model
                 )
                 proposal = self._validate(result.data, retry_context, agent)
+            proposal, result = self._lookup_round(context, run_id, agent, proposal, result)
             return self._persist(run_id, user_id, proposal, result)
         except Exception as error:
             self._mark_failed(run_id, user_id, error)
             if isinstance(error, (AIError, WorkflowConflictError, AgentProposalError)):
                 raise
             raise AgentProposalError("Specialized agent proposal failed validation") from error
+
+    def _lookup_round(self, context: AgentTaskContext, run_id: UUID, agent, proposal, result):
+        """When the task names no records and the agent only proposed read-only lookups, run
+        them now and ask the agent once more, with the results, for the actions that complete
+        the task. The lookups never change data; the final proposal is validated as usual.
+        If the second answer is unusable, the lookup proposal is kept (nothing is lost)."""
+        if not self.settings.agent_lookup_round_enabled or not proposal.actions:
+            return proposal, result
+        if self._known_identifier(context):
+            return proposal, result
+        definitions = [self.tools.get(a.tool_name, a.tool_version) for a in proposal.actions]
+        if not all(is_lookup_tool(definition) for definition in definitions):
+            return proposal, result
+        findings = []
+        for item, definition in list(zip(proposal.actions, definitions, strict=True))[:MAX_LOOKUPS]:
+            findings.append(self._run_lookup(context, agent.agent_id, item, definition))
+        self.audit.record(
+            actor_type=ActorType.AGENT,
+            actor_id=None,
+            event_type="agent_lookup_performed",
+            resource_type="agent_run",
+            resource_id=run_id,
+            metadata={
+                "task_id": str(context.task_id),
+                "tools": [item.tool_name for item in proposal.actions[:MAX_LOOKUPS]],
+            },
+            correlation_id=context.correlation_id,
+        )
+        self.session.commit()
+        lookup_context = replace(
+            context,
+            feedback=(
+                f"{context.feedback + chr(10) if context.feedback else ''}"
+                "Read-only lookups already done (do not repeat them):\n"
+                + "\n".join(findings)
+                + "\nNow propose the actions that complete the task, using the real "
+                "identifiers above. If nothing found fits, propose an internal note "
+                "explaining what is missing."
+            ),
+        )
+        try:
+            second = agent.propose_actions(
+                context=lookup_context,
+                provider=self.provider,
+                response_model=self._constrained_model(lookup_context),
+            )
+            return self._validate(second.data, lookup_context, agent), second
+        except (ToolInputValidationError, AgentProposalError) as rejected:
+            logger.info(
+                "agent_lookup_round_rejected",
+                extra={"agent_run_id": str(run_id), "reason": self._rejection(rejected)},
+            )
+            return proposal, result
+
+    def _run_lookup(self, context: AgentTaskContext, agent_id: str, item, definition) -> str:
+        call = f"- {item.tool_name}({json.dumps(item.input_payload, default=str)[:300]})"
+        try:
+            payload = self.tools.validate_input(definition, item.input_payload, agent_id)
+            output = definition.handler.execute(
+                ExecutionContext(
+                    user_id=context.user_id,
+                    command_id=context.command_id,
+                    task_id=context.task_id,
+                    action_id=uuid4(),
+                    execution_id=uuid4(),
+                    correlation_id=context.correlation_id,
+                    credentials=EnvironmentCredentialProvider(),
+                ),
+                payload,
+            )
+            data = sanitize_execution_payload(
+                definition.output_schema.model_validate(output).model_dump(mode="json")
+            )
+            text = json.dumps(data, ensure_ascii=False, default=str)
+            if len(text) > LOOKUP_RESULT_CHARS:
+                text = text[:LOOKUP_RESULT_CHARS] + "…(truncated)"
+            return f"{call} -> {text}"
+        except Exception as error:  # a failed lookup is reported to the model, not raised
+            return f"{call} -> failed ({type(error).__name__})"
+
+    @staticmethod
+    def _known_identifier(context: AgentTaskContext) -> bool:
+        return (
+            UUID_PATTERN.search(
+                " ".join([context.task_instructions, context.plan_objective, context.command_input])
+            )
+            is not None
+        )
 
     def _tool_specs(self, allowed_tools: frozenset[str]) -> tuple[str, ...]:
         specs = []
@@ -341,7 +438,14 @@ class AgentRunnerService:
         allowed = set(context.available_tools)
         definitions = [item for item in self.tools.definitions() if item.name in allowed]
         known_ids = UUID_PATTERN.search(
-            " ".join([context.task_instructions, context.plan_objective, context.command_input])
+            " ".join(
+                [
+                    context.task_instructions,
+                    context.plan_objective,
+                    context.command_input,
+                    context.feedback or "",
+                ]
+            )
         )
         if known_ids is None:
             without_ids = [item for item in definitions if not requires_identifier(item)]
@@ -601,6 +705,17 @@ def find_placeholder_identifier(payload: object, path: str = "") -> str | None:
 UUID_PATTERN = re.compile(
     r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE
 )
+
+
+def is_lookup_tool(definition) -> bool:
+    """Read-only internal data tool (list/search/get on CRM, marketing or knowledge)."""
+    namespace, _, operation = definition.name.partition(".")
+    return (
+        definition.name.startswith(LOOKUP_NAMESPACES)
+        and operation.startswith(LOOKUP_OPERATIONS)
+        and definition.risk_level == RiskLevel.GREEN
+        and not definition.requires_approval
+    )
 
 
 def requires_identifier(definition) -> bool:

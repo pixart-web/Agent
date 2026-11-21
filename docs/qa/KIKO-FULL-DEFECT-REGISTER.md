@@ -30,6 +30,8 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-022 | Desktop / hidden window suspended        | HIGH     | Fixed (acceptance round)           |
 | KQA-023 | Supervisor / abandoned planning runs     | MEDIUM   | Fixed (improvements round)         |
 | KQA-024 | Onboarding / phone width overflow        | LOW      | Fixed (improvements round)         |
+| KQA-026 | Automations / schedules never ran        | HIGH     | Fixed (roadmap round)              |
+| KQA-027 | Local worker / macOS process pool        | MEDIUM   | Fixed (roadmap round)              |
 
 ---
 
@@ -292,3 +294,27 @@ Second pass during owner acceptance testing, with temporary accounts for every r
 - **Fix:** agent runs older than twice the model's time budget plus 2 minutes are marked failed
   (`stale_run`) before a new run starts; the next start counts as a re-run.
 - **Regression test:** `tests/test_agent_runs_background.py::test_a_run_abandoned_by_a_dead_worker_no_longer_blocks_the_task`.
+
+## Roadmap round (2026-11-21)
+
+### KQA-026 — Scheduled automations never ran on their own
+
+- **Severity:** HIGH. Schedules were only processed by `python -m app.scripts.run_due_automations`
+  run by hand; no service in Docker Compose, production Compose or the local environment called
+  it, so a scheduled automation created in the UI never fired.
+- **Fix:** `app.scripts.run_automation_scheduler` (resilient loop, every 30 s) and the
+  `automation-scheduler` / `scheduler` services.
+- **Tests:** `tests/test_automations.py::test_scheduler_loop_runs_due_schedules_until_stopped`;
+  live `kiko-local.sh workflows` (the running scheduler fires a due schedule once, creates one
+  command and advances the next run).
+
+### KQA-027 — Local worker: every task failed in the macOS process pool
+
+- **Severity:** MEDIUM (local environment only; production runs Linux with fork). Found while
+  moving the local worker from `solo` to `prefork`: Python on macOS starts pool processes with
+  _spawn_, and Celery's fast trace path then fails every task ("not enough values to unpack").
+- **Fix:** `FORKED_BY_MULTIPROCESSING=1` (plus `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`,
+  `NO_PROXY=*`) in `kiko-local.sh`. Verified: actions execute in `SpawnPoolWorker` processes and
+  the smoke test passes.
+- **Side effect cleaned up:** two agent runs started while the pool was broken stay `running`
+  until the stale-run cut-off marks them failed.

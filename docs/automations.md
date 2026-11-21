@@ -53,15 +53,18 @@ correlation/causation, commands and audit records.
 
 ## Schedules and recovery
 
-Run due schedules explicitly with:
+The automation scheduler runs due schedules continuously:
 
 ```bash
-python -m app.scripts.run_due_automations
+python -m app.scripts.run_automation_scheduler   # loop, every AUTOMATION_SCHEDULER_INTERVAL_SECONDS (30)
+python -m app.scripts.run_due_automations        # one pass, for operators
 ```
 
-The runner advances the next due time while holding the automation lock. Multiple schedulers may
-observe the same due item, but the persistent dedupe key allows only one command. Scheduling this
-script is an operations concern; no production scheduler is configured by this phase.
+It runs as the `automation-scheduler` service in `docker-compose.yml` and
+`deploy/compose.production.yml`, and as `scheduler` in `scripts/local/kiko-local.sh`. Each pass
+advances the next due time while holding the automation lock; several schedulers (or a manual
+pass) may observe the same due item, but the persistent dedupe key allows only one command.
+Transient failures back off and retry. `kiko-local.sh workflows` checks it end to end.
 
 Failed runs require an authenticated manual recovery request. Recovery creates one causally linked,
 deduplicated child run and is still subject to depth, cooldown and budget controls. There is no

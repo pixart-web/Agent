@@ -518,3 +518,33 @@ def test_trigger_config_is_owned_matched_and_rejects_sensitive_conditions(
     )
     assert sensitive.status_code == 422
     assert service.get_owned(users["automation-config-owner@example.com"].id, automation.id)
+
+
+def test_scheduler_loop_runs_due_schedules_until_stopped(client, db_session) -> None:
+    from app.scripts import run_automation_scheduler
+    from app.scripts._loop import run_forever
+
+    register(client, "automation-scheduler@example.com")
+    user = db_session.scalar(select(User).where(User.email == "automation-scheduler@example.com"))
+    factory = sessionmaker(bind=db_session.get_bind(), expire_on_commit=False)
+    service = AutomationService(factory)
+    service.create(
+        user.id,
+        AutomationCreate(
+            name="Weekly report",
+            trigger_type="schedule",
+            trigger_config={"interval_minutes": 60},
+            next_run_at=utc_now() - timedelta(minutes=5),
+            command_template="Prepare the synthetic weekly report.",
+        ),
+    )
+    processed: list[int] = []
+    run_forever(
+        lambda: processed.append(run_automation_scheduler.run_once(service)),
+        name="automation_scheduler_test",
+        interval_seconds=0,
+        should_stop=lambda: len(processed) >= 2,
+        sleep=lambda _seconds: None,
+    )
+    # The first iteration runs the due schedule; the second finds nothing new.
+    assert processed == [1, 0]
