@@ -21,17 +21,18 @@ Homebrew PostgreSQL or any other project's database, Redis or volumes.
 
 ## 2. Services and addresses
 
-| Service     | What runs                                                                 | Address                                                  | Data                     |
-| ----------- | ------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------ |
-| `postgres`  | dedicated PostgreSQL **16** cluster (Homebrew `postgresql@16` binaries)   | `127.0.0.1:55432`, db/user `kiko_local`                  | `~/.kiko-local/postgres` |
-| `redis`     | dedicated Redis, password protected, AOF on                               | `127.0.0.1:56379` (db 0 app, db 1 Celery broker)         | `~/.kiko-local/redis`    |
-| `mailpit`   | email capture, nothing is relayed                                         | SMTP `127.0.0.1:56025`, inbox **http://127.0.0.1:58025** | `~/.kiko-local/mailpit`  |
-| `api`       | FastAPI (uvicorn), migrations applied on start                            | **http://localhost:8000**                                | —                        |
-| `worker`    | Celery worker, 3 processes (`--pool=prefork`, macOS spawn start)          | Redis db 1                                               | —                        |
-| `scheduler` | automation scheduler (`app.scripts.run_automation_scheduler`, every 30 s) | —                                                        | —                        |
-| `outbox`    | outbox dispatcher (`app.scripts.run_outbox_dispatcher`)                   | —                                                        | —                        |
-| `mailer`    | transactional email dispatcher → Mailpit                                  | —                                                        | —                        |
-| `web`       | Next.js web client (target of emailed links)                              | http://localhost:3000                                    | —                        |
+| Service     | What runs                                                               | Address                                                  | Data                     |
+| ----------- | ----------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------ |
+| `postgres`  | dedicated PostgreSQL **16** cluster (Homebrew `postgresql@16` binaries) | `127.0.0.1:55432`, db/user `kiko_local`                  | `~/.kiko-local/postgres` |
+| `redis`     | dedicated Redis, password protected, AOF on                             | `127.0.0.1:56379` (db 0 app, db 1 Celery broker)         | `~/.kiko-local/redis`    |
+| `mailpit`   | email capture, nothing is relayed                                       | SMTP `127.0.0.1:56025`, inbox **http://127.0.0.1:58025** | `~/.kiko-local/mailpit`  |
+| `api`       | FastAPI (uvicorn), migrations applied on start                          | **http://localhost:8000**                                | —                        |
+| `worker`    | Celery worker, queue `celery` (actions, automations), 3 processes       | Redis db 1                                               | —                        |
+| `aiworker`  | Celery worker, queue `ai` (plans, agent runs), 1 process                | Redis db 1                                               | —                        |
+| `scheduler` | automation scheduler and abandoned-run clean-up (every 30 s)            | —                                                        | —                        |
+| `outbox`    | outbox dispatcher (`app.scripts.run_outbox_dispatcher`)                 | —                                                        | —                        |
+| `mailer`    | transactional email dispatcher → Mailpit                                | —                                                        | —                        |
+| `web`       | Next.js web client (target of emailed links)                            | http://localhost:3000                                    | —                        |
 
 All listeners are bound to `127.0.0.1`. State directory: `~/.kiko-local` (`chmod 700`)
 

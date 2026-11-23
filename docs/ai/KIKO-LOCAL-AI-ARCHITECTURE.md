@@ -104,6 +104,20 @@ second proposal is validated and governed as usual. If the second answer is unus
 proposal is kept. `AGENT_LOOKUP_ROUND_ENABLED=false` turns it off. Agent runs may therefore call
 the model three times; their worker time limit and stale-run cut-off allow for that.
 
+### AI queue and abandoned runs
+
+Plans and agent runs are routed to the Celery queue `ai` (`AI_TASK_QUEUE`), served by a
+dedicated worker with concurrency 1 (`ai-worker` in Docker Compose and production Compose,
+`aiworker` in `kiko-local.sh`). Model calls therefore never pile up inside the runtime past
+their timeout, and actions, automations and approvals on the `celery` queue never wait for
+the model. Scale by adding AI workers per inference host.
+
+The automation scheduler also fails runs abandoned by a dead worker or API
+(`app.services.run_maintenance`): Supervisor runs older than the model budget plus 2 minutes
+and agent runs older than three budgets plus 2 minutes become `stale_run`, the command
+returns to _pending_ when no plan was stored, and the event is audited
+(`supervisor_run_abandoned` / `agent_run_abandoned`).
+
 ### Worker time limits
 
 The Celery tasks for plans and agent runs have soft time limits equal to the model's whole time

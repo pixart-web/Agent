@@ -32,6 +32,9 @@ listed after they are fixed. "Fix commit" refers to commits on the QA branch unl
 | KQA-024 | Onboarding / phone width overflow        | LOW      | Fixed (improvements round)         |
 | KQA-026 | Automations / schedules never ran        | HIGH     | Fixed (roadmap round)              |
 | KQA-027 | Local worker / macOS process pool        | MEDIUM   | Fixed (roadmap round)              |
+| KQA-028 | Navigation / brand link without a name   | MEDIUM   | Fixed (deep test round 2)          |
+| KQA-029 | Module screens / unstyled buttons        | LOW      | Fixed (deep test round 2)          |
+| KQA-030 | AI runs / abandoned runs kept 'working'  | MEDIUM   | Fixed (deep test round 2)          |
 
 ---
 
@@ -318,3 +321,35 @@ Second pass during owner acceptance testing, with temporary accounts for every r
   the smoke test passes.
 - **Side effect cleaned up:** two agent runs started while the pool was broken stay `running`
   until the stale-run cut-off marks them failed.
+
+## Deep test round 2 (2026-11-23)
+
+Fresh temporary accounts (owner, admin, manager, member, viewer, platform administrator) in a
+new fictitious workspace; every screen visited as every role; write flows driven through the
+UI with the real local model.
+
+### KQA-028 — Navigation brand link had no accessible name on phones and when collapsed
+
+- **Severity:** MEDIUM (WCAG 2.4.4 / 4.1.2, axe "link-name", serious). Introduced with the
+  official logo: when only the robot mark shows (collapsed rail, phone width), the mark is
+  decorative and the link had no name. Found by the quality sweep on all 21 screens (phone).
+- **Fix:** the link is named "Kiko — Início". Sweep clean again on desktop and phone.
+- **Prevention:** the quality sweep now runs in CI (C3), so this class of regression fails a PR.
+
+### KQA-029 — Bare buttons in module screens looked like browser defaults
+
+- **Severity:** LOW (visual). Older screens (automations, knowledge, tasks, marketing,
+  command list) use `<button>` without a class; on the dark theme they rendered as flat grey
+  system buttons (e.g. "Create automation").
+- **Fix:** base Kiko styles for unclassed buttons in the app (form submit = primary amber,
+  others secondary) and consistent sizing for unclassed selects.
+
+### KQA-030 — Abandoned AI runs kept showing "working…"
+
+- **Severity:** MEDIUM. A plan or agent run left `running` by a dead worker was only failed
+  when someone started another run on the same command/task; until then the screen showed
+  progress forever (two such runs from 21 Nov were still `running` on 23 Nov).
+- **Fix:** `app.services.run_maintenance.fail_abandoned_runs`, called by the automation
+  scheduler every 30 s; audited; the command returns to pending when no plan was stored.
+  Verified live: the two old runs were failed within seconds of the scheduler restart.
+- **Tests:** `tests/test_run_maintenance.py`.

@@ -26,22 +26,22 @@ defect register where one exists.
 
 ## C. UX improvements
 
-| #   | Item                                                                                                                                                                                |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | ~~Show progress while the local model works~~ — done: elapsed time, explanation and "you can leave this page" for Supervisor plans; elapsed time for agent runs                     |
-| C2  | ~~Explain "Local AI runtime is not reachable" with a recovery hint~~ — done: hints for runtime down, model missing, timeout and worker down (`lib/ai-errors.ts`)                    |
-| C3  | Accessibility: keep the Playwright quality sweep in CI so contrast and accessible-name regressions are caught (5 issues fixed in this program)                                      |
-| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                                                                |
-| C5  | ~~Hide or disable create/edit controls per role~~ — done: `CanEdit`/`EditFieldset` on every dashboard screen; settings disabled for non-admins; subscription cancel for owners only |
-| C6  | ~~Read-only onboarding for invited non-admins~~ — done: "Join <company>" page with the profile read-only                                                                            |
+| #   | Item                                                                                                                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | ~~Show progress while the local model works~~ — done: elapsed time, explanation and "you can leave this page" for Supervisor plans; elapsed time for agent runs                                      |
+| C2  | ~~Explain "Local AI runtime is not reachable" with a recovery hint~~ — done: hints for runtime down, model missing, timeout and worker down (`lib/ai-errors.ts`)                                     |
+| C3  | ~~Accessibility: keep the Playwright quality sweep in CI~~ — done: CI job "Accessibility and quality sweep" runs it on every dashboard screen (desktop and phone) with PostgreSQL, Redis and Mailpit |
+| C4  | Native menu, command palette and save panel need UI automation with Accessibility permission to be regression-tested                                                                                 |
+| C5  | ~~Hide or disable create/edit controls per role~~ — done: `CanEdit`/`EditFieldset` on every dashboard screen; settings disabled for non-admins; subscription cancel for owners only                  |
+| C6  | ~~Read-only onboarding for invited non-admins~~ — done: "Join <company>" page with the profile read-only                                                                                             |
 
 ## D. Performance improvements
 
-| #   | Item                                | Measurement                                                                                             |
-| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| D1  | AI generation latency               | p50 43.5 s, max 75.7 s on M4; a GPU server or a smaller validated model would cut this                  |
-| D2  | AI concurrency                      | Ollama serves one generation per model at a time; queue or `OLLAMA_NUM_PARALLEL` for multi-user servers |
-| D3  | ~~`/crm/contacts` per-row queries~~ | Fixed in the acceptance round (KQA-020): batched loading                                                |
+| #   | Item                                | Measurement                                                                                                                        |
+| --- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | AI generation latency               | p50 43.5 s, max 75.7 s on M4; a GPU server or a smaller validated model would cut this                                             |
+| D2  | ~~AI concurrency~~                  | Done: model work on its own Celery queue (`ai`) with a dedicated single-process worker; add AI workers per inference host to scale |
+| D3  | ~~`/crm/contacts` per-row queries~~ | Fixed in the acceptance round (KQA-020): batched loading                                                                           |
 
 ## E. Architectural improvements
 

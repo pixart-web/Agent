@@ -20,4 +20,8 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_ignore_result=True,
     broker_connection_retry_on_startup=True,
+    task_routes={
+        "app.services.supervisor_tasks.complete_supervisor_run": {"queue": settings.ai_task_queue},
+        "app.services.agent_run_tasks.complete_agent_run": {"queue": settings.ai_task_queue},
+    },
 )

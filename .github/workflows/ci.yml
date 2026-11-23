@@ -195,6 +195,110 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: pnpm build
 
+  quality-sweep:
+    name: Accessibility and quality sweep (every dashboard screen)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: agent
+          POSTGRES_USER: agent
+          POSTGRES_PASSWORD: agent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agent -d agent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+      mailpit:
+        image: axllent/mailpit:v1.29
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      APP_ENV: test
+      AUTH_SECRET_KEY: test-only-auth-secret-with-at-least-32-characters
+      AUTH_COOKIE_SECURE: 'false'
+      AUTH_REQUIRE_EMAIL_VERIFICATION: 'true'
+      AUTH_RATE_LIMIT_ENABLED: 'false'
+      DATABASE_URL: postgresql+psycopg://agent:agent@localhost:5432/agent
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      WEB_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      TRUSTED_HOSTS: localhost,127.0.0.1
+      PUBLIC_WEB_URL: http://localhost:3000
+      TRANSACTIONAL_EMAIL_ENABLED: 'true'
+      TRANSACTIONAL_EMAIL_FROM: kiko-ci@example.com
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+      SMTP_STARTTLS: 'false'
+      AI_PROVIDER: fake
+      AI_LOCAL_MODEL: fake-supervisor-v1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - run: python -m pip install -e "apps/api[dev]"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Enable pnpm with Corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate and seed
+        working-directory: apps/api
+        run: |
+          python -m alembic upgrade head
+          python -m app.scripts.seed_agents
+      - name: Start the API and the email dispatcher
+        working-directory: apps/api
+        run: |
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/api.log 2>&1 &
+          nohup python -m app.scripts.run_transactional_email_dispatcher > /tmp/mailer.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8000/health && break; sleep 1; done
+      # The production web build calls the API on its own origin (behind the reverse proxy),
+      # so the sweep uses the development server, which calls NEXT_PUBLIC_API_URL. Every route
+      # is requested once first so on-demand compilation cannot exceed the test timeouts.
+      - name: Start the web client and compile every route
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        working-directory: apps/web
+        run: |
+          nohup pnpm exec next dev -p 3000 > /tmp/web.log 2>&1 &
+          for i in $(seq 1 90); do curl -fsS http://localhost:3000/login > /dev/null && break; sleep 1; done
+          for route in /login /onboarding /dashboard /dashboard/kiko /dashboard/commands \
+            /dashboard/commands/new /dashboard/tasks /dashboard/projects /dashboard/executions \
+            /dashboard/analytics /dashboard/agents /dashboard/automations /dashboard/knowledge \
+            /dashboard/approvals /dashboard/notifications /dashboard/codex /dashboard/email \
+            /dashboard/calendar /dashboard/crm /dashboard/marketing /dashboard/integrations \
+            /dashboard/settings /dashboard/subscription; do
+            curl -fsS -o /dev/null "http://localhost:3000$route" || echo "warm-up failed: $route"
+          done
+      - name: Install Chromium for Playwright
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Quality sweep (page errors, API 5xx, overflow, axe WCAG 2 A/AA serious/critical)
+        working-directory: apps/web
+        env:
+          E2E_WEB_URL: http://localhost:3000
+          E2E_API_URL: http://localhost:8000
+          E2E_MAILPIT_URL: http://localhost:8025
+        run: pnpm exec playwright test e2e/dashboard-quality-sweep.spec.ts --reporter=line
+      - name: Service logs
+        if: failure()
+        run: tail -n 80 /tmp/api.log /tmp/mailer.log /tmp/web.log
+
   desktop:
     name: Desktop (macOS)
     runs-on: macos-latest

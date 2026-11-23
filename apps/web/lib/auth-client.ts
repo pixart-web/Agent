@@ -179,6 +179,13 @@ export async function authFetch(
       headers: authorizedHeaders(init.headers),
     });
 
+  // No token in memory yet (the page was just loaded): renew the session first instead of
+  // sending a request that can only answer 401. The desktop app keeps its session natively.
+  if (!isDesktop && accessToken === null && retryAfterRefresh) {
+    const renewed = await refreshAccessToken();
+    return renewed ? authFetch(path, init, false) : send();
+  }
+
   const response = await send();
   if (response.status !== 401 || !retryAfterRefresh) {
     return response;

@@ -10,13 +10,17 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('knowledge client', () => {
   it('creates a workspace with the requested scoped identity', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ id: 'w1', name: 'Demo', slug: 'demo', role: 'owner' }),
-        {
-          status: 201,
-        },
-      ),
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 'w1',
+            name: 'Demo',
+            slug: 'demo',
+            role: 'owner',
+          }),
+          { status: 201 },
+        ),
     );
     vi.stubGlobal('fetch', fetchMock);
     await createWorkspace('Demo', 'demo');
@@ -24,7 +28,12 @@ describe('knowledge client', () => {
       expect.stringContaining('/api/v1/knowledge/workspaces'),
       expect.objectContaining({ method: 'POST' }),
     );
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+    const post = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        String(url).includes('/api/v1/knowledge/workspaces') &&
+        init?.method === 'POST',
+    );
+    expect(JSON.parse(post?.[1].body)).toEqual({
       name: 'Demo',
       slug: 'demo',
     });
