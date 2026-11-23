@@ -4,7 +4,7 @@ import { authFetch } from './auth-client';
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`Knowledge request failed (${response.status})`);
+    throw new Error(`O pedido de conhecimento falhou (${response.status})`);
   return (await response.json()) as T;
 }
 
@@ -79,7 +79,7 @@ export async function archiveKnowledge(
     { method: 'DELETE' },
   );
   if (!response.ok)
-    throw new Error(`Knowledge request failed (${response.status})`);
+    throw new Error(`O pedido de conhecimento falhou (${response.status})`);
 }
 
 export async function ingestKnowledgeDocument(

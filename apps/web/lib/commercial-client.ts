@@ -33,7 +33,7 @@ export type Subscription = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`Commercial request failed (${response.status})`);
+    throw new Error(`O pedido comercial falhou (${response.status})`);
   return (await response.json()) as T;
 }
 

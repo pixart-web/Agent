@@ -26,10 +26,10 @@ export default function EmailMessagePage() {
     if (!user || !accountId) return;
     void getEmailMessage(accountId, params.message_id)
       .then((value) => setMessage(value.message))
-      .catch(() => setError('Email message was not found.'));
+      .catch(() => setError('Mensagem de email não encontrada.'));
   }, [accountId, params.message_id, user]);
 
-  async function handToKiko(mode: 'Analyze' | 'Prepare a reply to') {
+  async function handToKiko(mode: 'Analisar' | 'Preparar resposta a') {
     const command = await createCommand(
       mode +
         ' email message ' +
@@ -52,7 +52,7 @@ export default function EmailMessagePage() {
         <>
           <section className="section-heading">
             <div>
-              <p className="eyebrow">Untrusted email content</p>
+              <p className="eyebrow">Conteúdo de email não verificado</p>
               <h1>{message.subject}</h1>
               <p>From: {message.sender.name || message.sender.address}</p>
             </div>
@@ -61,16 +61,16 @@ export default function EmailMessagePage() {
                 <button
                   className="secondary-button"
                   type="button"
-                  onClick={() => void handToKiko('Analyze')}
+                  onClick={() => void handToKiko('Analisar')}
                 >
-                  Analyze with Kiko
+                  Analisar com o Kiko
                 </button>
                 <button
                   className="primary-button"
                   type="button"
-                  onClick={() => void handToKiko('Prepare a reply to')}
+                  onClick={() => void handToKiko('Preparar resposta a')}
                 >
-                  Prepare reply
+                  Preparar resposta
                 </button>
               </CanEdit>
             </div>
@@ -78,9 +78,9 @@ export default function EmailMessagePage() {
           <section className="workflow-panel">
             <pre className="email-body">{message.text_body}</pre>
             {message.body_truncated && (
-              <p>Body truncated by the configured safety limit.</p>
+              <p>Texto cortado pelo limite de segurança configurado.</p>
             )}
-            <h2>Attachment metadata</h2>
+            <h2>Metadados dos anexos</h2>
             {message.attachments.map((attachment) => (
               <p key={attachment.attachment_id || attachment.filename}>
                 {attachment.filename} � {attachment.mime_type} �{' '}

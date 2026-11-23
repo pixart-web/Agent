@@ -38,14 +38,14 @@ describe('calendar action UI', () => {
       <ActionProposalPreview action={action} />,
     );
 
-    expect(markup).toContain('Create Calendar Event');
-    expect(markup).toContain('Account: account-1');
-    expect(markup).toContain('Calendar: primary');
-    expect(markup).toContain('Title: Customer review');
+    expect(markup).toContain('Criar evento de calendário');
+    expect(markup).toContain('Conta: account-1');
+    expect(markup).toContain('Calendário: primary');
+    expect(markup).toContain('Título: Customer review');
     expect(markup).toContain('Europe/Lisbon');
-    expect(markup).toContain('Location: Video call');
-    expect(markup).toContain('Attendees: customer@example.net');
-    expect(markup).toContain('Risk: yellow');
-    expect(markup).toContain('Requires approval: Yes');
+    expect(markup).toContain('Local: Video call');
+    expect(markup).toContain('Participantes: customer@example.net');
+    expect(markup).toContain('Risco: Amarelo');
+    expect(markup).toContain('Requer aprovação: Sim');
   });
 });

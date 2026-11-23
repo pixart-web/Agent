@@ -95,7 +95,7 @@ describe('workflow components', () => {
 
     expect(markup).toContain('Prepare the product launch');
     expect(markup).toContain('planning');
-    expect(markup).toContain('2/3 tasks');
+    expect(markup).toContain('2/3 tarefas');
     expect(markup).toContain('/dashboard/commands/command-1');
   });
 
@@ -118,16 +118,16 @@ describe('workflow components', () => {
 
     expect(markup).toContain('Launch plan');
     expect(markup).toContain('Draft campaign copy');
-    expect(markup).toContain('waiting approval');
+    expect(markup).toContain('À espera de aprovação');
     expect(markup).toContain('Marketing');
-    expect(markup).toContain('high');
-    expect(markup).toContain('yellow');
+    expect(markup).toContain('Alta');
+    expect(markup).toContain('Amarelo');
   });
 
   it('renders an empty command state', () => {
     const markup = renderToStaticMarkup(<CommandList commands={[]} />);
 
-    expect(markup).toContain('No commands yet');
+    expect(markup).toContain('Ainda não há comandos');
   });
 
   it('renders command lifecycle actions for terminal and archived commands', () => {
@@ -146,9 +146,9 @@ describe('workflow components', () => {
       />,
     );
 
-    expect(markup).toContain('Duplicate');
-    expect(markup).toContain('Archive');
-    expect(markup).toContain('Restore');
+    expect(markup).toContain('Duplicar');
+    expect(markup).toContain('Arquivar');
+    expect(markup).toContain('Restaurar');
   });
 
   it('renders the generate button and its loading state', () => {

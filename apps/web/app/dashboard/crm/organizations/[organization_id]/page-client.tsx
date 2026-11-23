@@ -11,6 +11,7 @@ import {
   updateCrmOrganization,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
+import { label } from '../../../../../lib/labels';
 
 export default function CrmOrganizationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -33,26 +34,26 @@ export default function CrmOrganizationPage() {
         setOrganization(organizationValue);
         setActivities(activityValue.activities);
       })
-      .catch(() => setError('Unable to load this organization.'));
+      .catch(() => setError('Não foi possível carregar esta organização.'));
   }, [organizationId, user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading organization…</main>;
+    return <main className="loading-page">A carregar a organização…</main>;
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">CRM organization</p>
-          <h1>{organization?.name || 'Organization'}</h1>
-          <p>{organization?.member_count ?? 0} contacts</p>
+          <p className="eyebrow">Organização do CRM</p>
+          <h1>{organization?.name || 'Organização'}</h1>
+          <p>{organization?.member_count ?? 0} contactos</p>
         </div>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
       {organization && (
         <section className="workflow-panel">
           <label>
-            Lifecycle
+            Ciclo de vida
             <select
               value={organization.status}
               onChange={async (event) => {
@@ -63,31 +64,31 @@ export default function CrmOrganizationPage() {
                     }),
                   );
                 } catch {
-                  setError('Unable to update this organization.');
+                  setError('Não foi possível atualizar esta organização.');
                 }
               }}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="archived">Archived</option>
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+              <option value="archived">Arquivado</option>
             </select>
           </label>
-          <p>Status: {organization.status}</p>
-          <p>Website: {organization.website || 'Not set'}</p>
-          <p>Tags: {organization.tags.join(', ') || 'None'}</p>
+          <p>Estado: {label(organization.status)}</p>
+          <p>Website: {organization.website || 'Não definido'}</p>
+          <p>Tags: {organization.tags.join(', ') || 'Nenhum'}</p>
         </section>
       )}
       <section className="workflow-panel">
-        <h2>Activity</h2>
+        <h2>Atividade</h2>
         {activities.map((activity) => (
           <article className="agent-card" key={activity.id}>
             <p className="eyebrow">{activity.activity_type}</p>
             <h3>{activity.subject}</h3>
-            <p>{new Date(activity.occurred_at).toLocaleString()}</p>
+            <p>{new Date(activity.occurred_at).toLocaleString('pt-PT')}</p>
           </article>
         ))}
         {activities.length === 0 && (
-          <p className="empty-state">No linked activity.</p>
+          <p className="empty-state">Sem atividade ligada.</p>
         )}
       </section>
     </main>

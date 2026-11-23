@@ -47,7 +47,7 @@ export type OperationsAnalytics = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`Operations request failed (${response.status})`);
+    throw new Error(`O pedido de operações falhou (${response.status})`);
   return (await response.json()) as T;
 }
 

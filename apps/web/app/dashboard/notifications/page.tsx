@@ -11,6 +11,7 @@ import {
   type Notification,
 } from '../../../lib/notification-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { label } from '../../../lib/labels';
 
 export default function NotificationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -26,27 +27,31 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (user)
-      void refresh().catch(() => setError('Unable to load notifications.'));
+      void refresh().catch(() =>
+        setError('Não foi possível carregar as notificações.'),
+      );
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading notifications…</main>;
+    return <main className="loading-page">A carregar as notificações…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Operational inbox</p>
-          <h1>Notifications</h1>
-          <p>{unread} unread · generated from persisted workspace state.</p>
+          <p className="eyebrow">Caixa operacional</p>
+          <h1>Notificações</h1>
+          <p>
+            {unread} por ler · geradas a partir do estado guardado do workspace.
+          </p>
         </div>
         <button
           className="secondary-button"
           disabled={!unread}
           onClick={() => void markAllNotificationsRead().then(refresh)}
         >
-          Mark all read
+          Marcar tudo como lido
         </button>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
@@ -55,14 +60,15 @@ export default function NotificationsPage() {
           {items.map((item) => (
             <article className="activity-item" key={item.id}>
               <p className="eyebrow">
-                {item.kind.replaceAll('_', ' ')} ·{' '}
-                {item.read_at ? 'read' : 'unread'}
+                {label(item.kind)} · {item.read_at ? 'read' : 'unread'}
               </p>
               <h2>{item.title}</h2>
               <p>{item.body}</p>
-              <p>{new Date(item.created_at).toLocaleString()}</p>
+              <p>{new Date(item.created_at).toLocaleString('pt-PT')}</p>
               <div className="button-row">
-                {item.href && <Link href={item.href}>Open related work</Link>}
+                {item.href && (
+                  <Link href={item.href}>Abrir trabalho relacionado</Link>
+                )}
                 {!item.read_at && (
                   <button
                     className="text-button"
@@ -70,14 +76,16 @@ export default function NotificationsPage() {
                       void markNotificationRead(item.id).then(refresh)
                     }
                   >
-                    Mark read
+                    Marcar como lido
                   </button>
                 )}
               </div>
             </article>
           ))}
         </div>
-        {!items.length && <p className="empty-state">No notifications yet.</p>}
+        {!items.length && (
+          <p className="empty-state">Ainda sem notificações.</p>
+        )}
       </section>
     </main>
   );

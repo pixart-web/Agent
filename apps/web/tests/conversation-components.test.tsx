@@ -37,10 +37,10 @@ describe('conversation operation status', () => {
       <ConversationOperationStatus operation={operation} />,
     );
 
-    expect(markup).toContain('in progress');
-    expect(markup).toContain('Supervisor: completed');
+    expect(markup).toContain('Em curso');
+    expect(markup).toContain('Supervisor: Concluído');
     expect(markup).toContain('Campaign plan');
-    expect(markup).toContain('2 completed · 1 waiting approval');
+    expect(markup).toContain('2 concluído · 1 à espera de aprovação');
     expect(markup).toContain('1 aprovação pendente');
   });
 

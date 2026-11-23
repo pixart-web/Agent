@@ -1,13 +1,14 @@
 import type { AutomationRun } from '@agent/shared';
 import Link from 'next/link';
 import React from 'react';
+import { label } from '../lib/labels';
 
 export function AutomationPolicyNote() {
   return (
     <p>
-      A trigger creates a correlated command only. It cannot approve plans,
-      approve actions, lower risk, or execute external tools. Event payloads are
-      untrusted data and are not interpolated into the command.
+      Um gatilho apenas cria um comando correlacionado. Não pode aprovar planos
+      ou ações, baixar o risco nem executar ferramentas externas. Os dados do
+      evento não são de confiança e nunca entram no comando.
     </p>
   );
 }
@@ -16,13 +17,13 @@ export function AutomationRunSummary({ run }: { run: AutomationRun }) {
   return (
     <div>
       <p className="eyebrow">
-        {run.trigger_type} · {run.status}
+        {label(run.trigger_type)} · {label(run.status)}
       </p>
       <p>Correlation: {run.correlation_id}</p>
       {run.skipped_reason && <p>Guardrail: {run.skipped_reason}</p>}
       {run.command_id && (
         <Link href={`/dashboard/commands/${run.command_id}`}>
-          Open generated command
+          Abrir o comando criado
         </Link>
       )}
     </div>

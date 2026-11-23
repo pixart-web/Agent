@@ -30,9 +30,9 @@ describe('Automation governance UI', () => {
   it('states that automation cannot bypass risk and approvals', () => {
     const markup = renderToStaticMarkup(<AutomationPolicyNote />);
 
-    expect(markup).toContain('cannot approve plans');
-    expect(markup).toContain('lower risk');
-    expect(markup).toContain('untrusted data');
+    expect(markup).toContain('Não pode aprovar planos');
+    expect(markup).toContain('baixar o risco');
+    expect(markup).toContain('não são de confiança');
   });
 
   it('shows loop guardrails without exposing event payloads', () => {

@@ -13,6 +13,7 @@ import {
 } from '../../lib/use-kiko-activity';
 import { getAgentOverview } from '../../lib/workflow-client';
 import { KikoIcon, type KikoIconName } from './kiko-icons';
+import { operationalMessage } from '../../lib/labels';
 
 /** Kiko's state as text (and a coloured dot). Screen readers hear changes politely. */
 export function KikoStatusIndicator({
@@ -137,7 +138,10 @@ export function agentActivity(overview: AgentOverview | null): {
   if (overview.operational_status === 'disabled')
     return { text: 'Desativado neste workspace', tone: 'off' };
   if (overview.operational_status === 'unavailable')
-    return { text: overview.operational_message, tone: 'off' };
+    return {
+      text: operationalMessage(overview.operational_message),
+      tone: 'off',
+    };
   if (overview.tasks_running > 0)
     return {
       text: `A trabalhar em ${overview.tasks_running} ${overview.tasks_running === 1 ? 'tarefa' : 'tarefas'}`,

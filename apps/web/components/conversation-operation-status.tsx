@@ -1,5 +1,6 @@
 import type { ConversationOperation } from '@agent/shared';
 import React from 'react';
+import { label } from '../lib/labels';
 
 export function ConversationOperationStatus({
   operation,
@@ -14,24 +15,24 @@ export function ConversationOperationStatus({
         <span
           className={`workflow-badge workflow-badge--${operation.command.status}`}
         >
-          {operation.command.status.replaceAll('_', ' ')}
+          {label(operation.command.status)}
         </span>
       </div>
       {operation.supervisor_status && (
-        <p>Supervisor: {operation.supervisor_status.replaceAll('_', ' ')}</p>
+        <p>Supervisor: {label(operation.supervisor_status)}</p>
       )}
       {operation.plan && (
         <div className="conversation-operation__plan">
           <strong>{operation.plan.title}</strong>
           <p>{operation.plan.objective}</p>
-          <span>Plano {operation.plan.status.replaceAll('_', ' ')}</span>
+          <span>Plano {label(operation.plan.status)}</span>
         </div>
       )}
       {tasks.length > 0 && (
         <p>
           Tarefas:{' '}
           {tasks
-            .map(([status, count]) => `${count} ${status.replaceAll('_', ' ')}`)
+            .map(([status, count]) => `${count} ${label(status).toLowerCase()}`)
             .join(' · ')}
         </p>
       )}

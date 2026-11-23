@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { DashboardNav } from '../../../../components/dashboard-nav';
 import { getCalendarEvent } from '../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+import { label } from '../../../../lib/labels';
 
 export default function CalendarEventPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -22,20 +23,20 @@ export default function CalendarEventPage() {
     if (!user || !accountId || !calendarId) return;
     void getCalendarEvent(accountId, calendarId, params.event_id)
       .then((value) => setEvent(value.event))
-      .catch(() => setError('Unable to read this event.'));
+      .catch(() => setError('Não foi possível ler este evento.'));
   }, [accountId, calendarId, params.event_id, user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading event…</main>;
+    return <main className="loading-page">A carregar o evento…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Untrusted external content</p>
-          <h1>{event?.title ?? 'Calendar event'}</h1>
-          <p>Status: {event?.status ?? 'Loading'}</p>
+          <p className="eyebrow">Conteúdo externo não verificado</p>
+          <h1>{event?.title ?? 'Evento de calendário'}</h1>
+          <p>Estado: {event ? label(event.status) : 'A carregar'}</p>
         </div>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
@@ -43,14 +44,14 @@ export default function CalendarEventPage() {
         <section className="workflow-panel">
           <p>Start: {event.start.date_time ?? event.start.date}</p>
           <p>End: {event.end.date_time ?? event.end.date}</p>
-          <p>Time zone: {event.start.time_zone ?? 'All day'}</p>
-          <p>Location: {event.location || 'Not set'}</p>
-          <p>Description: {event.description || 'Not set'}</p>
-          <h2>Attendees</h2>
+          <p>Time zone: {event.start.time_zone ?? 'Todo o dia'}</p>
+          <p>Location: {event.location || 'Não definido'}</p>
+          <p>Description: {event.description || 'Não definido'}</p>
+          <h2>Participantes</h2>
           {event.attendees.map((attendee) => (
             <p key={attendee.email}>
               {attendee.display_name || attendee.email} ·{' '}
-              {attendee.response_status || 'No response'}
+              {attendee.response_status || 'Sem resposta'}
             </p>
           ))}
         </section>

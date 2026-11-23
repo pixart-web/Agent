@@ -5,7 +5,7 @@ phase('governed-work', async () => {
   await step('submit a command', async () => {
     await go('/dashboard/commands/new/');
     await fill(
-      'Operational instruction',
+      'Instrução operacional',
       'Prepare a follow-up plan for the desktop QA client.',
     );
     const submit = await waitFor(
@@ -45,20 +45,20 @@ phase('governed-work', async () => {
     const summary = await waitFor(
       () =>
         [...document.querySelectorAll('summary')].find((item) =>
-          /Create a plan manually/.test(item.textContent),
+          /Criar um plano manualmente/.test(item.textContent),
         ),
       'manual plan summary',
     );
     summary.click();
-    await fill('Title', 'Desktop QA plan');
-    await fill('Objective', 'Follow up with the desktop QA client.');
-    await click('Create plan');
-    await waitFor(() => actionByText('Add task'), 'task form', 20000);
+    await fill('Título', 'Desktop QA plan');
+    await fill('Objetivo', 'Follow up with the desktop QA client.');
+    await click('Criar plano');
+    await waitFor(() => actionByText('Adicionar tarefa'), 'task form', 20000);
   });
   await step('add a task to the plan', async () => {
-    await fill('Title', 'Call the QA client');
-    await fill('Instructions', 'Confirm the desktop rollout window.');
-    await click('Add task');
+    await fill('Título', 'Call the QA client');
+    await fill('Instruções', 'Confirm the desktop rollout window.');
+    await click('Adicionar tarefa');
     await seeText('Call the QA client', 20000);
   });
   let commandPath = '';
@@ -84,7 +84,7 @@ phase('governed-work', async () => {
       'status select',
     );
     setValue(select, 'ready');
-    await click('Change status');
+    await click('Alterar estado');
     await waitFor(
       () => document.querySelector('.action-composer'),
       'action composer',
@@ -102,11 +102,11 @@ phase('governed-work', async () => {
       'Notify the QA client about the rollout window',
     );
     [...composer.querySelectorAll('button')]
-      .find((b) => /Create & dispatch/.test(b.textContent))
+      .find((b) => /Criar e enviar/.test(b.textContent))
       .click();
     await waitFor(
       () =>
-        /waiting[_ ]approval/i.test(
+        /waiting[_ ]approval|espera de aprova/i.test(
           document.querySelector('.action-row')?.textContent ?? '',
         ),
       'action waiting for approval',
@@ -115,7 +115,7 @@ phase('governed-work', async () => {
   });
   await step('approve it in the Approvals centre', async () => {
     await go('/dashboard/approvals/');
-    await fill('Decision note', 'Approved from the macOS app.');
+    await fill('Nota da decisão', 'Approved from the macOS app.');
     await click('Aprovar');
     await waitFor(() => !actionByText('Aprovar'), 'approval recorded', 20000);
   });
@@ -125,8 +125,8 @@ phase('governed-work', async () => {
       await go(commandPath);
       await sleep(1500);
       const row = document.querySelector('.action-row')?.textContent ?? '';
-      if (/completed/i.test(row)) return;
-      if (/failed/i.test(row)) throw new Error(`action failed: ${row}`);
+      if (/completed|conclu/i.test(row)) return;
+      if (/failed|falhou/i.test(row)) throw new Error(`action failed: ${row}`);
     }
     throw new Error('action did not complete');
   });
@@ -152,9 +152,9 @@ phase('governed-work', async () => {
   });
   await step('create a project', async () => {
     await go('/dashboard/projects/');
-    await fill('Name', 'Desktop launch');
-    await fill('Description', 'Created from the macOS app.');
-    await click('Create project');
+    await fill('Nome', 'Desktop launch');
+    await fill('Descrição', 'Created from the macOS app.');
+    await click('Criar projeto');
     await seeText('Desktop launch', 20000);
   });
   await step('Kiko AI conversation', async () => {
@@ -188,19 +188,21 @@ phase('governed-work', async () => {
   await step('create a CRM contact', async () => {
     await go('/dashboard/crm/');
     const type = await waitFor(
-      () => labelControl('Record type'),
+      () => labelControl('Tipo de registo'),
       'record type',
     );
     const contactOption = [...type.options].find((option) =>
       /contact/i.test(option.textContent),
     );
     if (contactOption) setValue(type, contactOption.value);
-    await fill('Full name', 'Ana Desktop');
+    await fill('Nome completo', 'Ana Desktop');
     await fill('Email', 'ana.desktop@example.com');
     const save = await waitFor(
       () =>
         [...document.querySelectorAll('button.primary-button')].find(
-          (b) => /create|save|add/i.test(b.textContent) && !b.disabled,
+          (b) =>
+            /criar|guardar|adicionar|create|save|add/i.test(b.textContent) &&
+            !b.disabled,
         ),
       'crm save',
     );

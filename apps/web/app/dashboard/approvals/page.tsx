@@ -19,6 +19,7 @@ import {
   WorkflowApiError,
 } from '../../../lib/workflow-client';
 import { CanEdit } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function ApprovalsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -46,7 +47,7 @@ export default function ApprovalsPage() {
       setError(
         loadError instanceof WorkflowApiError
           ? loadError.message
-          : 'Unable to load approvals.',
+          : 'Não foi possível carregar as aprovações.',
       );
     }
   }, [filter]);
@@ -63,7 +64,7 @@ export default function ApprovalsPage() {
       setComments((current) => ({ ...current, [approvalId]: '' }));
       await load();
     } catch {
-      setError('Unable to add the approval comment.');
+      setError('Não foi possível adicionar o comentário.');
     }
   }
 
@@ -83,13 +84,13 @@ export default function ApprovalsPage() {
       setError(
         decisionError instanceof WorkflowApiError
           ? decisionError.message
-          : 'Unable to save the decision.',
+          : 'Não foi possível guardar a decisão.',
       );
     }
   }
 
   if (authLoading || !user) {
-    return <main className="loading-page">Loading approvals…</main>;
+    return <main className="loading-page">A carregar as aprovações…</main>;
   }
 
   return (
@@ -97,24 +98,27 @@ export default function ApprovalsPage() {
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Human control</p>
-          <h1>Approvals</h1>
-          <p>Kiko pauses yellow and red actions before they reach the queue.</p>
+          <p className="eyebrow">Controlo humano</p>
+          <h1>Aprovações</h1>
+          <p>
+            O Kiko suspende as ações amarelas e vermelhas antes de entrarem na
+            fila.
+          </p>
         </div>
         <label>
-          View
+          Ver
           <select
             value={filter}
             onChange={(event) =>
               setFilter(event.target.value as ApprovalStatus | '')
             }
           >
-            <option value="pending">Pending</option>
-            <option value="">All history</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="expired">Expired</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="pending">Pendentes</option>
+            <option value="">Todo o histórico</option>
+            <option value="approved">Aprovado</option>
+            <option value="rejected">Rejeitado</option>
+            <option value="expired">Expirado</option>
+            <option value="cancelled">Cancelado</option>
           </select>
         </label>
       </section>
@@ -142,28 +146,28 @@ export default function ApprovalsPage() {
               <div className="approval-evidence">
                 <dl className="execution-meta">
                   <div>
-                    <dt>Requesting agent</dt>
+                    <dt>Agente que pede</dt>
                     <dd>{details[approval.id].requesting_agent}</dd>
                   </div>
                   <div>
-                    <dt>Target integration</dt>
+                    <dt>Integração de destino</dt>
                     <dd>{details[approval.id].target_integration}</dd>
                   </div>
                   <div>
-                    <dt>Tool</dt>
+                    <dt>Ferramenta</dt>
                     <dd>{details[approval.id].action.tool_name}</dd>
                   </div>
                   <div>
-                    <dt>Expires</dt>
+                    <dt>Expira</dt>
                     <dd>
                       {approval.expires_at
-                        ? new Date(approval.expires_at).toLocaleString()
-                        : 'No expiry'}
+                        ? new Date(approval.expires_at).toLocaleString('pt-PT')
+                        : 'Sem validade'}
                     </dd>
                   </div>
                 </dl>
                 <details>
-                  <summary>Exact action payload</summary>
+                  <summary>Dados exatos da ação</summary>
                   <pre>
                     {JSON.stringify(
                       details[approval.id].action.input_payload,
@@ -176,12 +180,14 @@ export default function ApprovalsPage() {
             )}
             <dl className="execution-meta">
               <div>
-                <dt>Task</dt>
+                <dt>Tarefa</dt>
                 <dd>{approval.task_id}</dd>
               </div>
               <div>
-                <dt>Requested</dt>
-                <dd>{new Date(approval.requested_at).toLocaleString()}</dd>
+                <dt>Pedido em</dt>
+                <dd>
+                  {new Date(approval.requested_at).toLocaleString('pt-PT')}
+                </dd>
               </div>
             </dl>
             <CanEdit>
@@ -203,7 +209,7 @@ export default function ApprovalsPage() {
                 )}
               {approval.status === 'pending' && (
                 <label>
-                  Decision note
+                  Nota da decisão
                   <textarea
                     rows={3}
                     value={reasons[approval.id] ?? ''}
@@ -240,24 +246,24 @@ export default function ApprovalsPage() {
               )}
             </CanEdit>
             <div className="approval-comments">
-              <h3>Discussion & history</h3>
+              <h3>Discussão e histórico</h3>
               {details[approval.id]?.comments.map((item) => (
                 <p key={item.id}>
-                  <strong>Comment</strong> ·{' '}
-                  {new Date(item.created_at).toLocaleString()}
+                  <strong>Comentar</strong> ·{' '}
+                  {new Date(item.created_at).toLocaleString('pt-PT')}
                   <br />
                   {item.body}
                 </p>
               ))}
               {details[approval.id]?.history.map((item, index) => (
                 <p key={`${item.event_type}-${index}`}>
-                  <strong>{item.event_type.replaceAll('_', ' ')}</strong> ·{' '}
-                  {new Date(item.created_at).toLocaleString()}
+                  <strong>{label(item.event_type)}</strong> ·{' '}
+                  {new Date(item.created_at).toLocaleString('pt-PT')}
                 </p>
               ))}
               <CanEdit>
                 <label>
-                  Add comment
+                  Adicionar comentário
                   <textarea
                     rows={2}
                     maxLength={2000}
@@ -276,7 +282,7 @@ export default function ApprovalsPage() {
                   disabled={!comments[approval.id]?.trim()}
                   onClick={() => void comment(approval.id)}
                 >
-                  Comment
+                  Comentar
                 </button>
               </CanEdit>
             </div>
@@ -284,7 +290,7 @@ export default function ApprovalsPage() {
         ))}
       </div>
       {!approvals.length && (
-        <p className="empty-state">No actions are waiting for approval.</p>
+        <p className="empty-state">Não há ações à espera de aprovação.</p>
       )}
     </main>
   );

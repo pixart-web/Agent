@@ -6,6 +6,7 @@ import { AiErrorNotice } from './ai-error-notice';
 import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
+import { label } from '../lib/labels';
 
 type Props = {
   plan: Plan | null;
@@ -115,7 +116,8 @@ export function SupervisorPlanReview({
             </h3>
             <p>{task.instructions}</p>
             <p className="supervisor-task-meta">
-              Prioridade: {task.priority} · Risco: {task.risk_level}
+              Prioridade: {label(task.priority)} · Risco:{' '}
+              {label(task.risk_level)}
             </p>
           </article>
         ))}

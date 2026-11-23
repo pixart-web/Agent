@@ -35,11 +35,11 @@ export default function MarketingCampaignPage() {
         setCampaign(campaignValue);
         setContent(contentValue.content);
       })
-      .catch(() => setError('Unable to load this campaign.'));
+      .catch(() => setError('Não foi possível carregar esta campanha.'));
   }, [campaignId, user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading campaign…</main>;
+    return <main className="loading-page">A carregar a campanha…</main>;
 
   return (
     <main>
@@ -47,7 +47,7 @@ export default function MarketingCampaignPage() {
       <section className="section-heading">
         <div>
           <p className="eyebrow">Campaign · {campaign?.status || 'loading'}</p>
-          <h1>{campaign?.name || 'Campaign'}</h1>
+          <h1>{campaign?.name || 'Campanha'}</h1>
           <p>{campaign?.objective}</p>
         </div>
       </section>
@@ -55,7 +55,7 @@ export default function MarketingCampaignPage() {
       {campaign && (
         <section className="workflow-panel">
           <label>
-            Campaign lifecycle
+            Ciclo de vida da campanha
             <select
               value={campaign.status}
               onChange={async (event) => {
@@ -66,22 +66,22 @@ export default function MarketingCampaignPage() {
                     }),
                   );
                 } catch {
-                  setError('Unable to update this campaign.');
+                  setError('Não foi possível atualizar esta campanha.');
                 }
               }}
             >
-              <option value="idea">Idea</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="completed">Completed</option>
-              <option value="archived">Archived</option>
+              <option value="idea">Ideia</option>
+              <option value="active">Ativo</option>
+              <option value="paused">Em pausa</option>
+              <option value="completed">Concluído</option>
+              <option value="archived">Arquivado</option>
             </select>
           </label>
         </section>
       )}
       <CanEdit>
         <section className="workflow-panel">
-          <h2>Create content draft</h2>
+          <h2>Criar rascunho de conteúdo</h2>
           <form
             className="workflow-form"
             onSubmit={async (event) => {
@@ -98,12 +98,12 @@ export default function MarketingCampaignPage() {
                 setBody('');
                 setContent((await listMarketingContent(campaignId)).content);
               } catch {
-                setError('Unable to create this content draft.');
+                setError('Não foi possível criar este rascunho.');
               }
             }}
           >
             <label>
-              Channel
+              Canal
               <input
                 required
                 value={channel}
@@ -111,7 +111,7 @@ export default function MarketingCampaignPage() {
               />
             </label>
             <label>
-              Title
+              Título
               <input
                 required
                 value={title}
@@ -119,19 +119,19 @@ export default function MarketingCampaignPage() {
               />
             </label>
             <label>
-              Draft copy
+              Texto do rascunho
               <textarea
                 required
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
               />
             </label>
-            <button>Create draft</button>
+            <button>Criar rascunho</button>
           </form>
         </section>
       </CanEdit>
       <section className="workflow-panel">
-        <h2>Content lifecycle</h2>
+        <h2>Ciclo de vida do conteúdo</h2>
         <div className="agent-grid">
           {content.map((item) => (
             <Link
@@ -147,15 +147,13 @@ export default function MarketingCampaignPage() {
               <p>
                 Scheduled:{' '}
                 {item.scheduled_for
-                  ? new Date(item.scheduled_for).toLocaleString()
-                  : 'Not scheduled'}
+                  ? new Date(item.scheduled_for).toLocaleString('pt-PT')
+                  : 'Não agendado'}
               </p>
             </Link>
           ))}
         </div>
-        {content.length === 0 && (
-          <p className="empty-state">No content items.</p>
-        )}
+        {content.length === 0 && <p className="empty-state">Sem conteúdos.</p>}
       </section>
     </main>
   );

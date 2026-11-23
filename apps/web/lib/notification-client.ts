@@ -18,7 +18,7 @@ export type NotificationPreferences = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`Notification request failed (${response.status})`);
+    throw new Error(`O pedido de notificações falhou (${response.status})`);
   return (await response.json()) as T;
 }
 
@@ -38,14 +38,16 @@ export async function markNotificationRead(id: string): Promise<void> {
       method: 'POST',
     },
   );
-  if (!response.ok) throw new Error('Unable to mark notification read');
+  if (!response.ok)
+    throw new Error('Não foi possível marcar a notificação como lida');
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
   const response = await authFetch('/api/v1/notifications/read-all', {
     method: 'POST',
   });
-  if (!response.ok) throw new Error('Unable to mark notifications read');
+  if (!response.ok)
+    throw new Error('Não foi possível marcar as notificações como lidas');
 }
 
 export function getNotificationPreferences(): Promise<NotificationPreferences> {

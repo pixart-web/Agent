@@ -33,7 +33,7 @@ export default function IntegrationsPage() {
   }, [user]);
 
   if (loading || !user) {
-    return <main className="loading-page">Loading integrations…</main>;
+    return <main className="loading-page">A carregar as integrações…</main>;
   }
 
   const connected = Boolean(github?.enabled && github?.credential_configured);
@@ -43,9 +43,9 @@ export default function IntegrationsPage() {
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">External services</p>
-          <h1>Integrations</h1>
-          <p>Credentials remain server-side and are never shown here.</p>
+          <p className="eyebrow">Serviços externos</p>
+          <h1>Integrações</h1>
+          <p>As credenciais ficam no servidor e nunca são mostradas aqui.</p>
         </div>
       </section>
       <div className="agent-grid">
@@ -53,34 +53,31 @@ export default function IntegrationsPage() {
           className="agent-card agent-card--link"
           href="/dashboard/integrations/github"
         >
-          <p className="eyebrow">Development tools</p>
+          <p className="eyebrow">Ferramentas de desenvolvimento</p>
           <h2>GitHub</h2>
-          <p>Status: {connected ? 'Connected' : 'Not configured'}</p>
+          <p>Estado: {connected ? 'Ligado' : 'Não configurado'}</p>
           <p>
-            Allowed repositories:{' '}
-            {github?.allowed_repositories.join(', ') || 'None'}
+            Repositórios permitidos:{' '}
+            {github?.allowed_repositories.join(', ') || 'Nenhum'}
           </p>
         </Link>
         <Link
           className="agent-card agent-card--link"
           href="/dashboard/integrations/email"
         >
-          <p className="eyebrow">Communication</p>
+          <p className="eyebrow">Comunicação</p>
           <h2>Email</h2>
-          <p>
-            Status: {email?.connected_accounts ? 'Connected' : 'Not connected'}
-          </p>
+          <p>Estado: {email?.connected_accounts ? 'Ligado' : 'Não ligado'}</p>
           <p>Provider: {email?.provider || 'gmail'}</p>
         </Link>
         <Link
           className="agent-card agent-card--link"
           href="/dashboard/integrations/calendar"
         >
-          <p className="eyebrow">Scheduling</p>
-          <h2>Calendar</h2>
+          <p className="eyebrow">Agendamento</p>
+          <h2>Calendário</h2>
           <p>
-            Status:{' '}
-            {calendar?.connected_accounts ? 'Connected' : 'Not connected'}
+            Estado: {calendar?.connected_accounts ? 'Ligado' : 'Não ligado'}
           </p>
           <p>Provider: {calendar?.provider || 'google_calendar'}</p>
         </Link>{' '}

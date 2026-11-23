@@ -31,11 +31,11 @@ describe('Marketing approval UI', () => {
       <ActionProposalPreview action={scheduleAction} />,
     );
 
-    expect(markup).toContain('Schedule Proposed Content');
+    expect(markup).toContain('Agendar conteúdo proposto');
     expect(markup).toContain('content-demo');
     expect(markup).toContain('2026-09-22T18:00:00Z');
-    expect(markup).toContain('Risk: yellow');
-    expect(markup).toContain('Requires approval: Yes');
+    expect(markup).toContain('Risco: Amarelo');
+    expect(markup).toContain('Requer aprovação: Sim');
   });
 
   it('labels publication recording as confirmation, not publishing', () => {
@@ -48,7 +48,7 @@ describe('Marketing approval UI', () => {
       />,
     );
 
-    expect(markup).toContain('Record Confirmed Publication');
+    expect(markup).toContain('Registar publicação confirmada');
     expect(markup).not.toContain('Publish Content');
   });
 });

@@ -3,7 +3,7 @@ phase('local-ai', async () => {
   await step('submit a command for the local AI Supervisor', async () => {
     await go('/dashboard/commands/new/');
     await fill(
-      'Operational instruction',
+      'Instrução operacional',
       'Prepare an internal plan to follow up the quotes requested this week.',
     );
     const submit = await waitFor(

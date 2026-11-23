@@ -129,7 +129,7 @@ export default function KikoPage() {
               >
                 <strong>{conversation.title}</strong>
                 <span>
-                  {new Date(conversation.updated_at).toLocaleString()}
+                  {new Date(conversation.updated_at).toLocaleString('pt-PT')}
                 </span>
               </Link>
             ))}

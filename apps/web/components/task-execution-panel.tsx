@@ -18,6 +18,7 @@ import {
 } from '../lib/workflow-client';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
+import { label } from '../lib/labels';
 
 const TOOLS = [
   'internal.echo',
@@ -67,7 +68,7 @@ export function TaskExecutionPanel({
       setError(
         loadError instanceof WorkflowApiError
           ? loadError.message
-          : 'Unable to load execution activity.',
+          : 'Não foi possível carregar a atividade de execução.',
       ),
     );
   }, [load]);
@@ -91,7 +92,7 @@ export function TaskExecutionPanel({
       setError(
         submitError instanceof WorkflowApiError
           ? submitError.message
-          : 'Unable to dispatch action.',
+          : 'Não foi possível enviar a ação.',
       );
     }
   }
@@ -100,8 +101,8 @@ export function TaskExecutionPanel({
     <section className="execution-workbench">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Execution Engine</p>
-          <h2>Actions and attempts</h2>
+          <p className="eyebrow">Motor de execução</p>
+          <h2>Ações e tentativas</h2>
         </div>
       </div>
       {error && <p className="workflow-alert">{error}</p>}
@@ -115,7 +116,7 @@ export function TaskExecutionPanel({
             {task.status === 'ready' && (
               <div className="action-composer">
                 <select
-                  aria-label="Tool"
+                  aria-label="Ferramenta"
                   value={tool[task.id] ?? TOOLS[0]}
                   onChange={(event) =>
                     setTool((current) => ({
@@ -125,12 +126,14 @@ export function TaskExecutionPanel({
                   }
                 >
                   {TOOLS.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </select>
                 <input
-                  aria-label="Action input"
-                  placeholder="Text or simulated action description"
+                  aria-label="Dados da ação"
+                  placeholder="Texto ou descrição da ação simulada"
                   value={text[task.id] ?? ''}
                   onChange={(event) =>
                     setText((current) => ({
@@ -144,7 +147,7 @@ export function TaskExecutionPanel({
                   type="button"
                   onClick={() => void createAndDispatch(task)}
                 >
-                  Create & dispatch
+                  Criar e enviar
                 </button>
               </div>
             )}
@@ -153,13 +156,14 @@ export function TaskExecutionPanel({
             <div className="action-row" key={action.id}>
               <div>
                 <strong>{action.tool_name}</strong>
-                <span> · {action.risk_level}</span>
+                <span> · {label(action.risk_level)}</span>
               </div>
               <StatusBadge status={action.status} />
               <ol className="attempt-list">
                 {(executions[action.id] ?? []).map((execution) => (
                   <li key={execution.id}>
-                    Attempt {execution.attempt_number} — {execution.status}
+                    Attempt {execution.attempt_number} —{' '}
+                    {label(execution.status)}
                     {execution.duration_ms !== null
                       ? ` · ${execution.duration_ms}ms`
                       : ''}
@@ -178,8 +182,10 @@ export function TaskExecutionPanel({
         <ol>
           {activity.map((entry) => (
             <li key={entry.id}>
-              <time>{new Date(entry.created_at).toLocaleTimeString()}</time>
-              <strong>{entry.event_type.replaceAll('_', ' ')}</strong>
+              <time>
+                {new Date(entry.created_at).toLocaleTimeString('pt-PT')}
+              </time>
+              <strong>{label(entry.event_type)}</strong>
             </li>
           ))}
         </ol>

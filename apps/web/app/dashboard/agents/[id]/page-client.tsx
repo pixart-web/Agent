@@ -1,6 +1,6 @@
 'use client';
 
-import type { AgentOverview } from '@agent/shared';
+import { AGENT_CATALOG, type AgentOverview } from '@agent/shared';
 import { useParams } from '../../../../lib/route-params';
 import { useEffect, useState } from 'react';
 
@@ -12,6 +12,7 @@ import {
 } from '../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import { aiErrorHint } from '../../../../lib/ai-errors';
+import { operationalMessage } from '../../../../lib/labels';
 
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,19 +24,26 @@ export default function AgentDetailPage() {
     if (user) void getAgentOverview(id).then(setOverview);
   }, [id, user]);
   if (loading || !user || !overview)
-    return <main className="loading-page">Loading agent…</main>;
+    return <main className="loading-page">A carregar o agente…</main>;
   return (
     <main>
       <DashboardNav user={user} />
       <section className="hero">
         <div>
           <p className="eyebrow">{overview.capabilities.prompt_version}</p>
-          <h1>{overview.capabilities.name} Agent</h1>
-          <p>{overview.capabilities.description}</p>
+          <h1>
+            Agente{' '}
+            {AGENT_CATALOG.find((agent) => agent.id === id)?.name ??
+              overview.capabilities.name}
+          </h1>
+          <p>
+            {AGENT_CATALOG.find((agent) => agent.id === id)?.description ??
+              overview.capabilities.description}
+          </p>
           <p
             className={`agent-operational agent-operational--${overview.operational_status}`}
           >
-            {overview.operational_message}
+            {operationalMessage(overview.operational_message)}
           </p>
           {overview.operational_status === 'unavailable' &&
             aiErrorHint(overview.operational_message) && (
@@ -46,10 +54,10 @@ export default function AgentDetailPage() {
         </div>
       </section>
       <section className="workflow-panel">
-        <h2>Workspace configuration</h2>
+        <h2>Configuração do workspace</h2>
         <div className="agent-config-grid">
           <label>
-            <span>Active</span>
+            <span>Ativo</span>
             <input
               type="checkbox"
               checked={overview.configuration.enabled}
@@ -62,10 +70,10 @@ export default function AgentDetailPage() {
                     enabled: event.target.checked,
                   });
                   setOverview(await getAgentOverview(id));
-                  setMessage('Configuration saved.');
+                  setMessage('Configuração guardada.');
                 } catch {
                   setMessage(
-                    'Only workspace administrators can change this configuration.',
+                    'Só os administradores do workspace podem alterar esta configuração.',
                   );
                 } finally {
                   setSaving(false);
@@ -74,7 +82,7 @@ export default function AgentDetailPage() {
             />
           </label>
           <label>
-            Approval policy
+            Política de aprovação
             <select
               value={overview.configuration.approval_policy}
               disabled={saving}
@@ -87,17 +95,19 @@ export default function AgentDetailPage() {
                       .value as AgentOverview['configuration']['approval_policy'],
                   });
                   setOverview(await getAgentOverview(id));
-                  setMessage('Configuration saved.');
+                  setMessage('Configuração guardada.');
                 } catch {
-                  setMessage('The configuration could not be saved.');
+                  setMessage('Não foi possível guardar a configuração.');
                 } finally {
                   setSaving(false);
                 }
               }}
             >
-              <option value="platform_default">Platform default</option>
-              <option value="risk_based">Risk based</option>
-              <option value="always">Always require approval</option>
+              <option value="platform_default">
+                Predefinição da plataforma
+              </option>
+              <option value="risk_based">Com base no risco</option>
+              <option value="always">Pedir sempre aprovação</option>
             </select>
           </label>
         </div>
@@ -108,8 +118,8 @@ export default function AgentDetailPage() {
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Capabilities</h2>
-        <p>Maximum {overview.capabilities.max_actions} actions per task</p>
+        <h2>Capacidades</h2>
+        <p>Máximo de {overview.capabilities.max_actions} ações por tarefa</p>
         <div className="tool-chips">
           {overview.capabilities.allowed_tools.map((tool) => (
             <code key={tool}>{tool}</code>
@@ -122,7 +132,9 @@ export default function AgentDetailPage() {
           <div className="action-row" key={run.id}>
             <div>
               <strong>
-                {run.proposal_summary ?? run.error_message ?? 'Agent run'}
+                {run.proposal_summary ??
+                  run.error_message ??
+                  'Execução do agente'}
               </strong>
               <span>
                 {' '}

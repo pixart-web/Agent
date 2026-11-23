@@ -12,6 +12,7 @@ import {
 } from '../../../lib/commercial-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { useWorkspaceAccess } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function SubscriptionPage() {
   const { role } = useWorkspaceAccess();
@@ -27,19 +28,19 @@ export default function SubscriptionPage() {
         setSubscription(nextSubscription);
         setPlans(nextPlans);
       })
-      .catch(() => setError('Unable to load subscription details.'));
+      .catch(() => setError('Não foi possível carregar a subscrição.'));
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading subscription…</main>;
+    return <main className="loading-page">A carregar a subscrição…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Commercial access</p>
-          <h1>Subscription</h1>
+          <p className="eyebrow">Acesso comercial</p>
+          <h1>Subscrição</h1>
         </div>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
@@ -47,69 +48,72 @@ export default function SubscriptionPage() {
         <section className="workflow-panel">
           <div className="workflow-panel__heading">
             <div>
-              <p className="eyebrow">Current plan</p>
+              <p className="eyebrow">Plano atual</p>
               <h2>{subscription.plan.name}</h2>
             </div>
-            <strong>{subscription.status}</strong>
+            <strong>{label(subscription.status)}</strong>
           </div>
           <p>
             Current period ends{' '}
-            {new Date(subscription.current_period_end).toLocaleDateString()}.
+            {new Date(subscription.current_period_end).toLocaleDateString(
+              'pt-PT',
+            )}
+            .
           </p>
           <p>
-            {subscription.ai_tokens_used.toLocaleString()} of{' '}
-            {subscription.plan.monthly_token_limit.toLocaleString()} AI tokens
-            recorded.
+            {subscription.ai_tokens_used.toLocaleString('pt-PT')} de{' '}
+            {subscription.plan.monthly_token_limit.toLocaleString('pt-PT')}{' '}
+            tokens de IA registados.
           </p>
           <p>
-            Billing provider:{' '}
-            {subscription.billing_configuration_status.replaceAll('_', ' ')}.
+            Billing provider: {label(subscription.billing_configuration_status)}
+            .
           </p>
           {!subscription.cancel_at_period_end && role === 'owner' && (
             <button
               className="secondary-button"
               onClick={() => void cancelSubscription().then(setSubscription)}
             >
-              Cancel at period end
+              Cancelar no fim do período
             </button>
           )}
           {subscription.cancel_at_period_end && (
             <p className="workflow-alert">
-              Cancellation is scheduled for the period end.
+              O cancelamento está agendado para o fim do período.
             </p>
           )}
         </section>
       )}
-      <section className="agent-grid" aria-label="Available plans">
+      <section className="agent-grid" aria-label="Planos disponíveis">
         {plans.map((plan) => (
           <article className="agent-card" key={plan.code}>
             <h2>{plan.name}</h2>
             <p>{plan.description}</p>
             <dl className="agent-metrics">
               <div>
-                <dt>Seats</dt>
+                <dt>Lugares</dt>
                 <dd>{plan.seat_limit}</dd>
               </div>
               <div>
-                <dt>Automations</dt>
+                <dt>Automatizações</dt>
                 <dd>{plan.automation_limit}</dd>
               </div>
               <div>
-                <dt>Retention</dt>
+                <dt>Retenção</dt>
                 <dd>{plan.retention_days}d</dd>
               </div>
             </dl>
             <p>
               {plan.integrations.length
                 ? plan.integrations.join(', ')
-                : 'No external integrations'}
+                : 'Sem integrações externas'}
             </p>
           </article>
         ))}
       </section>
       <p className="empty-state">
-        Plan upgrades require owner-approved commercial configuration. No charge
-        is simulated from this screen.
+        Mudar de plano exige configuração comercial aprovada pelo dono. Este
+        ecrã não simula nenhuma cobrança.
       </p>
     </main>
   );

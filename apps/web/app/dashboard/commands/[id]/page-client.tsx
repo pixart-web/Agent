@@ -46,6 +46,7 @@ import {
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
 import { CanEdit } from '../../../../lib/workspace-access';
+import { label } from '../../../../lib/labels';
 
 export default function CommandDetailPage() {
   const { id: commandId } = useParams<{ id: string }>();
@@ -113,7 +114,7 @@ export default function CommandDetailPage() {
       setError(
         loadError instanceof WorkflowApiError
           ? loadError.message
-          : 'Unable to load this workflow.',
+          : 'Não foi possível carregar este fluxo.',
       );
     } finally {
       setLoading(false);
@@ -170,7 +171,7 @@ export default function CommandDetailPage() {
       setError(
         submitError instanceof WorkflowApiError
           ? submitError.message
-          : 'Unable to create the plan.',
+          : 'Não foi possível criar o plano.',
       );
     }
   }
@@ -249,7 +250,7 @@ export default function CommandDetailPage() {
       setError(
         submitError instanceof WorkflowApiError
           ? submitError.message
-          : 'Unable to create the task.',
+          : 'Não foi possível criar a tarefa.',
       );
     }
   }
@@ -265,7 +266,7 @@ export default function CommandDetailPage() {
       setError(
         transitionError instanceof WorkflowApiError
           ? transitionError.message
-          : 'Unable to change task status.',
+          : 'Não foi possível alterar o estado da tarefa.',
       );
     }
   }
@@ -278,13 +279,13 @@ export default function CommandDetailPage() {
       setError(
         cancelError instanceof WorkflowApiError
           ? cancelError.message
-          : 'Unable to cancel the command.',
+          : 'Não foi possível cancelar o comando.',
       );
     }
   }
 
   if (authLoading || !user || loading) {
-    return <main className="loading-page">Loading workflow…</main>;
+    return <main className="loading-page">A carregar o fluxo…</main>;
   }
 
   return (
@@ -309,8 +310,8 @@ export default function CommandDetailPage() {
             statusLabel={
               command.status === 'planning'
                 ? plan
-                  ? 'Waiting for approval'
-                  : 'Supervisor planning'
+                  ? 'À espera de aprovação'
+                  : 'Planeamento do Supervisor'
                 : undefined
             }
           />
@@ -345,22 +346,22 @@ export default function CommandDetailPage() {
                 type="button"
                 onClick={handleCancelCommand}
               >
-                Cancel command
+                Cancelar comando
               </button>
             )}
           </CanEdit>
         </>
       ) : (
-        <p className="empty-state">Command unavailable.</p>
+        <p className="empty-state">Comando indisponível.</p>
       )}
 
       <CanEdit>
         {command && !plan && (
           <details className="workflow-panel workflow-form-panel">
-            <summary>Create a plan manually</summary>
+            <summary>Criar um plano manualmente</summary>
             <form className="workflow-form" onSubmit={handlePlanSubmit}>
               <label>
-                Title
+                Título
                 <input
                   required
                   value={planTitle}
@@ -368,7 +369,7 @@ export default function CommandDetailPage() {
                 />
               </label>
               <label>
-                Objective
+                Objetivo
                 <textarea
                   required
                   rows={5}
@@ -377,7 +378,7 @@ export default function CommandDetailPage() {
                 />
               </label>
               <button className="primary-button" type="submit">
-                Create plan
+                Criar plano
               </button>
             </form>
           </details>
@@ -387,13 +388,13 @@ export default function CommandDetailPage() {
       <CanEdit>
         {plan?.status === 'draft' && (
           <section className="workflow-panel workflow-form-panel">
-            <h2>Add a task</h2>
+            <h2>Adicionar uma tarefa</h2>
             <form
               className="workflow-form workflow-form--grid"
               onSubmit={handleTaskSubmit}
             >
               <label>
-                Title
+                Título
                 <input
                   required
                   value={taskTitle}
@@ -401,7 +402,7 @@ export default function CommandDetailPage() {
                 />
               </label>
               <label>
-                Agent
+                Agente
                 <select
                   value={agentId}
                   onChange={(event) =>
@@ -416,7 +417,7 @@ export default function CommandDetailPage() {
                 </select>
               </label>
               <label className="workflow-form__wide">
-                Instructions
+                Instruções
                 <textarea
                   required
                   rows={5}
@@ -425,7 +426,7 @@ export default function CommandDetailPage() {
                 />
               </label>
               <label>
-                Priority
+                Prioridade
                 <select
                   value={priority}
                   onChange={(event) =>
@@ -433,12 +434,14 @@ export default function CommandDetailPage() {
                   }
                 >
                   {TASK_PRIORITIES.map((value) => (
-                    <option key={value}>{value}</option>
+                    <option key={value} value={value}>
+                      {label(value)}
+                    </option>
                   ))}
                 </select>
               </label>
               <label>
-                Risk
+                Risco
                 <select
                   value={riskLevel}
                   onChange={(event) =>
@@ -446,12 +449,14 @@ export default function CommandDetailPage() {
                   }
                 >
                   {RISK_LEVELS.map((value) => (
-                    <option key={value}>{value}</option>
+                    <option key={value} value={value}>
+                      {label(value)}
+                    </option>
                   ))}
                 </select>
               </label>
               <label>
-                Sequence
+                Sequência
                 <input
                   type="number"
                   min={1}
@@ -460,7 +465,7 @@ export default function CommandDetailPage() {
                 />
               </label>
               <button className="primary-button" type="submit">
-                Add task
+                Adicionar tarefa
               </button>
             </form>
           </section>
@@ -473,7 +478,7 @@ export default function CommandDetailPage() {
           <section className="task-control" key={`control-${task.id}`}>
             <div>
               <strong>{task.title}</strong>
-              <span>{task.history.length} status changes</span>
+              <span>{task.history.length} mudanças de estado</span>
             </div>
             <CanEdit>
               {transitions.length > 0 && (
@@ -489,12 +494,14 @@ export default function CommandDetailPage() {
                     }
                   >
                     {transitions.map((value) => (
-                      <option key={value}>{value}</option>
+                      <option key={value} value={value}>
+                        {label(value)}
+                      </option>
                     ))}
                   </select>
                   <input
                     aria-label={`Reason for ${task.title}`}
-                    placeholder="Reason (optional)"
+                    placeholder="Motivo (opcional)"
                     value={transitionReason[task.id] ?? ''}
                     onChange={(event) =>
                       setTransitionReason((current) => ({
@@ -508,13 +515,13 @@ export default function CommandDetailPage() {
                     type="button"
                     onClick={() => handleTransition(task)}
                   >
-                    Change status
+                    Alterar estado
                   </button>
                 </div>
               )}
             </CanEdit>
             <details>
-              <summary>Status history</summary>
+              <summary>Histórico de estados</summary>
               <ol className="history-list">
                 {task.history.map((entry) => (
                   <li key={entry.id}>

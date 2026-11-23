@@ -46,8 +46,8 @@ const task: TaskDetail = {
 describe('specialized agent UI', () => {
   it('shows assignment and keeps proposals separate from execution', () => {
     const markup = renderToStaticMarkup(<TaskAgentPanel tasks={[task]} />);
-    expect(markup).toContain('Specialized agents');
+    expect(markup).toContain('Agentes especializados');
     expect(markup).toContain('marketing');
-    expect(markup).toContain('Ask agent to prepare actions');
+    expect(markup).toContain('Pedir ao agente que prepare ações');
   });
 });

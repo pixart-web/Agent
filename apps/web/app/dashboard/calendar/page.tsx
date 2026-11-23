@@ -15,6 +15,7 @@ import {
   listCalendars,
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { label } from '../../../lib/labels';
 
 export default function CalendarPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -43,7 +44,7 @@ export default function CalendarPage() {
           value.calendars.find((item) => item.primary) ?? value.calendars[0];
         setCalendarId(selected?.id ?? '');
       })
-      .catch(() => setError('Unable to read calendars.'));
+      .catch(() => setError('Não foi possível ler os calendários.'));
   }, [accountId]);
 
   useEffect(() => {
@@ -58,27 +59,27 @@ export default function CalendarPage() {
       end.toISOString(),
     )
       .then((value) => setEvents(value.events))
-      .catch(() => setError('Unable to read events.'));
+      .catch(() => setError('Não foi possível ler os eventos.'));
   }, [accountId, calendarId]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading Calendar…</main>;
+    return <main className="loading-page">A carregar o calendário…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Untrusted external content</p>
-          <h1>Calendar</h1>
+          <p className="eyebrow">Conteúdo externo não verificado</p>
+          <h1>Calendário</h1>
           <p>
-            Upcoming events are read on demand. Changes require an explicit
-            approval.
+            Os próximos eventos são lidos a pedido. As alterações exigem
+            aprovação explícita.
           </p>
         </div>
         <div>
           <select
-            aria-label="Calendar account"
+            aria-label="Conta de calendário"
             value={accountId}
             onChange={(event) => setAccountId(event.target.value)}
           >
@@ -89,7 +90,7 @@ export default function CalendarPage() {
             ))}
           </select>
           <select
-            aria-label="Calendar"
+            aria-label="Calendário"
             value={calendarId}
             onChange={(event) => setCalendarId(event.target.value)}
           >
@@ -116,7 +117,7 @@ export default function CalendarPage() {
             }
             key={event.id}
           >
-            <p className="eyebrow">{event.status}</p>
+            <p className="eyebrow">{label(event.status)}</p>
             <h3>{event.title}</h3>
             <p>
               {event.start.date_time ?? event.start.date} →{' '}
@@ -126,7 +127,7 @@ export default function CalendarPage() {
           </Link>
         ))}
         {events.length === 0 && (
-          <p className="empty-state">No events in the next 30 days.</p>
+          <p className="empty-state">Sem eventos nos próximos 30 dias.</p>
         )}
       </section>
     </main>

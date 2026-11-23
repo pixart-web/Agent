@@ -30,10 +30,10 @@ describe('GitHub action UI', () => {
       <ActionProposalPreview action={action} />,
     );
 
-    expect(markup).toContain('Create GitHub Issue');
-    expect(markup).toContain('Repository: pixart-web/Agent');
-    expect(markup).toContain('Title: Add password recovery');
-    expect(markup).toContain('Risk: yellow');
-    expect(markup).toContain('Requires approval: Yes');
+    expect(markup).toContain('Criar issue no GitHub');
+    expect(markup).toContain('Repositório: pixart-web/Agent');
+    expect(markup).toContain('Título: Add password recovery');
+    expect(markup).toContain('Risco: Amarelo');
+    expect(markup).toContain('Requer aprovação: Sim');
   });
 });

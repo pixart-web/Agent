@@ -66,8 +66,9 @@ AI saturated beyond the existing background-run tests.
 
 ## Known gaps / follow-ups
 
-1. Module screens (commands, tasks, CRM, settings, …) keep their English text and older
-   layouts under the new theme; translate and restyle them screen by screen.
+1. Module screens are translated to European Portuguese (0.3.4); server-generated messages,
+   sign-in/account screens and onboarding are still in English, and the older module layouts
+   are not restyled beyond the theme.
 2. Planning/execution mode headers exist; the dependency graph and per-step logs in the
    execution workspace still come from the existing panels.
 3. Notification titles come from the backend in English ("Approval required").

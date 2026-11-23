@@ -30,10 +30,10 @@ describe('CRM action UI', () => {
     const markup = renderToStaticMarkup(
       <ActionProposalPreview action={action} />,
     );
-    expect(markup).toContain('Create CRM Contact');
+    expect(markup).toContain('Criar contacto no CRM');
     expect(markup).toContain('João Sponsor Demo');
     expect(markup).toContain('joao@sponsor-demo.example');
-    expect(markup).toContain('Risk: yellow');
-    expect(markup).toContain('Requires approval: Yes');
+    expect(markup).toContain('Risco: Amarelo');
+    expect(markup).toContain('Requer aprovação: Sim');
   });
 });

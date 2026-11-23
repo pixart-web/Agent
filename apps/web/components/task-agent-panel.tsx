@@ -15,6 +15,7 @@ import { AiErrorNotice } from './ai-error-notice';
 import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
+import { label } from '../lib/labels';
 
 /**
  * Agents run in the background: starting one answers at once, the panel follows the run
@@ -47,7 +48,9 @@ export function TaskAgentPanel({
   }, [tasks]);
 
   useEffect(() => {
-    void load().catch(() => setError('Unable to load agent runs.'));
+    void load().catch(() =>
+      setError('Não foi possível carregar as execuções dos agentes.'),
+    );
   }, [load]);
 
   // Follow every run that is still working, one poller per run.
@@ -89,7 +92,7 @@ export function TaskAgentPanel({
             setError(
               pollError instanceof WorkflowApiError
                 ? pollError.message
-                : 'Unable to follow the agent run.',
+                : 'Não foi possível acompanhar a execução do agente.',
             );
         });
     }
@@ -113,7 +116,7 @@ export function TaskAgentPanel({
       setError(
         runError instanceof WorkflowApiError
           ? runError.message
-          : 'Unable to run agent.',
+          : 'Não foi possível executar o agente.',
       );
     } finally {
       setStarting('');
@@ -124,8 +127,8 @@ export function TaskAgentPanel({
     <section className="execution-workbench">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Specialized agents</p>
-          <h2>Agent analysis and action proposals</h2>
+          <p className="eyebrow">Agentes especializados</p>
+          <h2>Análise dos agentes e propostas de ação</h2>
         </div>
       </div>
       {error && <AiErrorNotice message={error} />}
@@ -139,7 +142,7 @@ export function TaskAgentPanel({
           <article className="workflow-panel agent-run-card" key={task.id}>
             <div className="workflow-panel__heading">
               <div>
-                <span className="eyebrow">Assigned Agent</span>
+                <span className="eyebrow">Agente atribuído</span>
                 <h3>{task.agent_id}</h3>
                 <p>{task.title}</p>
               </div>
@@ -155,15 +158,15 @@ export function TaskAgentPanel({
                     type="button"
                   >
                     {busy
-                      ? 'Analyzing…'
+                      ? 'A analisar…'
                       : latest
-                        ? 'Run agent again'
-                        : 'Ask agent to prepare actions'}
+                        ? 'Executar o agente de novo'
+                        : 'Pedir ao agente que prepare ações'}
                   </button>
                   {latest && !working && (
                     <input
                       maxLength={5000}
-                      placeholder="Optional feedback"
+                      placeholder="Comentário opcional"
                       value={feedback[task.id] ?? ''}
                       onChange={(event) =>
                         setFeedback((current) => ({
@@ -186,7 +189,7 @@ export function TaskAgentPanel({
             {latest && !working && (
               <dl className="execution-meta">
                 <div>
-                  <dt>Model</dt>
+                  <dt>Modelo</dt>
                   <dd>{latest.model}</dd>
                 </div>
                 <div>
@@ -194,11 +197,11 @@ export function TaskAgentPanel({
                   <dd>{latest.total_tokens ?? '—'}</dd>
                 </div>
                 <div>
-                  <dt>Duration</dt>
+                  <dt>Duração</dt>
                   <dd>{latest.latency_ms ?? '—'} ms</dd>
                 </div>
                 <div>
-                  <dt>Summary</dt>
+                  <dt>Resumo</dt>
                   <dd>
                     {latest.proposal_summary ?? latest.error_message ?? '—'}
                   </dd>
@@ -220,40 +223,40 @@ export function TaskAgentPanel({
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  'github.create_issue': 'Create GitHub Issue',
-  'github.comment_issue': 'Comment on GitHub Issue',
-  'github.create_branch': 'Create GitHub Branch',
-  'github.create_or_update_file': 'Create or Update GitHub File',
-  'github.open_pull_request': 'Open GitHub Pull Request',
-  'email.send': 'Send Email',
-  'email.reply': 'Reply to Email',
-  'email.mark_read': 'Mark Email Read',
-  'calendar.create_event': 'Create Calendar Event',
-  'calendar.update_event': 'Update Calendar Event',
-  'calendar.cancel_event': 'Cancel Calendar Event',
-  'marketing.create_campaign': 'Create Marketing Campaign',
-  'marketing.update_campaign': 'Update Marketing Campaign',
-  'marketing.create_content': 'Create Content Draft',
-  'marketing.update_content': 'Update Content Draft',
-  'marketing.transition_content': 'Transition Content Lifecycle',
-  'marketing.schedule_content': 'Schedule Proposed Content',
-  'marketing.record_publication': 'Record Confirmed Publication',
-  'marketing.add_asset_metadata': 'Add Asset Metadata',
-  'marketing.record_metric': 'Record Performance Metric',
-  'crm.create_client': 'Create Client Profile',
-  'crm.update_client': 'Update Client Profile',
-  'crm.create_project': 'Create Client Project',
-  'crm.update_project': 'Update Client Project',
-  'crm.create_pipeline': 'Create Sales Pipeline',
-  'crm.create_opportunity': 'Create Opportunity',
-  'crm.update_opportunity': 'Update Opportunity',
-  'crm.link_task': 'Link Task to Client',
-  'crm.create_organization': 'Create CRM Organization',
-  'crm.create_contact': 'Create CRM Contact',
-  'crm.update_contact': 'Update CRM Contact',
-  'crm.add_note': 'Add CRM Note',
-  'crm.link_email': 'Link Email to CRM',
-  'crm.link_event': 'Link Event to CRM',
+  'github.create_issue': 'Criar issue no GitHub',
+  'github.comment_issue': 'Comentar issue do GitHub',
+  'github.create_branch': 'Criar branch no GitHub',
+  'github.create_or_update_file': 'Criar ou atualizar ficheiro no GitHub',
+  'github.open_pull_request': 'Abrir pull request no GitHub',
+  'email.send': 'Enviar email',
+  'email.reply': 'Responder a email',
+  'email.mark_read': 'Marcar email como lido',
+  'calendar.create_event': 'Criar evento de calendário',
+  'calendar.update_event': 'Atualizar evento de calendário',
+  'calendar.cancel_event': 'Cancelar evento de calendário',
+  'marketing.create_campaign': 'Criar campanha de marketing',
+  'marketing.update_campaign': 'Atualizar campanha de marketing',
+  'marketing.create_content': 'Criar rascunho de conteúdo',
+  'marketing.update_content': 'Atualizar rascunho de conteúdo',
+  'marketing.transition_content': 'Mudar estado do conteúdo',
+  'marketing.schedule_content': 'Agendar conteúdo proposto',
+  'marketing.record_publication': 'Registar publicação confirmada',
+  'marketing.add_asset_metadata': 'Adicionar metadados do recurso',
+  'marketing.record_metric': 'Registar métrica de desempenho',
+  'crm.create_client': 'Criar perfil de cliente',
+  'crm.update_client': 'Atualizar perfil de cliente',
+  'crm.create_project': 'Criar projeto de cliente',
+  'crm.update_project': 'Atualizar projeto de cliente',
+  'crm.create_pipeline': 'Criar pipeline de vendas',
+  'crm.create_opportunity': 'Criar oportunidade',
+  'crm.update_opportunity': 'Atualizar oportunidade',
+  'crm.link_task': 'Ligar tarefa a cliente',
+  'crm.create_organization': 'Criar organização no CRM',
+  'crm.create_contact': 'Criar contacto no CRM',
+  'crm.update_contact': 'Atualizar contacto no CRM',
+  'crm.add_note': 'Adicionar nota no CRM',
+  'crm.link_email': 'Ligar email ao CRM',
+  'crm.link_event': 'Ligar evento ao CRM',
 };
 
 export function ActionProposalPreview({ action }: { action: TaskAction }) {
@@ -293,36 +296,36 @@ export function ActionProposalPreview({ action }: { action: TaskAction }) {
     <li>
       <strong>{ACTION_LABELS[action.tool_name] ?? action.tool_name}</strong>
       {github && typeof repository === 'string' && (
-        <span>Repository: {repository}</span>
+        <span>Repositório: {repository}</span>
       )}
-      {github && typeof title === 'string' && <span>Title: {title}</span>}
+      {github && typeof title === 'string' && <span>Título: {title}</span>}
       {github && typeof branch === 'string' && <span>Branch: {branch}</span>}
-      {email && typeof account === 'string' && <span>Account: {account}</span>}
-      {email && typeof subject === 'string' && <span>Subject: {subject}</span>}
-      {email && recipients && <span>Recipients: {recipients}</span>}
-      {calendar && typeof account === 'string' && (
-        <span>Account: {account}</span>
-      )}
+      {email && typeof account === 'string' && <span>Conta: {account}</span>}
+      {email && typeof subject === 'string' && <span>Assunto: {subject}</span>}
+      {email && recipients && <span>Destinatários: {recipients}</span>}
+      {calendar && typeof account === 'string' && <span>Conta: {account}</span>}
       {calendar && typeof calendarId === 'string' && (
-        <span>Calendar: {calendarId}</span>
+        <span>Calendário: {calendarId}</span>
       )}
-      {calendar && typeof eventId === 'string' && <span>Event: {eventId}</span>}
-      {calendar && typeof title === 'string' && <span>Title: {title}</span>}
+      {calendar && typeof eventId === 'string' && (
+        <span>Evento: {eventId}</span>
+      )}
+      {calendar && typeof title === 'string' && <span>Título: {title}</span>}
       {calendar && start !== undefined && (
-        <span>Start: {JSON.stringify(start)}</span>
+        <span>Início: {JSON.stringify(start)}</span>
       )}
-      {calendar && end !== undefined && <span>End: {JSON.stringify(end)}</span>}
+      {calendar && end !== undefined && <span>Fim: {JSON.stringify(end)}</span>}
       {calendar && typeof location === 'string' && (
-        <span>Location: {location}</span>
+        <span>Local: {location}</span>
       )}
-      {calendar && attendees && <span>Attendees: {attendees}</span>}
+      {calendar && attendees && <span>Participantes: {attendees}</span>}
       {(crm || marketing) && (
-        <span>Exact payload: {JSON.stringify(action.input_payload)}</span>
+        <span>Dados exatos: {JSON.stringify(action.input_payload)}</span>
       )}
-      <span>Risk: {action.risk_level}</span>
+      <span>Risco: {label(action.risk_level)}</span>
       {(github || email || calendar || crm || marketing) && (
         <span>
-          Requires approval: {action.risk_level === 'green' ? 'No' : 'Yes'}
+          Requer aprovação: {action.risk_level === 'green' ? 'Não' : 'Sim'}
         </span>
       )}
       <StatusBadge status={action.status} />

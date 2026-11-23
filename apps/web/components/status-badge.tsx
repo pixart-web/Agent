@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { label as statusLabel } from '../lib/labels';
+
 export function StatusBadge({
   status,
   label,
@@ -9,7 +11,7 @@ export function StatusBadge({
 }) {
   return (
     <span className={`workflow-badge workflow-badge--${status}`}>
-      {label ?? status.replaceAll('_', ' ')}
+      {label ?? statusLabel(status)}
     </span>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 
 import type { Agent } from '../lib/workflow-client';
 import { StatusBadge } from './status-badge';
+import { label } from '../lib/labels';
 
 export function CommandDetail({
   command,
@@ -26,7 +27,7 @@ export function CommandDetail({
     <>
       <section className="workflow-panel">
         <div className="workflow-panel__heading">
-          <p className="eyebrow">Command</p>
+          <p className="eyebrow">Comando</p>
           <StatusBadge status={command.status} label={statusLabel} />
         </div>
         <h1 className="workflow-title">{command.input}</h1>
@@ -36,7 +37,7 @@ export function CommandDetail({
         <section className="workflow-panel">
           <div className="workflow-panel__heading">
             <div>
-              <p className="eyebrow">Plan</p>
+              <p className="eyebrow">Plano</p>
               <h2>{plan.title}</h2>
             </div>
             <StatusBadge status={plan.status} />
@@ -48,7 +49,7 @@ export function CommandDetail({
       {tasks.length > 0 && (
         <section aria-labelledby="task-list-title">
           <div className="section-heading">
-            <h2 id="task-list-title">Tasks</h2>
+            <h2 id="task-list-title">Tarefas</h2>
             <span>{tasks.length} configured</span>
           </div>
           <div className="task-list">
@@ -64,16 +65,16 @@ export function CommandDetail({
                 <p>{task.instructions}</p>
                 <dl className="task-meta">
                   <div>
-                    <dt>Agent</dt>
+                    <dt>Agente</dt>
                     <dd>{agentNames[task.agent_id] ?? task.agent_id}</dd>
                   </div>
                   <div>
-                    <dt>Priority</dt>
-                    <dd>{task.priority}</dd>
+                    <dt>Prioridade</dt>
+                    <dd>{label(task.priority)}</dd>
                   </div>
                   <div>
-                    <dt>Risk</dt>
-                    <dd>{task.risk_level}</dd>
+                    <dt>Risco</dt>
+                    <dd>{label(task.risk_level)}</dd>
                   </div>
                 </dl>
               </article>
