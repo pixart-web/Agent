@@ -110,4 +110,6 @@ files (background removed so they sit on any dark surface):
 | `apps/web/app/icon.png` (256²)                    | Web favicon                                              |
 
 The logo is designed for dark backgrounds only. The animated `KikoAvatar` stays the live
-state indicator (home hero, workspace headers).
+state indicator (home hero, workspace headers) and is drawn after the logo's robot (domed
+head, dark visor with a silver rim, amber-ringed headphone ears, amber core ring and the
+amber-to-violet orbit), so the character and the logo read as the same Kiko.

@@ -704,16 +704,37 @@ main:has(> .kiko-rail.is-collapsed) > .kiko-topbar {
 }
 
 .kiko-avatar__ear {
-  fill: #2a2740;
-  stroke: rgba(255, 255, 255, 0.12);
+  fill: #3a2a26;
+  stroke: rgba(255, 255, 255, 0.1);
   stroke-width: 1.5;
 }
 
 .kiko-avatar__ear-light {
   fill: none;
-  stroke: var(--kiko-amber);
-  stroke-width: 3.5;
-  filter: drop-shadow(0 0 6px rgba(255, 153, 95, 0.8));
+  stroke: #ffa45c;
+  stroke-width: 6;
+  filter: drop-shadow(0 0 7px rgba(255, 153, 95, 0.9));
+}
+
+.kiko-avatar__ear-cup {
+  fill: #1c1412;
+}
+
+.kiko-avatar__visor {
+  stroke: rgba(235, 230, 250, 0.55);
+  stroke-width: 2.5;
+}
+
+.kiko-avatar__orbit {
+  filter: drop-shadow(0 0 6px rgba(255, 150, 80, 0.7));
+}
+
+.kiko-avatar__head {
+  filter: drop-shadow(0 0 12px rgba(255, 140, 60, 0.28));
+}
+
+.kiko-avatar__core-glow {
+  opacity: 0.55;
 }
 
 .kiko-avatar__glare {
@@ -725,21 +746,21 @@ main:has(> .kiko-rail.is-collapsed) > .kiko-topbar {
 
 .kiko-avatar__eye-line {
   fill: none;
-  stroke: #9fd8ff;
-  stroke-width: 7;
+  stroke: #f4f5ff;
+  stroke-width: 8;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgba(120, 200, 255, 0.85));
+  filter: drop-shadow(0 0 5px rgba(140, 150, 255, 0.95));
 }
 
 .kiko-avatar__eye-dot {
-  fill: #9fd8ff;
-  filter: drop-shadow(0 0 6px rgba(120, 200, 255, 0.85));
+  fill: #f4f5ff;
+  filter: drop-shadow(0 0 5px rgba(140, 150, 255, 0.95));
 }
 
 .kiko-avatar__core {
   fill: none;
-  stroke: var(--kiko-amber);
-  stroke-width: 4;
+  stroke: #ffa45c;
+  stroke-width: 4.5;
   filter: drop-shadow(0 0 5px rgba(255, 153, 95, 0.9));
 }
 
@@ -868,6 +889,15 @@ main:has(> .kiko-rail.is-collapsed) > .kiko-topbar {
 .kiko-avatar--offline .kiko-avatar__core,
 .kiko-avatar--offline .kiko-avatar__eye-line {
   stroke: #5d5a70;
+  filter: none;
+}
+
+.kiko-avatar--offline .kiko-avatar__orbit {
+  fill: #4a4760;
+  filter: none;
+}
+
+.kiko-avatar--offline .kiko-avatar__head {
   filter: none;
 }
 
