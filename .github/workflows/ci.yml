@@ -267,13 +267,24 @@ jobs:
           nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/api.log 2>&1 &
           nohup python -m app.scripts.run_transactional_email_dispatcher > /tmp/mailer.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8000/health && break; sleep 1; done
-      - name: Build and start the web client
+      # The production web build calls the API on its own origin (behind the reverse proxy),
+      # so the sweep uses the development server, which calls NEXT_PUBLIC_API_URL. Every route
+      # is requested once first so on-demand compilation cannot exceed the test timeouts.
+      - name: Start the web client and compile every route
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
+        working-directory: apps/web
         run: |
-          pnpm --filter @agent/web build
-          nohup pnpm --filter @agent/web exec next start -p 3000 > /tmp/web.log 2>&1 &
-          for i in $(seq 1 60); do curl -fsS http://localhost:3000/login > /dev/null && break; sleep 1; done
+          nohup pnpm exec next dev -p 3000 > /tmp/web.log 2>&1 &
+          for i in $(seq 1 90); do curl -fsS http://localhost:3000/login > /dev/null && break; sleep 1; done
+          for route in /login /onboarding /dashboard /dashboard/kiko /dashboard/commands \
+            /dashboard/commands/new /dashboard/tasks /dashboard/projects /dashboard/executions \
+            /dashboard/analytics /dashboard/agents /dashboard/automations /dashboard/knowledge \
+            /dashboard/approvals /dashboard/notifications /dashboard/codex /dashboard/email \
+            /dashboard/calendar /dashboard/crm /dashboard/marketing /dashboard/integrations \
+            /dashboard/settings /dashboard/subscription; do
+            curl -fsS -o /dev/null "http://localhost:3000$route" || echo "warm-up failed: $route"
+          done
       - name: Install Chromium for Playwright
         working-directory: apps/web
         run: pnpm exec playwright install --with-deps chromium
