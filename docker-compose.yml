@@ -130,12 +130,12 @@ services:
       timeout: 5s
       retries: 5
 
-  worker:
+  worker: &worker-service
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     entrypoint: []
-    command: celery -A app.execution.celery_app:celery_app worker --loglevel=INFO
+    command: celery -A app.execution.celery_app:celery_app worker --loglevel=INFO -Q celery
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agent:agent@postgres:5432/agent}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -223,6 +223,11 @@ services:
       redis:
         condition: service_healthy
     stop_grace_period: 15s
+
+  # Model work (plans, agent runs) on its own queue, one at a time per worker.
+  ai-worker:
+    <<: *worker-service
+    command: celery -A app.execution.celery_app:celery_app worker --loglevel=INFO -Q ai --concurrency=1 --hostname=ai@%h
 
   automation-scheduler:
     build:

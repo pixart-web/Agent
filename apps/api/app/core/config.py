@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     agent_lookup_round_enabled: bool = True
     # How often the automation scheduler looks for due schedules.
     automation_scheduler_interval_seconds: float = Field(default=30.0, ge=1.0, le=3600.0)
+    # Celery queue for model work (plans, agent runs), served by a dedicated low-concurrency
+    # worker so AI calls never queue inside the model runtime past their timeout and never
+    # hold up approved actions.
+    ai_task_queue: str = Field(default="ai", min_length=1, max_length=64)
     approval_expire_hours: int = Field(default=24, ge=1, le=720)
     github_integration_enabled: bool = False
     github_token: SecretStr | None = None

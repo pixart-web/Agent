@@ -6,7 +6,8 @@
 #   redis     dedicated Redis                   127.0.0.1:56379  (password protected)
 #   mailpit   email capture (nothing leaves)    SMTP 127.0.0.1:56025, UI http://127.0.0.1:58025
 #   api       FastAPI (uvicorn)                 http://localhost:8000
-#   worker    Celery execution worker
+#   worker    Celery worker: actions and automations (queue celery)
+#   aiworker  Celery worker: model work, plans and agent runs (queue ai, one at a time)
 #   outbox    outbox dispatcher
 #   mailer    transactional email dispatcher -> Mailpit
 #   scheduler runs scheduled automations when they fall due
@@ -52,7 +53,7 @@ SMTP_PORT="${KIKO_LOCAL_SMTP_PORT:-56025}"
 MAIL_UI_PORT="${KIKO_LOCAL_MAIL_UI_PORT:-58025}"
 API_PORT="${KIKO_LOCAL_API_PORT:-8000}"
 WEB_PORT="${KIKO_LOCAL_WEB_PORT:-3000}"
-ALL_SERVICES=(postgres redis mailpit api worker outbox mailer scheduler web)
+ALL_SERVICES=(postgres redis mailpit api worker aiworker outbox mailer scheduler web)
 
 RUN="$H/run"
 LOGS="$H/logs"
@@ -293,31 +294,36 @@ start_api() {
   say "api: http://localhost:$API_PORT"
 }
 
-start_worker() {
-  if alive worker; then say "worker: already running"; return; fi
+# One Celery worker per queue: `worker` runs actions and automations (queue "celery",
+# 3 processes); `aiworker` runs model work (queue "ai": plans, agent runs) one at a time.
+# prefork (not solo): task time limits are enforced. On macOS the pool starts with spawn and
+# a forked process must not touch the system proxy settings: FORKED_BY_MULTIPROCESSING,
+# OBJC_DISABLE_INITIALIZE_FORK_SAFETY and NO_PROXY=* (every local service is on 127.0.0.1).
+start_celery() {
+  local name="$1" queue="$2" concurrency="$3" host="$4"
+  if alive "$name"; then say "$name: already running"; return; fi
   write_api_env
-  # prefork (not solo): task time limits are enforced and a plan being generated does not
-  # hold up approved actions. On macOS a forked process must not touch the system proxy
-  # settings (the lookup hangs in the child): OBJC_DISABLE_INITIALIZE_FORK_SAFETY plus
-  # NO_PROXY=* (every local service, Ollama included, is on 127.0.0.1).
-  start_bg worker "$LOGS/worker.log" bash -c "set -a; . '$RUN/api.env'; set +a; cd '$API_DIR'; \
+  start_bg "$name" "$LOGS/$name.log" bash -c "set -a; . '$RUN/api.env'; set +a; cd '$API_DIR'; \
     OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES NO_PROXY='*' no_proxy='*' FORKED_BY_MULTIPROCESSING=1 exec '$PY' -m celery -A app.execution.celery_app:celery_app worker \
-      --loglevel=INFO --pool=prefork --concurrency=${KIKO_LOCAL_WORKER_CONCURRENCY:-3} \
-      --hostname=kiko-local@%h"
+      --loglevel=INFO --pool=prefork --concurrency=$concurrency -Q $queue \
+      --hostname=$host@%h"
   local i log_start
-  log_start=$(wc -l < "$LOGS/worker.log" 2>/dev/null || echo 0)
+  log_start=$(wc -l < "$LOGS/$name.log" 2>/dev/null || echo 0)
   for ((i = 0; i < 60; i++)); do
-    if tail -n +"$((log_start + 1))" "$LOGS/worker.log" | grep -q "kiko-local@.* ready"; then
-      say "worker: ready (broker connected)"; return
+    if tail -n +"$((log_start + 1))" "$LOGS/$name.log" | grep -q "$host@.* ready"; then
+      say "$name: ready (queue $queue)"; return
     fi
-    if tail -n +"$((log_start + 1))" "$LOGS/worker.log" | grep -q "Cannot connect to"; then
-      die "worker cannot reach its broker (see $LOGS/worker.log)"
+    if tail -n +"$((log_start + 1))" "$LOGS/$name.log" | grep -q "Cannot connect to"; then
+      die "$name cannot reach its broker (see $LOGS/$name.log)"
     fi
-    alive worker || die "worker exited (see $LOGS/worker.log)"
+    alive "$name" || die "$name exited (see $LOGS/$name.log)"
     sleep 0.5
   done
-  die "worker did not become ready (see $LOGS/worker.log)"
+  die "$name did not become ready (see $LOGS/$name.log)"
 }
+
+start_worker() { start_celery worker celery "${KIKO_LOCAL_WORKER_CONCURRENCY:-3}" kiko-local; }
+start_aiworker() { start_celery aiworker ai 1 kiko-local-ai; }
 
 start_outbox() {
   if alive outbox; then say "outbox: already running"; return; fi
@@ -368,7 +374,7 @@ stop_process() { # name grace-seconds
 start_one() {
   case "$1" in
     postgres) start_postgres ;; redis) start_redis ;; mailpit) start_mailpit ;;
-    api) start_api ;; worker) start_worker ;; outbox) start_outbox ;;
+    api) start_api ;; worker) start_worker ;; aiworker) start_aiworker ;; outbox) start_outbox ;;
     mailer) start_mailer ;; scheduler) start_scheduler ;; web) start_web ;;
     *) die "unknown service: $1 (one of: ${ALL_SERVICES[*]})" ;;
   esac
@@ -378,7 +384,8 @@ stop_one() {
   case "$1" in
     postgres) stop_postgres ;; redis) stop_redis ;;
     mailpit) stop_process mailpit 5 ;; api) stop_process api 15 ;;
-    worker) stop_process worker 30 ;; outbox) stop_process outbox 15 ;;
+    worker) stop_process worker 30 ;; aiworker) stop_process aiworker 30 ;;
+    outbox) stop_process outbox 15 ;;
     mailer) stop_process mailer 15 ;; scheduler) stop_process scheduler 15 ;;
     web) stop_process web 10 ;;
     *) die "unknown service: $1 (one of: ${ALL_SERVICES[*]})" ;;
@@ -390,7 +397,7 @@ cmd_start() {
   local services=("$@")
   if [ ${#services[@]} -eq 0 ]; then
     start_postgres; start_redis; start_mailpit; migrate
-    start_api; start_worker; start_outbox; start_mailer; start_scheduler; start_web
+    start_api; start_worker; start_aiworker; start_outbox; start_mailer; start_scheduler; start_web
     say ""; say "Kiko local API: http://localhost:$API_PORT   (Kiko → Server Connection…)"
     say "Email inbox:    http://127.0.0.1:$MAIL_UI_PORT"
   else

@@ -2131,3 +2131,66 @@ a.kiko-feed__item:hover {
   border-color: var(--kiko-amber);
   outline: 3px solid rgba(255, 153, 95, 0.18);
 }
+
+/* ── Unstyled buttons in module screens ────────────────────────────────────────── */
+/* Older screens use bare <button> elements; give them the Kiko controls instead of the
+   browser's default grey. A form's submit button is the primary action. */
+
+main button:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--kiko-line-strong);
+  border-radius: var(--radius-control);
+  color: var(--kiko-text);
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 160ms,
+    border-color 160ms,
+    transform 160ms var(--ease-out);
+}
+
+main button:not([class]):hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+main form button[type='submit']:not([class]) {
+  border-color: transparent;
+  color: #1d0f06;
+  background: linear-gradient(
+    135deg,
+    #ffb27f 0%,
+    var(--kiko-amber) 55%,
+    #f07a3d 100%
+  );
+  box-shadow: 0 8px 24px rgba(255, 153, 95, 0.22);
+}
+
+main form button[type='submit']:not([class]):hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffbf93 0%, #ffa572 55%, #f4884d 100%);
+  transform: translateY(-1px);
+}
+
+main button:not([class]):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main button:not([class]) {
+    transition: none;
+  }
+}
+
+main select:not([class]) {
+  min-height: 38px;
+  padding: 6px 12px;
+}

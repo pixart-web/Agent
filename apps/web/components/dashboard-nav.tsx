@@ -209,6 +209,7 @@ export function DashboardNav({ user }: { user: User }) {
           <Link
             href="/dashboard"
             className="kiko-rail__brand-link"
+            aria-label="Kiko — Início"
             onClick={closeMenu}
           >
             <span className="kiko-rail__brand-full">

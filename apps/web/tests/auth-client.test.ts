@@ -65,6 +65,26 @@ describe('auth client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('renews the session first when no token is in memory', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ access_token: 'fresh-token', token_type: 'bearer' }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ id: 'user-1' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await authFetch('/api/v1/auth/me');
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      '/api/v1/auth/refresh',
+    );
+    const headers = new Headers(fetchMock.mock.calls[1][1]?.headers);
+    expect(headers.get('Authorization')).toBe('Bearer fresh-token');
+  });
+
   it('shares one refresh request across concurrent callers', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
