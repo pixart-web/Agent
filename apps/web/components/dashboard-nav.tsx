@@ -7,10 +7,9 @@ import React, { useEffect, useState } from 'react';
 
 import { logout } from '../lib/auth-client';
 import type { User } from '../lib/auth-types';
-import { deriveKikoState } from '../lib/kiko-state';
 import { listWorkspaces } from '../lib/knowledge-client';
 import { isDesktop } from '../lib/platform';
-import { signalsFrom, useKikoLiveData } from '../lib/use-kiko-signals';
+import { useKikoLiveData } from '../lib/use-kiko-signals';
 import { resetWorkspaceRole } from '../lib/workspace-access';
 import {
   getWorkspaceSettings,
@@ -18,7 +17,7 @@ import {
   type WorkspaceSettings,
 } from '../lib/workspace-settings-client';
 import { CommandPalette, PALETTE_EVENT } from './desktop-shell';
-import { KikoAvatar } from './kiko/kiko-avatar';
+import { KikoLogo, KikoMark } from './kiko/kiko-logo';
 import { KikoContextPanel } from './kiko/kiko-context-panel';
 import { KikoIcon, type KikoIconName } from './kiko/kiko-icons';
 
@@ -117,7 +116,6 @@ export function DashboardNav({ user }: { user: User }) {
   const router = useRouter();
   const pathname = usePathname() ?? '';
   const live = useKikoLiveData();
-  const state = deriveKikoState(signalsFrom(live));
   const [workspace, setWorkspace] = useState<Pick<
     WorkspaceSettings,
     'id' | 'name' | 'role'
@@ -213,10 +211,11 @@ export function DashboardNav({ user }: { user: User }) {
             className="kiko-rail__brand-link"
             onClick={closeMenu}
           >
-            <KikoAvatar state={state} size={34} decorative />
-            <span className="kiko-rail__brand-text">
-              <strong>Kiko</strong>
-              <span>AI Operating System</span>
+            <span className="kiko-rail__brand-full">
+              <KikoLogo width={176} />
+            </span>
+            <span className="kiko-rail__brand-mark">
+              <KikoMark size={40} />
             </span>
           </Link>
           <button

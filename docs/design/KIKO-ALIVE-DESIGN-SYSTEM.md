@@ -96,3 +96,18 @@ See the UX specification (§ Character). Rendering choice: **SVG + CSS**. It is 
 option that reaches the quality bar, needs no runtime, no GPU scene and no external service,
 works offline in the Tauri WebView, and its static frame is the fallback. A 3D (GLB/Three.js)
 or Rive version can replace the SVG later behind the same `KikoAvatar` props.
+
+## Brand assets
+
+The official logo artwork is kept in `apps/desktop/assets/kiko-logo-original.png`. Derived
+files (background removed so they sit on any dark surface):
+
+| File                                              | Use                                                      |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| `apps/web/public/brand/kiko-logo.png` (720 × 290) | `KikoLogo`: sign-in/account screens, navigation          |
+| `apps/web/public/brand/kiko-mark.png` (192 × 160) | `KikoMark`: collapsed navigation                         |
+| `apps/desktop/assets/icon-source.png` (1024²)     | App icon source (`tauri icon`), robot on a squircle tile |
+| `apps/web/app/icon.png` (256²)                    | Web favicon                                              |
+
+The logo is designed for dark backgrounds only. The animated `KikoAvatar` stays the live
+state indicator (home hero, workspace headers).
