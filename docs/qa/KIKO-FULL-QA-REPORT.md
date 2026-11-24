@@ -44,7 +44,8 @@ which proxies all API calls through Rust and keeps the refresh token in the Keyc
 
 ## 4–5. Functional inventory and coverage matrix
 
-See [KIKO-FUNCTIONAL-COVERAGE-MATRIX.md](KIKO-FUNCTIONAL-COVERAGE-MATRIX.md). Summary: identity,
+The detailed coverage matrix of 2026-11-15 was retired (superseded by the later rounds below and
+the automated suites). Summary at the time: identity,
 AI, operations, approvals, execution, CRM contacts, knowledge, notifications, recovery and
 multi-tenancy are **verified end to end**; organisations/opportunities, marketing, automations,
 entitlements and project↔task association are **partially** verified (live creation + unit
