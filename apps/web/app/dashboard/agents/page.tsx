@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { DashboardNav } from '../../../components/dashboard-nav';
 import { getAgentOverview } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { operationalMessage } from '../../../lib/labels';
 
 const SPECIALISTS = AGENT_CATALOG.filter((agent) => agent.id !== 'supervisor');
 
@@ -22,14 +23,14 @@ export default function AgentsPage() {
     ).then((pairs) => setOverviews(Object.fromEntries(pairs)));
   }, [user]);
   if (loading || !user)
-    return <main className="loading-page">Loading agents…</main>;
+    return <main className="loading-page">A carregar os agentes…</main>;
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Kiko team</p>
-          <h1>Specialized Agents</h1>
+          <p className="eyebrow">Equipa Kiko</p>
+          <h1>Agentes especializados</h1>
         </div>
       </section>
       <div className="agent-grid">
@@ -46,23 +47,25 @@ export default function AgentsPage() {
               <p
                 className={`agent-operational agent-operational--${overview?.operational_status ?? 'unavailable'}`}
               >
-                {overview?.operational_message ?? 'Checking provider…'}
+                {overview
+                  ? operationalMessage(overview.operational_message)
+                  : 'A verificar o fornecedor…'}
               </p>
               <dl className="agent-metrics">
                 <div>
-                  <dt>Pending</dt>
+                  <dt>Pendentes</dt>
                   <dd>{overview?.tasks_pending ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>Running</dt>
+                  <dt>A decorrer</dt>
                   <dd>{overview?.tasks_running ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>Approval</dt>
+                  <dt>Aprovação</dt>
                   <dd>{overview?.tasks_waiting_approval ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>Failed</dt>
+                  <dt>Falhou</dt>
                   <dd>{overview?.tasks_failed ?? 0}</dd>
                 </div>
               </dl>

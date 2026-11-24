@@ -24,6 +24,7 @@ import {
   updateWorkspaceSettings,
   type WorkspaceSettings,
 } from '../../../lib/workspace-settings-client';
+import { label } from '../../../lib/labels';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -46,28 +47,32 @@ export default function SettingsPage() {
     setTimezone(user.timezone);
     void listSessions()
       .then(setSessions)
-      .catch(() => setMessage('Unable to load sessions.'));
+      .catch(() => setMessage('Não foi possível carregar as sessões.'));
     void getNotificationPreferences()
       .then(setNotifications)
-      .catch(() => setMessage('Unable to load notification preferences.'));
+      .catch(() =>
+        setMessage('Não foi possível carregar as preferências de notificação.'),
+      );
     void getWorkspaceSettings()
       .then(setWorkspace)
-      .catch(() => setMessage('Unable to load workspace settings.'));
+      .catch(() =>
+        setMessage('Não foi possível carregar as definições do workspace.'),
+      );
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading settings…</main>;
+    return <main className="loading-page">A carregar as definições…</main>;
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
     try {
       await updateProfile(fullName.trim(), language, timezone);
-      setMessage('Profile updated.');
+      setMessage('Perfil atualizado.');
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to update profile.',
+          : 'Não foi possível atualizar o perfil.',
       );
     }
   }
@@ -81,7 +86,7 @@ export default function SettingsPage() {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to change password.',
+          : 'Não foi possível alterar a palavra-passe.',
       );
     }
   }
@@ -96,12 +101,12 @@ export default function SettingsPage() {
       <DashboardNav user={user} />
       <section className="hero compact-hero">
         <div>
-          <p className="eyebrow">Account</p>
-          <h1>Settings</h1>
+          <p className="eyebrow">Conta</p>
+          <h1>Definições</h1>
           {workspace?.is_synthetic_demo ? (
             <p className="status-pill warning">
-              Synthetic demo workspace — no real customer data or external
-              delivery.
+              Workspace de demonstração — sem dados reais de clientes nem envios
+              externos.
             </p>
           ) : null}
         </div>
@@ -109,10 +114,10 @@ export default function SettingsPage() {
       <section className="workflow-grid">
         <form className="workflow-panel auth-form" onSubmit={saveProfile}>
           <div className="workflow-panel__heading">
-            <h2>Profile</h2>
+            <h2>Perfil</h2>
           </div>
           <label>
-            Full name
+            Nome completo
             <input
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
@@ -123,32 +128,32 @@ export default function SettingsPage() {
             <input value={user.email} disabled />
           </label>
           <label>
-            Language
+            Idioma
             <select
               value={language}
               onChange={(event) => setLanguage(event.target.value)}
             >
-              <option value="en">English</option>
+              <option value="en">Inglês</option>
               <option value="pt-PT">Português (Portugal)</option>
             </select>
           </label>
           <label>
-            Timezone
+            Fuso horário
             <input
               value={timezone}
               onChange={(event) => setTimezone(event.target.value)}
             />
           </label>
           <button className="primary-button" type="submit">
-            Save profile
+            Guardar perfil
           </button>
         </form>
         <form className="workflow-panel auth-form" onSubmit={savePassword}>
           <div className="workflow-panel__heading">
-            <h2>Change password</h2>
+            <h2>Alterar palavra-passe</h2>
           </div>
           <label>
-            Current password
+            Palavra-passe atual
             <input
               type="password"
               autoComplete="current-password"
@@ -157,7 +162,7 @@ export default function SettingsPage() {
             />
           </label>
           <label>
-            New password
+            Nova palavra-passe
             <input
               type="password"
               autoComplete="new-password"
@@ -166,7 +171,7 @@ export default function SettingsPage() {
             />
           </label>
           <button className="primary-button" type="submit">
-            Change password
+            Alterar palavra-passe
           </button>
         </form>
       </section>
@@ -176,7 +181,7 @@ export default function SettingsPage() {
           onSubmit={async (event) => {
             event.preventDefault();
             setWorkspace(await updateWorkspaceSettings(workspace));
-            setMessage('Workspace settings updated.');
+            setMessage('Definições do workspace atualizadas.');
           }}
         >
           <fieldset
@@ -187,7 +192,7 @@ export default function SettingsPage() {
               <h2>Workspace</h2>
             </div>
             <label>
-              Name
+              Nome
               <input
                 value={workspace.name}
                 onChange={(event) =>
@@ -196,7 +201,7 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              Description
+              Descrição
               <textarea
                 value={workspace.description ?? ''}
                 onChange={(event) =>
@@ -208,7 +213,7 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              Sector
+              Setor
               <input
                 value={workspace.sector ?? ''}
                 onChange={(event) =>
@@ -220,7 +225,7 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              Country code
+              Código do país
               <input
                 maxLength={2}
                 value={workspace.country ?? ''}
@@ -246,7 +251,7 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              Data retention (days)
+              Retenção de dados (dias)
               <input
                 type="number"
                 min={30}
@@ -261,7 +266,7 @@ export default function SettingsPage() {
               />
             </label>
             <label>
-              Monthly AI token limit
+              Limite mensal de tokens de IA
               <input
                 type="number"
                 min={1000}
@@ -280,12 +285,13 @@ export default function SettingsPage() {
               className="primary-button"
               disabled={!['owner', 'admin'].includes(workspace.role)}
             >
-              Save workspace
+              Guardar workspace
             </button>
           </fieldset>
           {!['owner', 'admin'].includes(workspace.role) && (
             <p className="form-hint">
-              Only owners and admins can change workspace settings.
+              Só donos e administradores podem alterar as definições do
+              workspace.
             </p>
           )}
         </form>
@@ -293,14 +299,14 @@ export default function SettingsPage() {
       {workspace && (
         <section className="workflow-panel">
           <div className="workflow-panel__heading">
-            <h2>Team and roles</h2>
+            <h2>Equipa e funções</h2>
           </div>
           <div className="activity-list">
             {workspace.members.map((member) => (
               <article className="activity-item" key={member.id}>
                 <strong>{member.full_name}</strong>
                 <p>
-                  {member.email} · {member.role}
+                  {member.email} · {label(member.role)}
                 </p>
               </article>
             ))}
@@ -311,14 +317,14 @@ export default function SettingsPage() {
         <section className="workflow-panel">
           <div className="workflow-panel__heading">
             <div>
-              <p className="eyebrow">Data portability</p>
-              <h2>Workspace export</h2>
+              <p className="eyebrow">Portabilidade de dados</p>
+              <h2>Exportação do workspace</h2>
             </div>
           </div>
           <p className="empty-state">
-            Download the workspace profile, CRM records, projects, tasks and
-            activities. Authentication secrets and integration credentials are
-            excluded. Every export is recorded in the audit log.
+            Descarrega o perfil do workspace, registos do CRM, projetos, tarefas
+            e atividades. Segredos de autenticação e credenciais de integrações
+            ficam de fora. Cada exportação fica registada na auditoria.
           </p>
           <div className="button-row">
             <button
@@ -326,42 +332,44 @@ export default function SettingsPage() {
               type="button"
               onClick={() =>
                 void downloadWorkspaceExport().catch(() =>
-                  setMessage('Unable to export workspace data.'),
+                  setMessage(
+                    'Não foi possível exportar os dados do workspace.',
+                  ),
                 )
               }
             >
-              Download JSON archive
+              Descarregar arquivo JSON
             </button>
             <button
               className="secondary-button"
               type="button"
               onClick={() =>
                 void downloadWorkspaceExport('contacts', 'csv').catch(() =>
-                  setMessage('Unable to export contacts.'),
+                  setMessage('Não foi possível exportar os contactos.'),
                 )
               }
             >
-              Download contacts CSV
+              Descarregar contactos (CSV)
             </button>
           </div>
         </section>
       )}
       <section className="workflow-panel settings-sessions">
         <div className="workflow-panel__heading">
-          <h2>Active sessions</h2>
+          <h2>Sessões ativas</h2>
         </div>
         {sessions.length === 0 ? (
-          <p className="empty-state">No active sessions.</p>
+          <p className="empty-state">Sem sessões ativas.</p>
         ) : (
           sessions.map((session) => (
             <article className="settings-session" key={session.id}>
               <div>
                 <strong>
-                  {session.current ? 'Current session' : 'Signed-in session'}
+                  {session.current ? 'Sessão atual' : 'Sessão iniciada'}
                 </strong>
                 <p>
-                  {session.user_agent ?? 'Unknown device'} ·{' '}
-                  {session.ip_address ?? 'Unknown IP'}
+                  {session.user_agent ?? 'Dispositivo desconhecido'} ·{' '}
+                  {session.ip_address ?? 'IP desconhecido'}
                 </p>
               </div>
               {!session.current && (
@@ -370,7 +378,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => void removeSession(session.id)}
                 >
-                  Revoke
+                  Revogar
                 </button>
               )}
             </article>
@@ -385,11 +393,11 @@ export default function SettingsPage() {
             setNotifications(
               await updateNotificationPreferences(notifications),
             );
-            setMessage('Notification preferences updated.');
+            setMessage('Preferências de notificação atualizadas.');
           }}
         >
           <div className="workflow-panel__heading">
-            <h2>Notifications</h2>
+            <h2>Notificações</h2>
           </div>
           <label>
             <input
@@ -402,7 +410,7 @@ export default function SettingsPage() {
                 })
               }
             />
-            In-app operational notifications
+            Notificações operacionais na app
           </label>
           <label>
             <input
@@ -415,9 +423,9 @@ export default function SettingsPage() {
                 })
               }
             />
-            Email notifications (requires configured transactional provider)
+            Notificações por email (requer fornecedor de email configurado)
           </label>
-          <button className="primary-button">Save preferences</button>
+          <button className="primary-button">Guardar preferências</button>
         </form>
       )}
       {message && (

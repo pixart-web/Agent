@@ -27,28 +27,30 @@ export default function CodexRunsPage() {
         setRuns(items);
         setIntegration(status);
       })
-      .catch(() => setError('Unable to load Codex runs.'));
+      .catch(() =>
+        setError('Não foi possível carregar as execuções do Codex.'),
+      );
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading Codex…</main>;
+    return <main className="loading-page">A carregar o Codex…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Development execution</p>
-          <h1>Codex runs</h1>
+          <p className="eyebrow">Execução de desenvolvimento</p>
+          <h1>Execuções do Codex</h1>
           <p>
-            Safe run metadata only. Terminal logs and credentials are never
-            shown.
+            Só metadados seguros da execução. Registos do terminal e credenciais
+            nunca são mostrados.
           </p>
         </div>
         <span>
           {integration?.enabled && integration?.credential_configured
-            ? 'Ready'
-            : 'Not configured'}
+            ? 'Pronta'
+            : 'Não configurado'}
         </span>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
@@ -69,12 +71,12 @@ export default function CodexRunsPage() {
               <StatusBadge status={run.status} />
             </div>
             <p>{run.summary || run.instruction}</p>
-            <small>{new Date(run.created_at).toLocaleString()}</small>
+            <small>{new Date(run.created_at).toLocaleString('pt-PT')}</small>
           </Link>
         ))}
       </div>
       {!runs.length && !error && (
-        <p className="empty-state">No Codex runs yet.</p>
+        <p className="empty-state">Ainda não há execuções do Codex.</p>
       )}
     </main>
   );

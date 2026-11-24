@@ -14,6 +14,7 @@ import {
   type PlatformWorkspace,
 } from '../../../lib/platform-admin-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { label } from '../../../lib/labels';
 
 export default function PlatformAdminPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -35,19 +36,22 @@ export default function PlatformAdminPage() {
 
   useEffect(() => {
     if (user?.is_superuser)
-      void refresh().catch(() => setError('Unable to load platform data.'));
+      void refresh().catch(() =>
+        setError('Não foi possível carregar os dados da plataforma.'),
+      );
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading administration…</main>;
+    return <main className="loading-page">A carregar a administração…</main>;
   if (!user.is_superuser)
     return (
       <main>
         <DashboardNav user={user} />
         <section className="workflow-panel">
-          <h1>Platform administration</h1>
+          <h1>Administração da plataforma</h1>
           <p>
-            This area requires separately granted platform administrator access.
+            Esta área exige acesso de administrador da plataforma, concedido à
+            parte.
           </p>
         </section>
       </main>
@@ -58,8 +62,8 @@ export default function PlatformAdminPage() {
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Restricted control plane</p>
-          <h1>Platform administration</h1>
+          <p className="eyebrow">Área de controlo restrita</p>
+          <h1>Administração da plataforma</h1>
         </div>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
@@ -67,12 +71,12 @@ export default function PlatformAdminPage() {
         <section className="agent-grid">
           {[
             ['Workspaces', overview.workspace_count],
-            ['Active workspaces', overview.active_workspace_count],
-            ['Users', overview.user_count],
-            ['Active users', overview.active_user_count],
-            ['Active sessions', overview.active_session_count],
-            ['Integrations', overview.integration_account_count],
-            ['Failed email', overview.failed_email_count],
+            ['Workspaces ativos', overview.active_workspace_count],
+            ['Utilizadores', overview.user_count],
+            ['Utilizadores ativos', overview.active_user_count],
+            ['Sessões ativas', overview.active_session_count],
+            ['Integrações', overview.integration_account_count],
+            ['Email falhado', overview.failed_email_count],
           ].map(([label, value]) => (
             <article className="agent-card" key={label}>
               <p className="eyebrow">{label}</p>
@@ -83,7 +87,7 @@ export default function PlatformAdminPage() {
       )}
       <section className="workflow-panel">
         <div className="workflow-panel__heading">
-          <h2>Provider diagnostics</h2>
+          <h2>Diagnóstico do fornecedor</h2>
         </div>
         <div className="activity-list">
           {overview?.providers.map((provider) => (
@@ -100,15 +104,15 @@ export default function PlatformAdminPage() {
       </section>
       <section className="workflow-panel">
         <div className="workflow-panel__heading">
-          <h2>Tenants</h2>
+          <h2>Workspaces</h2>
         </div>
         <div className="activity-list">
           {workspaces.map((workspace) => (
             <article className="activity-item" key={workspace.id}>
               <strong>{workspace.name}</strong>
               <p>
-                {workspace.slug} · {workspace.member_count} members ·{' '}
-                {workspace.status}
+                {workspace.slug} · {workspace.member_count} membros ·{' '}
+                {label(workspace.status)}
               </p>
               <button
                 className="secondary-button"
@@ -127,7 +131,7 @@ export default function PlatformAdminPage() {
       </section>
       <section className="workflow-panel">
         <div className="workflow-panel__heading">
-          <h2>Users</h2>
+          <h2>Utilizadores</h2>
         </div>
         <div className="activity-list">
           {users.map((item) => (
@@ -146,7 +150,7 @@ export default function PlatformAdminPage() {
                     )
                   }
                 >
-                  {item.is_active ? 'Deactivate' : 'Activate'}
+                  {item.is_active ? 'Desativar' : 'Ativar'}
                 </button>
               )}
             </article>

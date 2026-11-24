@@ -32,12 +32,12 @@ describe('email action UI', () => {
       <ActionProposalPreview action={action} />,
     );
 
-    expect(markup).toContain('Send Email');
-    expect(markup).toContain('Account: account-1');
-    expect(markup).toContain('Subject: Approved subject');
-    expect(markup).toContain('Recipients: customer@example.net');
-    expect(markup).toContain('Risk: yellow');
-    expect(markup).toContain('Requires approval: Yes');
+    expect(markup).toContain('Enviar email');
+    expect(markup).toContain('Conta: account-1');
+    expect(markup).toContain('Assunto: Approved subject');
+    expect(markup).toContain('Destinatários: customer@example.net');
+    expect(markup).toContain('Risco: Amarelo');
+    expect(markup).toContain('Requer aprovação: Sim');
     expect(markup).not.toContain('Complete approved body');
   });
 });

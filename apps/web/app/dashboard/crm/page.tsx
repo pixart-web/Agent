@@ -29,6 +29,7 @@ import {
 import type { CrmImportPreview } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit, EditFieldset } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function CrmPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -46,7 +47,7 @@ export default function CrmPage() {
   const [jobTitle, setJobTitle] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
-  const [pipelineName, setPipelineName] = useState('Sales pipeline');
+  const [pipelineName, setPipelineName] = useState('Pipeline de vendas');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<CrmImportPreview | null>(
     null,
@@ -72,7 +73,7 @@ export default function CrmPage() {
       setPipelines(pipelineResult.pipelines);
       setOpportunities(allOpportunities);
     } catch {
-      setError('Unable to load CRM records.');
+      setError('Não foi possível carregar os registos do CRM.');
     }
   }
 
@@ -100,7 +101,7 @@ export default function CrmPage() {
       await refresh(query.trim());
     } catch {
       setError(
-        'Unable to create the CRM record. Check for duplicates and invalid fields.',
+        'Não foi possível criar o registo no CRM. Verifica duplicados e campos inválidos.',
       );
     } finally {
       setSaving(false);
@@ -117,10 +118,10 @@ export default function CrmPage() {
         is_default: pipelines.length === 0,
         stages: [
           { name: 'Lead', position: 1, default_probability: 10 },
-          { name: 'Qualified', position: 2, default_probability: 40 },
-          { name: 'Proposal', position: 3, default_probability: 70 },
+          { name: 'Qualificado', position: 2, default_probability: 40 },
+          { name: 'Proposta', position: 3, default_probability: 70 },
           {
-            name: 'Won',
+            name: 'Ganho',
             position: 4,
             default_probability: 100,
             is_terminal: true,
@@ -129,7 +130,7 @@ export default function CrmPage() {
       });
       await refresh(query.trim());
     } catch {
-      setError('Unable to create the sales pipeline.');
+      setError('Não foi possível criar o pipeline de vendas.');
     } finally {
       setSaving(false);
     }
@@ -142,7 +143,7 @@ export default function CrmPage() {
     try {
       setImportPreview(await previewCrmImport(importFile));
     } catch {
-      setError('Unable to preview this CSV import.');
+      setError('Não foi possível pré-visualizar esta importação CSV.');
     } finally {
       setSaving(false);
     }
@@ -159,7 +160,7 @@ export default function CrmPage() {
       await refresh(query.trim());
     } catch {
       setError(
-        'Import failed. Preview the final file again before confirming.',
+        'A importação falhou. Pré-visualiza de novo o ficheiro final antes de confirmar.',
       );
     } finally {
       setSaving(false);
@@ -171,18 +172,18 @@ export default function CrmPage() {
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading clients…</main>;
+    return <main className="loading-page">A carregar os clientes…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Governed business context</p>
-          <h1>Clients & CRM</h1>
+          <p className="eyebrow">Contexto de negócio governado</p>
+          <h1>Clientes e CRM</h1>
           <p>
-            CRM notes and linked Email/Calendar records are untrusted business
-            data.
+            As notas do CRM e os registos de email e calendário ligados são
+            dados de negócio não verificados.
           </p>
         </div>
         <form
@@ -192,7 +193,7 @@ export default function CrmPage() {
           }}
         >
           <label>
-            Search contacts and organizations
+            Pesquisar contactos e organizações
             <input
               value={query}
               maxLength={255}
@@ -200,7 +201,7 @@ export default function CrmPage() {
             />
           </label>
           <button className="secondary-button" type="submit">
-            Search
+            Pesquisar
           </button>
         </form>
       </section>
@@ -208,14 +209,15 @@ export default function CrmPage() {
       <CanEdit>
         <section className="workflow-panel crm-create-panel">
           <div>
-            <h2>Create CRM record</h2>
+            <h2>Criar registo no CRM</h2>
             <p>
-              Manual records are tenant-scoped and added to the audit trail.
+              Os registos manuais ficam limitados ao workspace e entram na
+              auditoria.
             </p>
           </div>
           <form onSubmit={createRecord}>
             <label>
-              Record type
+              Tipo de registo
               <select
                 value={createMode}
                 onChange={(event) =>
@@ -224,14 +226,14 @@ export default function CrmPage() {
                   )
                 }
               >
-                <option value="organization">Organization & client</option>
-                <option value="contact">Contact</option>
+                <option value="organization">Organização e cliente</option>
+                <option value="contact">Contacto</option>
               </select>
             </label>
             <label>
               {createMode === 'organization'
-                ? 'Organization name'
-                : 'Full name'}
+                ? 'Nome da organização'
+                : 'Nome completo'}
               <input
                 required
                 value={name}
@@ -241,12 +243,12 @@ export default function CrmPage() {
             {createMode === 'contact' && (
               <>
                 <label>
-                  Organization
+                  Organização
                   <select
                     value={organizationId}
                     onChange={(event) => setOrganizationId(event.target.value)}
                   >
-                    <option value="">None</option>
+                    <option value="">Nenhum</option>
                     {organizations.map((item) => (
                       <option value={item.id} key={item.id}>
                         {item.name}
@@ -255,7 +257,7 @@ export default function CrmPage() {
                   </select>
                 </label>
                 <label>
-                  Job title
+                  Cargo
                   <input
                     value={jobTitle}
                     onChange={(event) => setJobTitle(event.target.value)}
@@ -272,7 +274,7 @@ export default function CrmPage() {
               </>
             )}
             <button className="primary-button" disabled={saving}>
-              {saving ? 'Creating…' : 'Create'}
+              {saving ? 'A criar…' : 'Criar'}
             </button>
           </form>
         </section>
@@ -280,13 +282,13 @@ export default function CrmPage() {
       <section className="workflow-panel">
         <div className="crm-panel-heading">
           <div>
-            <h2>Sales pipeline</h2>
-            <p>Move opportunities between governed stages.</p>
+            <h2>Pipeline de vendas</h2>
+            <p>Move oportunidades entre etapas governadas.</p>
           </div>
           <CanEdit>
             <form onSubmit={createPipeline}>
               <label>
-                New pipeline
+                Novo pipeline
                 <input
                   required
                   value={pipelineName}
@@ -294,7 +296,7 @@ export default function CrmPage() {
                 />
               </label>
               <button className="secondary-button" disabled={saving}>
-                Create pipeline
+                Criar pipeline
               </button>
             </form>
           </CanEdit>
@@ -334,7 +336,7 @@ export default function CrmPage() {
                         <span>{item.probability}%</span>
                         <EditFieldset>
                           <label>
-                            Stage
+                            Etapa
                             <select
                               value={item.stage_id}
                               onChange={async (event) => {
@@ -365,16 +367,17 @@ export default function CrmPage() {
           ))
         ) : (
           <p className="empty-state">
-            No pipeline configured. Create one through Kiko or the CRM API.
+            Nenhum pipeline configurado. Cria um através do Kiko ou da API do
+            CRM.
           </p>
         )}
       </section>
       <section className="workflow-panel crm-import-panel">
         <div>
-          <h2>Data portability</h2>
+          <h2>Portabilidade de dados</h2>
           <p>
-            Import up to 1,000 CSV rows after validation, or export sanitized
-            tenant data.
+            Importa até 1000 linhas CSV depois de validadas, ou exporta os dados
+            do workspace limpos.
           </p>
         </div>
         <CanEdit>
@@ -398,7 +401,7 @@ export default function CrmPage() {
               disabled={!importFile || saving}
               onClick={() => void previewImport()}
             >
-              Preview import
+              Pré-visualizar importação
             </button>
             <button
               className="primary-button"
@@ -408,7 +411,7 @@ export default function CrmPage() {
               }
               onClick={() => void confirmImport()}
             >
-              Confirm import
+              Confirmar importação
             </button>
           </CanEdit>
           <button
@@ -416,32 +419,32 @@ export default function CrmPage() {
             type="button"
             onClick={() => void downloadCrmExport('organizations')}
           >
-            Export organizations
+            Exportar organizações
           </button>
           <button
             className="text-button"
             type="button"
             onClick={() => void downloadCrmExport('contacts')}
           >
-            Export contacts
+            Exportar contactos
           </button>
         </div>
         {importPreview && (
           <div className="import-summary" role="status">
-            <strong>{importPreview.valid_rows} valid rows</strong>
-            <span>{importPreview.invalid_rows} rows need attention</span>
+            <strong>{importPreview.valid_rows} linhas válidas</strong>
+            <span>{importPreview.invalid_rows} linhas precisam de revisão</span>
             {importPreview.rows
               .filter((row) => !row.valid)
               .map((row) => (
                 <p key={row.row}>
-                  Row {row.row}: {row.errors.join(', ')}
+                  Linha {row.row}: {row.errors.join(', ')}
                 </p>
               ))}
           </div>
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Clients</h2>
+        <h2>Clientes</h2>
         <div className="agent-grid">
           {clients.map((client) => (
             <Link
@@ -451,16 +454,16 @@ export default function CrmPage() {
             >
               <p className="eyebrow">{client.lifecycle_status}</p>
               <h3>{client.organization.name}</h3>
-              <p>{client.industry || 'No industry'}</p>
+              <p>{client.industry || 'Sem setor'}</p>
             </Link>
           ))}
         </div>
         {clients.length === 0 && (
-          <p className="empty-state">No client profiles found.</p>
+          <p className="empty-state">Nenhum perfil de cliente encontrado.</p>
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Organizations</h2>
+        <h2>Organizações</h2>
         <div className="agent-grid">
           {organizations.map((organization) => (
             <Link
@@ -468,21 +471,21 @@ export default function CrmPage() {
               href={'/dashboard/crm/organizations/' + organization.id}
               key={organization.id}
             >
-              <p className="eyebrow">{organization.status}</p>
+              <p className="eyebrow">{label(organization.status)}</p>
               <h3>{organization.name}</h3>
               <p>
-                {organization.member_count} contacts ·{' '}
-                {organization.tags.join(', ') || 'No tags'}
+                {organization.member_count} contactos ·{' '}
+                {organization.tags.join(', ') || 'Sem etiquetas'}
               </p>
             </Link>
           ))}
         </div>
         {organizations.length === 0 && (
-          <p className="empty-state">No organizations found.</p>
+          <p className="empty-state">Nenhuma organização encontrada.</p>
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Contacts</h2>
+        <h2>Contactos</h2>
         <div className="agent-grid">
           {contacts.map((contact) => (
             <Link
@@ -490,18 +493,18 @@ export default function CrmPage() {
               href={'/dashboard/crm/contacts/' + contact.id}
               key={contact.id}
             >
-              <p className="eyebrow">{contact.status}</p>
+              <p className="eyebrow">{label(contact.status)}</p>
               <h3>{contact.full_name}</h3>
-              <p>{contact.job_title || 'No job title'}</p>
+              <p>{contact.job_title || 'Sem cargo'}</p>
               <p>
                 {contact.methods.find((method) => method.is_primary)?.value ||
-                  'No primary contact method'}
+                  'Sem forma de contacto principal'}
               </p>
             </Link>
           ))}
         </div>
         {contacts.length === 0 && (
-          <p className="empty-state">No contacts found.</p>
+          <p className="empty-state">Nenhum contacto encontrado.</p>
         )}
       </section>
     </main>

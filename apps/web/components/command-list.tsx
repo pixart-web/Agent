@@ -24,7 +24,7 @@ export function CommandList({
 }) {
   if (commands.length === 0) {
     return (
-      <p className="empty-state">No commands yet. Create the first one.</p>
+      <p className="empty-state">Ainda não há comandos. Cria o primeiro.</p>
     );
   }
 
@@ -41,14 +41,16 @@ export function CommandList({
               >
                 {command.input}
               </Link>
-              <span>{new Date(command.created_at).toLocaleString()}</span>
-              {command.duplicated_from_id && <span> · duplicated</span>}
+              <span>
+                {new Date(command.created_at).toLocaleString('pt-PT')}
+              </span>
+              {command.duplicated_from_id && <span> · duplicado</span>}
             </div>
             <div className="command-row__meta">
               <StatusBadge status={command.status} />
               {commandProgress && (
                 <span>
-                  {commandProgress.completed}/{commandProgress.total} tasks
+                  {commandProgress.completed}/{commandProgress.total} tarefas
                 </span>
               )}
               <CanEdit>
@@ -59,7 +61,7 @@ export function CommandList({
                       disabled={busyCommandId === command.id}
                       onClick={() => onDuplicate(command)}
                     >
-                      Duplicate
+                      Duplicar
                     </button>
                   )}
                   {command.archived_at
@@ -69,7 +71,7 @@ export function CommandList({
                           disabled={busyCommandId === command.id}
                           onClick={() => onRestore(command)}
                         >
-                          Restore
+                          Restaurar
                         </button>
                       )
                     : onArchive &&
@@ -81,7 +83,7 @@ export function CommandList({
                           disabled={busyCommandId === command.id}
                           onClick={() => onArchive(command)}
                         >
-                          Archive
+                          Arquivar
                         </button>
                       )}
                 </div>

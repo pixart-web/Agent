@@ -189,7 +189,7 @@ describe('progress and activity', () => {
         operational_status: 'unavailable',
         operational_message: 'Local AI runtime is not reachable',
       } as never),
-    ).toEqual({ text: 'Local AI runtime is not reachable', tone: 'off' });
+    ).toEqual({ text: 'A IA local não está a responder', tone: 'off' });
     expect(agentActivity(base as never)).toEqual({
       text: 'Pronto',
       tone: 'ready',

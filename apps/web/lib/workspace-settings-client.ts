@@ -26,7 +26,9 @@ export type WorkspaceSettings = {
 
 async function json(response: Response): Promise<WorkspaceSettings> {
   if (!response.ok)
-    throw new Error(`Workspace settings request failed (${response.status})`);
+    throw new Error(
+      `O pedido das definições do workspace falhou (${response.status})`,
+    );
   return (await response.json()) as WorkspaceSettings;
 }
 
@@ -67,7 +69,7 @@ export async function downloadWorkspaceExport(
     `/api/v1/data-portability/export?resource=${resource}&format=${format}`,
   );
   if (!response.ok)
-    throw new Error(`Workspace export failed (${response.status})`);
+    throw new Error(`A exportação do workspace falhou (${response.status})`);
   const disposition = response.headers.get('content-disposition') ?? '';
   const filename =
     disposition.match(/filename="([^"]+)"/)?.[1] ??
@@ -83,5 +85,5 @@ export async function switchWorkspace(workspaceId: string): Promise<void> {
     body: JSON.stringify({ workspace_id: workspaceId }),
   });
   if (!response.ok)
-    throw new Error(`Workspace switch failed (${response.status})`);
+    throw new Error(`Não foi possível mudar de workspace (${response.status})`);
 }

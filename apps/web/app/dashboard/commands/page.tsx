@@ -77,7 +77,7 @@ export default function CommandsPage() {
           );
         }
       } catch {
-        if (active) setError('Unable to load commands right now.');
+        if (active) setError('Não foi possível carregar os comandos agora.');
       } finally {
         if (active) setLoading(false);
       }
@@ -119,7 +119,7 @@ export default function CommandsPage() {
       setError(
         mutationError instanceof WorkflowApiError
           ? mutationError.message
-          : 'Unable to update the command right now.',
+          : 'Não foi possível atualizar o comando agora.',
       );
     } finally {
       setBusyCommandId(null);
@@ -127,7 +127,7 @@ export default function CommandsPage() {
   }
 
   if (authLoading || !user) {
-    return <main className="loading-page">Restoring your secure session…</main>;
+    return <main className="loading-page">A restaurar a sessão segura…</main>;
   }
 
   return (
@@ -135,26 +135,26 @@ export default function CommandsPage() {
       <DashboardNav user={user} />
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Operations</p>
-          <h1 className="workflow-page-title">Commands</h1>
+          <p className="eyebrow">Operações</p>
+          <h1 className="workflow-page-title">Comandos</h1>
         </div>
         <Link className="primary-link" href="/dashboard/commands/new">
-          New command
+          Novo comando
         </Link>
       </div>
       <form className="command-filters" onSubmit={handleSearch}>
         <label>
-          Search commands
+          Pesquisar comandos
           <input
             type="search"
             value={searchDraft}
             maxLength={200}
             onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Campaign, client, objective…"
+            placeholder="Campanha, cliente, objetivo…"
           />
         </label>
         <button className="secondary-button" type="submit">
-          Search
+          Pesquisar
         </button>
         <label className="command-filters__check">
           <input
@@ -162,7 +162,7 @@ export default function CommandsPage() {
             checked={includeArchived}
             onChange={(event) => setIncludeArchived(event.target.checked)}
           />
-          Include archived
+          Incluir arquivados
         </label>
       </form>
       {error && (
@@ -171,7 +171,7 @@ export default function CommandsPage() {
         </p>
       )}
       {loading ? (
-        <p aria-live="polite">Loading commands…</p>
+        <p aria-live="polite">A carregar os comandos…</p>
       ) : (
         <CommandList
           commands={commands}

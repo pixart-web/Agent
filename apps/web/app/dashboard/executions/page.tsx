@@ -11,6 +11,7 @@ import { DashboardNav } from '../../../components/dashboard-nav';
 import { StatusBadge } from '../../../components/status-badge';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { listExecutions, WorkflowApiError } from '../../../lib/workflow-client';
+import { label } from '../../../lib/labels';
 
 export default function ExecutionsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -32,13 +33,13 @@ export default function ExecutionsPage() {
         setError(
           loadError instanceof WorkflowApiError
             ? loadError.message
-            : 'Unable to load executions.',
+            : 'Não foi possível carregar as execuções.',
         ),
       );
   }, [user, status, risk, agent]);
 
   if (authLoading || !user) {
-    return <main className="loading-page">Loading executions…</main>;
+    return <main className="loading-page">A carregar as execuções…</main>;
   }
 
   return (
@@ -46,22 +47,23 @@ export default function ExecutionsPage() {
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Kiko operations</p>
-          <h1>Execution Center</h1>
+          <p className="eyebrow">Operações do Kiko</p>
+          <h1>Centro de execução</h1>
           <p>
-            PostgreSQL-backed attempts transported through Redis and Celery.
+            Tentativas guardadas em PostgreSQL e transportadas por Redis e
+            Celery.
           </p>
         </div>
       </section>
       <section className="execution-filters">
         <select
-          aria-label="Filter by status"
+          aria-label="Filtrar por estado"
           value={status}
           onChange={(e) =>
             setStatus(e.target.value as TaskExecutionStatus | '')
           }
         >
-          <option value="">All statuses</option>
+          <option value="">Todos os estados</option>
           {[
             'queued',
             'running',
@@ -70,28 +72,32 @@ export default function ExecutionsPage() {
             'retry_scheduled',
             'cancelled',
           ].map((item) => (
-            <option key={item}>{item}</option>
+            <option key={item} value={item}>
+              {label(item)}
+            </option>
           ))}
         </select>
         <select
-          aria-label="Filter by risk"
+          aria-label="Filtrar por risco"
           value={risk}
           onChange={(e) => setRisk(e.target.value as RiskLevel | '')}
         >
-          <option value="">All risks</option>
-          <option>green</option>
-          <option>yellow</option>
-          <option>red</option>
+          <option value="">Todos os riscos</option>
+          <option value="green">Verde</option>
+          <option value="yellow">Amarelo</option>
+          <option value="red">Vermelho</option>
         </select>
         <select
-          aria-label="Filter by agent"
+          aria-label="Filtrar por agente"
           value={agent}
           onChange={(e) => setAgent(e.target.value)}
         >
-          <option value="">All agents</option>
+          <option value="">Todos os agentes</option>
           {['supervisor', 'marketing', 'sales', 'support', 'development'].map(
             (item) => (
-              <option key={item}>{item}</option>
+              <option key={item} value={item}>
+                {label(item)}
+              </option>
             ),
           )}
         </select>
@@ -109,19 +115,19 @@ export default function ExecutionsPage() {
             </div>
             <dl className="execution-meta">
               <div>
-                <dt>Task</dt>
+                <dt>Tarefa</dt>
                 <dd>{execution.task_id}</dd>
               </div>
               <div>
-                <dt>Duration</dt>
+                <dt>Duração</dt>
                 <dd>{execution.duration_ms ?? '—'} ms</dd>
               </div>
               <div>
                 <dt>Worker</dt>
-                <dd>{execution.worker_id ?? 'Not claimed'}</dd>
+                <dd>{execution.worker_id ?? 'Não reclamado'}</dd>
               </div>
               <div>
-                <dt>Error</dt>
+                <dt>Erro</dt>
                 <dd>{execution.error_message ?? '—'}</dd>
               </div>
             </dl>
@@ -129,7 +135,7 @@ export default function ExecutionsPage() {
         ))}
       </div>
       {!executions.length && (
-        <p className="empty-state">No executions found.</p>
+        <p className="empty-state">Nenhuma execução encontrada.</p>
       )}
     </main>
   );

@@ -49,10 +49,10 @@ describe('execution UI', () => {
       <TaskExecutionPanel commandId="command-1" tasks={[task]} />,
     );
 
-    expect(markup).toContain('Execution Engine');
+    expect(markup).toContain('Motor de execução');
     expect(markup).toContain('internal.echo');
     expect(markup).toContain('internal.simulate_critical_action');
-    expect(markup).toContain('Create &amp; dispatch');
+    expect(markup).toContain('Criar e enviar');
     expect(markup).toContain('Activity timeline');
   });
 });

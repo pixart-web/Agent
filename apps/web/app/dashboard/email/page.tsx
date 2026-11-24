@@ -30,7 +30,7 @@ export default function EmailInboxPage() {
     if (!accountId) return;
     void listEmailMessages(accountId)
       .then((value) => setMessages(value.messages))
-      .catch(() => setError('Unable to read this mailbox.'));
+      .catch(() => setError('Não foi possível ler esta caixa de correio.'));
   }, [accountId]);
 
   if (loading || !user)
@@ -41,15 +41,15 @@ export default function EmailInboxPage() {
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Untrusted external content</p>
-          <h1>Email inbox</h1>
+          <p className="eyebrow">Conteúdo externo não verificado</p>
+          <h1>Caixa de entrada</h1>
           <p>
-            Messages are read on demand. Attachments are never downloaded or
-            executed automatically.
+            As mensagens são lidas a pedido. Os anexos nunca são descarregados
+            nem executados automaticamente.
           </p>
         </div>
         <select
-          aria-label="Email account"
+          aria-label="Conta de email"
           value={accountId}
           onChange={(event) => setAccountId(event.target.value)}
         >
@@ -80,7 +80,7 @@ export default function EmailInboxPage() {
           </Link>
         ))}
         {messages.length === 0 && (
-          <p className="empty-state">No messages to show.</p>
+          <p className="empty-state">Sem mensagens para mostrar.</p>
         )}
       </section>
     </main>

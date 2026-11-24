@@ -12,6 +12,7 @@ import {
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function MarketingPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -40,7 +41,7 @@ export default function MarketingPage() {
         setCampaigns(campaignValue.campaigns);
         setScheduled(calendarValue.content);
       })
-      .catch(() => setError('Unable to load campaigns.'));
+      .catch(() => setError('Não foi possível carregar as campanhas.'));
   }
 
   useEffect(() => {
@@ -48,18 +49,22 @@ export default function MarketingPage() {
   }, [user]);
 
   if (loading || !user)
-    return <main className="loading-page">Loading marketing operations…</main>;
+    return (
+      <main className="loading-page">
+        A carregar as operações de marketing…
+      </main>
+    );
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Governed content operations</p>
+          <p className="eyebrow">Operações de conteúdo governadas</p>
           <h1>Marketing</h1>
           <p>
-            Campaigns and drafts are untrusted business data. Kiko never
-            publishes externally from this workspace.
+            Campanhas e rascunhos são dados de negócio não verificados. O Kiko
+            nunca publica externamente a partir deste workspace.
           </p>
         </div>
         <form
@@ -69,7 +74,7 @@ export default function MarketingPage() {
           }}
         >
           <label>
-            Search campaigns
+            Pesquisar campanhas
             <input
               value={query}
               maxLength={255}
@@ -77,14 +82,14 @@ export default function MarketingPage() {
             />
           </label>
           <button className="secondary-button" type="submit">
-            Search
+            Pesquisar
           </button>
         </form>
       </section>
       {error && <p className="workflow-alert">{error}</p>}
       <CanEdit>
         <section className="workflow-panel">
-          <h2>Create campaign</h2>
+          <h2>Criar campanha</h2>
           <form
             className="workflow-form"
             onSubmit={async (event) => {
@@ -97,14 +102,14 @@ export default function MarketingPage() {
                 setObjective('');
                 await refresh(query.trim());
               } catch {
-                setError('Unable to create this campaign.');
+                setError('Não foi possível criar esta campanha.');
               } finally {
                 setSaving(false);
               }
             }}
           >
             <label>
-              Campaign name
+              Nome da campanha
               <input
                 required
                 value={name}
@@ -112,19 +117,19 @@ export default function MarketingPage() {
               />
             </label>
             <label>
-              Objective
+              Objetivo
               <textarea
                 required
                 value={objective}
                 onChange={(event) => setObjective(event.target.value)}
               />
             </label>
-            <button disabled={saving}>Create campaign</button>
+            <button disabled={saving}>Criar campanha</button>
           </form>
         </section>
       </CanEdit>
       <section className="workflow-panel">
-        <h2>Campaigns</h2>
+        <h2>Campanhas</h2>
         <div className="agent-grid">
           {campaigns.map((campaign) => (
             <Link
@@ -132,21 +137,21 @@ export default function MarketingPage() {
               href={'/dashboard/marketing/campaigns/' + campaign.id}
               key={campaign.id}
             >
-              <p className="eyebrow">{campaign.status}</p>
+              <p className="eyebrow">{label(campaign.status)}</p>
               <h3>{campaign.name}</h3>
               <p>{campaign.objective}</p>
             </Link>
           ))}
         </div>
         {campaigns.length === 0 && (
-          <p className="empty-state">No campaigns found.</p>
+          <p className="empty-state">Nenhuma campanha encontrada.</p>
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Next 30 days</h2>
+        <h2>Próximos 30 dias</h2>
         <p>
-          Approved content scheduled in the editorial calendar. Scheduling does
-          not publish content externally.
+          Conteúdo aprovado e agendado no calendário editorial. Agendar não
+          publica nada externamente.
         </p>
         <div className="agent-grid">
           {scheduled.map((content) => (
@@ -161,14 +166,14 @@ export default function MarketingPage() {
               <h3>{content.title}</h3>
               <p>
                 {content.scheduled_for
-                  ? new Date(content.scheduled_for).toLocaleString()
-                  : 'Schedule pending'}
+                  ? new Date(content.scheduled_for).toLocaleString('pt-PT')
+                  : 'Agendamento pendente'}
               </p>
             </Link>
           ))}
         </div>
         {scheduled.length === 0 && (
-          <p className="empty-state">No content scheduled in this window.</p>
+          <p className="empty-state">Nenhum conteúdo agendado neste período.</p>
         )}
       </section>{' '}
     </main>

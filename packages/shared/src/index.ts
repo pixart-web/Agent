@@ -3,30 +3,30 @@ export const AGENT_CATALOG = [
     id: 'supervisor',
     name: 'Supervisor',
     description:
-      'Coordinates priorities, delegates work, and tracks execution.',
+      'Coordena prioridades, distribui o trabalho e acompanha a execução.',
   },
   {
     id: 'marketing',
     name: 'Marketing',
-    description: 'Supports campaigns, content operations, and brand workflows.',
+    description: 'Apoia campanhas, conteúdos e o trabalho de marca.',
   },
   {
     id: 'sales',
-    name: 'Sales',
+    name: 'Vendas',
     description:
-      'Assists pipeline management, proposals, and commercial follow-up.',
+      'Ajuda a gerir o pipeline, as propostas e o seguimento comercial.',
   },
   {
     id: 'support',
-    name: 'Support',
+    name: 'Suporte',
     description:
-      'Helps resolve customer requests and organize service knowledge.',
+      'Ajuda a resolver pedidos de clientes e a organizar o conhecimento de serviço.',
   },
   {
     id: 'development',
-    name: 'Development',
+    name: 'Desenvolvimento',
     description:
-      'Supports engineering delivery, quality, and technical operations.',
+      'Apoia o desenvolvimento, a qualidade e as operações técnicas.',
   },
 ] as const;
 

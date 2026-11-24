@@ -13,6 +13,7 @@ import { StatusBadge } from '../../../components/status-badge';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { createProject, listProjects } from '../../../lib/workflow-client';
 import { CanEdit } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -38,7 +39,7 @@ export default function ProjectsPage() {
       );
       setError('');
     } catch {
-      setError('Unable to load projects right now.');
+      setError('Não foi possível carregar os projetos agora.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +62,7 @@ export default function ProjectsPage() {
       await load();
     } catch {
       setError(
-        'The project could not be created. Check the details and retry.',
+        'Não foi possível criar o projeto. Verifica os dados e tenta de novo.',
       );
     } finally {
       setSaving(false);
@@ -69,40 +70,42 @@ export default function ProjectsPage() {
   }
 
   if (authLoading || !user)
-    return <main className="loading-page">Restoring your secure session…</main>;
+    return <main className="loading-page">A restaurar a sessão segura…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Workspace delivery</p>
-          <h1 className="workflow-page-title">Projects</h1>
+          <p className="eyebrow">Entrega do workspace</p>
+          <h1 className="workflow-page-title">Projetos</h1>
         </div>
-        <span>{projects.length} visible</span>
+        <span>{projects.length} visíveis</span>
       </div>
       <div className="project-layout">
         <section>
           <div className="task-filters">
             <label>
-              Search
+              Pesquisar
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Name or description"
+                placeholder="Nome ou descrição"
               />
             </label>
             <label>
-              Status
+              Estado
               <select
                 value={status}
                 onChange={(event) =>
                   setStatus(event.target.value as ProjectStatus | '')
                 }
               >
-                <option value="">All</option>
+                <option value="">Todos</option>
                 {PROJECT_STATUSES.map((value) => (
-                  <option key={value}>{value}</option>
+                  <option key={value} value={value}>
+                    {label(value)}
+                  </option>
                 ))}
               </select>
             </label>
@@ -113,10 +116,10 @@ export default function ProjectsPage() {
             </p>
           )}
           {loading ? (
-            <p>Loading projects…</p>
+            <p>A carregar os projetos…</p>
           ) : projects.length === 0 ? (
             <p className="empty-state">
-              No projects yet. Create the first delivery workspace alongside.
+              Ainda não há projetos. Cria o primeiro aqui ao lado.
             </p>
           ) : (
             <div className="project-list">
@@ -128,11 +131,12 @@ export default function ProjectsPage() {
                 >
                   <div>
                     <strong>{project.name}</strong>
-                    <p>{project.description || 'No description'}</p>
+                    <p>{project.description || 'Sem descrição'}</p>
                   </div>
                   <div className="project-progress">
                     <span>
-                      {project.completed_task_count}/{project.task_count} tasks
+                      {project.completed_task_count}/{project.task_count}{' '}
+                      tarefas
                     </span>
                     <progress max="100" value={project.progress_percentage} />
                   </div>
@@ -140,8 +144,8 @@ export default function ProjectsPage() {
                     {project.due_on
                       ? new Date(
                           `${project.due_on}T00:00:00`,
-                        ).toLocaleDateString()
-                      : 'No deadline'}
+                        ).toLocaleDateString('pt-PT')
+                      : 'Sem prazo'}
                   </span>
                   <StatusBadge status={project.status} />
                 </Link>
@@ -151,9 +155,9 @@ export default function ProjectsPage() {
         </section>
         <CanEdit>
           <form className="project-create" onSubmit={submit}>
-            <h2>New project</h2>
+            <h2>Novo projeto</h2>
             <label>
-              Name
+              Nome
               <input
                 required
                 maxLength={255}
@@ -162,7 +166,7 @@ export default function ProjectsPage() {
               />
             </label>
             <label>
-              Description
+              Descrição
               <textarea
                 maxLength={10000}
                 value={description}
@@ -170,7 +174,7 @@ export default function ProjectsPage() {
               />
             </label>
             <label>
-              Deadline
+              Prazo
               <input
                 type="date"
                 value={dueOn}
@@ -178,7 +182,7 @@ export default function ProjectsPage() {
               />
             </label>
             <button className="primary-button" disabled={saving}>
-              {saving ? 'Creating…' : 'Create project'}
+              {saving ? 'A criar…' : 'Criar projeto'}
             </button>
           </form>
         </CanEdit>

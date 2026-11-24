@@ -15,6 +15,7 @@ import {
   searchKnowledge,
 } from '../../../lib/knowledge-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { label } from '../../../lib/labels';
 
 export default function KnowledgePage() {
   const { user, loading } = useAuthenticatedUser();
@@ -43,7 +44,7 @@ export default function KnowledgePage() {
   useEffect(() => {
     if (user)
       void refresh().catch(() =>
-        setError('Unable to load business knowledge.'),
+        setError('Não foi possível carregar o conhecimento do negócio.'),
       );
   }, [refresh, user]);
 
@@ -56,7 +57,7 @@ export default function KnowledgePage() {
       setSlug('');
       setNotice('Workspace created with you as owner.');
     } catch {
-      setError('Workspace could not be created.');
+      setError('Não foi possível criar o workspace.');
     }
   }
 
@@ -73,11 +74,11 @@ export default function KnowledgePage() {
       setTitle('');
       setContent('');
       setNotice(
-        'Draft saved. An owner or admin must approve it before retrieval.',
+        'Rascunho guardado. Um dono ou administrador tem de o aprovar antes de poder ser usado.',
       );
       await refresh();
     } catch {
-      setError('Knowledge draft could not be saved.');
+      setError('Não foi possível guardar o rascunho de conhecimento.');
     }
   }
 
@@ -89,25 +90,25 @@ export default function KnowledgePage() {
       setItems(result.items);
       setNotice(result.trust_notice);
     } catch {
-      setError('Knowledge search failed.');
+      setError('A pesquisa de conhecimento falhou.');
     }
   }
 
   const selectedWorkspace = workspaces.find((space) => space.id === selected);
 
   if (loading || !user)
-    return <main className="loading-page">Loading knowledge…</main>;
+    return <main className="loading-page">A carregar o conhecimento…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Workspace memory</p>
-          <h1>Business knowledge</h1>
+          <p className="eyebrow">Memória do workspace</p>
+          <h1>Conhecimento do negócio</h1>
           <p>
-            Approved, provenance-aware reference data with strict workspace
-            boundaries.
+            Dados de referência aprovados, com origem registada e limitados ao
+            workspace.
           </p>
         </div>
       </section>
@@ -120,16 +121,16 @@ export default function KnowledgePage() {
           value={selected}
           onChange={(event) => setSelected(event.target.value)}
         >
-          <option value="">Select a workspace</option>
+          <option value="">Escolhe um workspace</option>
           {workspaces.map((space) => (
             <option key={space.id} value={space.id}>
-              {space.name} · {space.role}
+              {space.name} · {label(space.role)}
             </option>
           ))}
         </select>
         <form className="workflow-form" onSubmit={createSpace}>
           <label>
-            Name
+            Nome
             <input
               required
               value={name}
@@ -145,7 +146,7 @@ export default function KnowledgePage() {
               onChange={(event) => setSlug(event.target.value)}
             />
           </label>
-          <button type="submit">Create workspace</button>
+          <button type="submit">Criar workspace</button>
         </form>
       </section>
       {selected && (
@@ -153,10 +154,10 @@ export default function KnowledgePage() {
           {selectedWorkspace?.role !== 'viewer' && (
             <>
               <section className="workflow-panel">
-                <h2>Add a knowledge draft</h2>
+                <h2>Adicionar rascunho de conhecimento</h2>
                 <form className="workflow-form" onSubmit={createItem}>
                   <label>
-                    Title
+                    Título
                     <input
                       required
                       value={title}
@@ -164,18 +165,18 @@ export default function KnowledgePage() {
                     />
                   </label>
                   <label>
-                    Content
+                    Conteúdo
                     <textarea
                       required
                       value={content}
                       onChange={(event) => setContent(event.target.value)}
                     />
                   </label>
-                  <button type="submit">Save draft</button>
+                  <button type="submit">Guardar rascunho</button>
                 </form>
               </section>
               <section className="workflow-panel">
-                <h2>Ingest a document</h2>
+                <h2>Importar um documento</h2>
                 <p>
                   TXT, Markdown, PDF, or DOCX up to 5 MB. Only extracted text
                   and provenance are retained; every document starts as an
@@ -199,12 +200,14 @@ export default function KnowledgePage() {
                       );
                       await refresh();
                     } catch {
-                      setError('Document could not be ingested safely.');
+                      setError(
+                        'Não foi possível importar o documento com segurança.',
+                      );
                     }
                   }}
                 >
                   <label>
-                    Category
+                    Categoria
                     <select
                       value={documentCategory}
                       onChange={(event) =>
@@ -214,18 +217,18 @@ export default function KnowledgePage() {
                       }
                     >
                       <option value="approved_knowledge">
-                        General knowledge
+                        Conhecimento geral
                       </option>
-                      <option value="company_profile">Company profile</option>
-                      <option value="service">Service</option>
-                      <option value="product">Product</option>
-                      <option value="policy">Policy</option>
-                      <option value="brand_guideline">Brand guideline</option>
-                      <option value="procedure">Procedure</option>
+                      <option value="company_profile">Perfil da empresa</option>
+                      <option value="service">Serviço</option>
+                      <option value="product">Produto</option>
+                      <option value="policy">Política</option>
+                      <option value="brand_guideline">Diretriz de marca</option>
+                      <option value="procedure">Procedimento</option>
                     </select>
                   </label>
                   <label>
-                    Document
+                    Documento
                     <input
                       required
                       type="file"
@@ -235,29 +238,30 @@ export default function KnowledgePage() {
                       }
                     />
                   </label>
-                  <button disabled={!documentFile}>Extract document</button>
+                  <button disabled={!documentFile}>Extrair documento</button>
                 </form>
               </section>
             </>
           )}
           <section className="workflow-panel">
-            <h2>Search approved knowledge</h2>
+            <h2>Pesquisar conhecimento aprovado</h2>
             <form className="workflow-form" onSubmit={runSearch}>
               <label>
-                Question
+                Pergunta
                 <input
                   required
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
-              <button type="submit">Search</button>
+              <button type="submit">Pesquisar</button>
             </form>
             <div className="activity-list">
               {items.map((entry) => (
                 <article className="activity-item" key={entry.id}>
                   <p className="eyebrow">
-                    {entry.category} · {entry.status} · {entry.sensitivity}
+                    {label(entry.category)} · {label(entry.status)} ·{' '}
+                    {label(entry.sensitivity)}
                   </p>
                   <h3>{entry.title}</h3>
                   <p>{entry.content}</p>
@@ -278,7 +282,7 @@ export default function KnowledgePage() {
                           )
                         }
                       >
-                        Approve
+                        Aprovar
                       </button>
                     )}
                   {(selectedWorkspace?.role === 'owner' ||
@@ -290,7 +294,7 @@ export default function KnowledgePage() {
                         void archiveKnowledge(selected, entry.id).then(refresh)
                       }
                     >
-                      Archive
+                      Arquivar
                     </button>
                   )}
                 </article>

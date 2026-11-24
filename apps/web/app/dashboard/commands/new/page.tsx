@@ -33,7 +33,7 @@ export default function NewCommandPage() {
       setError(
         submitError instanceof WorkflowApiError
           ? submitError.message
-          : 'Unable to create the command right now.',
+          : 'Não foi possível criar o comando agora.',
       );
     } finally {
       setSubmitting(false);
@@ -41,15 +41,15 @@ export default function NewCommandPage() {
   }
 
   if (loading || !user) {
-    return <main className="loading-page">Restoring your secure session…</main>;
+    return <main className="loading-page">A restaurar a sessão segura…</main>;
   }
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="workflow-panel workflow-form-panel">
-        <p className="eyebrow">New command</p>
-        <h1 className="workflow-page-title">O que queres que o Agent faça?</h1>
+        <p className="eyebrow">Novo comando</p>
+        <h1 className="workflow-page-title">O que queres que o Kiko faça?</h1>
         <CanEdit
           fallback={
             <p className="form-hint">
@@ -59,14 +59,14 @@ export default function NewCommandPage() {
           }
         >
           <form className="workflow-form" onSubmit={handleSubmit}>
-            <label htmlFor="command-input">Operational instruction</label>
+            <label htmlFor="command-input">Instrução operacional</label>
             <textarea
               id="command-input"
               value={input}
               onChange={(event) => setInput(event.target.value)}
               rows={9}
               maxLength={10000}
-              placeholder="Create a campaign to sell websites to restaurants."
+              placeholder="Criar uma campanha para vender websites a restaurantes."
             />
             <p className="form-hint">
               Não incluas palavras-passe, chaves API ou outros segredos no

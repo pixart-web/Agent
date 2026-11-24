@@ -19,6 +19,7 @@ import {
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../lib/workspace-access';
+import { label } from '../../../lib/labels';
 
 export default function AutomationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -46,7 +47,9 @@ export default function AutomationsPage() {
 
   useEffect(() => {
     if (user)
-      void refresh().catch(() => setError('Unable to load automations.'));
+      void refresh().catch(() =>
+        setError('Não foi possível carregar as automatizações.'),
+      );
   }, [refresh, user]);
 
   async function act(operation: () => Promise<unknown>, message: string) {
@@ -58,7 +61,7 @@ export default function AutomationsPage() {
       await refresh();
       setNotice(message);
     } catch {
-      setError('The governed automation operation could not be completed.');
+      setError('Não foi possível concluir a operação da automatização.');
     } finally {
       setBusy(false);
     }
@@ -98,7 +101,7 @@ export default function AutomationsPage() {
         createAutomation({
           name: name.trim(),
           command_template: commandTemplate.trim(),
-          description: 'Created by the authenticated operator.',
+          description: 'Criado pelo operador autenticado.',
           trigger_type: triggerType,
           trigger_config: triggerConfig,
           next_run_at: nextRunAt,
@@ -106,22 +109,22 @@ export default function AutomationsPage() {
             ? [{ field: conditionField, operator: 'eq', value: conditionValue }]
             : [],
         }),
-      'Governed automation created.',
+      'Automatização governada criada.',
     );
     setName('');
     setCommandTemplate('');
   }
 
   if (loading || !user)
-    return <main className="loading-page">Loading automations…</main>;
+    return <main className="loading-page">A carregar as automatizações…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Governed autonomy</p>
-          <h1>Automations</h1>
+          <p className="eyebrow">Autonomia governada</p>
+          <h1>Automatizações</h1>
           <AutomationPolicyNote />
         </div>
       </section>
@@ -129,10 +132,10 @@ export default function AutomationsPage() {
       {notice && <p className="workflow-success">{notice}</p>}
       <CanEdit>
         <section className="workflow-panel">
-          <h2>Build an automation</h2>
+          <h2>Criar uma automatização</h2>
           <form className="workflow-form" onSubmit={handleCreate}>
             <label>
-              Name
+              Nome
               <input
                 required
                 maxLength={255}
@@ -141,7 +144,7 @@ export default function AutomationsPage() {
               />
             </label>
             <label>
-              Trigger
+              Gatilho
               <select
                 value={triggerType}
                 onChange={(event) =>
@@ -151,25 +154,25 @@ export default function AutomationsPage() {
                 }
               >
                 <option value="manual">Manual</option>
-                <option value="schedule">Schedule</option>
-                <option value="email_received">Email received</option>
-                <option value="calendar_event">Calendar event</option>
-                <option value="crm_change">CRM change</option>
-                <option value="task_state">Task state</option>
+                <option value="schedule">Agendamento</option>
+                <option value="email_received">Email recebido</option>
+                <option value="calendar_event">Evento de calendário</option>
+                <option value="crm_change">Alteração no CRM</option>
+                <option value="task_state">Estado da tarefa</option>
                 <option value="webhook">Webhook</option>
               </select>
             </label>
             {triggerType !== 'manual' && (
               <label>
                 {triggerType === 'schedule'
-                  ? 'Interval in minutes'
+                  ? 'Intervalo em minutos'
                   : triggerType === 'email_received'
-                    ? 'Connected account UUID'
+                    ? 'UUID da conta ligada'
                     : triggerType === 'calendar_event'
-                      ? 'Account UUID, calendar ID'
+                      ? 'UUID da conta, ID do calendário'
                       : triggerType === 'webhook'
-                        ? 'Webhook source'
-                        : 'Comma-separated values'}
+                        ? 'Origem do webhook'
+                        : 'Valores separados por vírgulas'}
                 <input
                   required
                   value={triggerValue}
@@ -178,7 +181,7 @@ export default function AutomationsPage() {
               </label>
             )}
             <label>
-              Optional condition field
+              Campo de condição (opcional)
               <input
                 value={conditionField}
                 placeholder="payload.status"
@@ -187,7 +190,7 @@ export default function AutomationsPage() {
             </label>
             {conditionField && (
               <label>
-                Equals
+                Igual a
                 <input
                   value={conditionValue}
                   onChange={(event) => setConditionValue(event.target.value)}
@@ -195,7 +198,7 @@ export default function AutomationsPage() {
               </label>
             )}
             <label>
-              Static command
+              Comando fixo
               <textarea
                 required
                 maxLength={20000}
@@ -204,22 +207,22 @@ export default function AutomationsPage() {
               />
             </label>
             <p>
-              Event payloads are stored as untrusted audit data and are never
-              interpolated into this command.
+              Os dados dos eventos ficam guardados na auditoria como não
+              verificados e nunca entram neste comando.
             </p>
             <button disabled={busy} type="submit">
-              Create automation
+              Criar automatização
             </button>
           </form>
         </section>
       </CanEdit>
       <section className="workflow-panel">
-        <h2>Configured automations</h2>
+        <h2>Automatizações configuradas</h2>
         <div className="agent-grid">
           {automations.map((automation) => (
             <article className="agent-card" key={automation.id}>
               <p className="eyebrow">
-                {automation.trigger_type} ·{' '}
+                {label(automation.trigger_type)} ·{' '}
                 {automation.enabled ? 'active' : 'paused'}
               </p>
               <h3>{automation.name}</h3>
@@ -236,7 +239,7 @@ export default function AutomationsPage() {
                     type="button"
                     onClick={() => {
                       const updated = window.prompt(
-                        'Static command for this automation',
+                        'Comando fixo desta automatização',
                         automation.command_template,
                       );
                       if (!updated || updated === automation.command_template)
@@ -246,11 +249,11 @@ export default function AutomationsPage() {
                           updateAutomation(automation.id, {
                             command_template: updated,
                           }),
-                        'Automation command updated.',
+                        'Comando da automatização atualizado.',
                       );
                     }}
                   >
-                    Edit command
+                    Editar comando
                   </button>
                   <button
                     className="secondary-button"
@@ -264,12 +267,12 @@ export default function AutomationsPage() {
                             !automation.enabled,
                           ),
                         automation.enabled
-                          ? 'Automation paused.'
-                          : 'Automation resumed.',
+                          ? 'Automatização em pausa.'
+                          : 'Automatização retomada.',
                       )
                     }
                   >
-                    {automation.enabled ? 'Pause' : 'Resume'}
+                    {automation.enabled ? 'Pausar' : 'Retomar'}
                   </button>
                   {automation.trigger_type === 'manual' &&
                     automation.enabled && (
@@ -283,11 +286,11 @@ export default function AutomationsPage() {
                                 automation.id,
                                 `manual/${Date.now()}`,
                               ),
-                            'A correlated command was created.',
+                            'Foi criado um comando correlacionado.',
                           )
                         }
                       >
-                        Trigger
+                        Gatilho
                       </button>
                     )}
                 </div>
@@ -296,11 +299,11 @@ export default function AutomationsPage() {
           ))}
         </div>
         {automations.length === 0 && (
-          <p className="empty-state">No automations configured.</p>
+          <p className="empty-state">Nenhuma automatização configurada.</p>
         )}
       </section>
       <section className="workflow-panel">
-        <h2>Recent runs</h2>
+        <h2>Execuções recentes</h2>
         <div className="activity-list">
           {runs.map((run) => (
             <article className="activity-item" key={run.id}>
@@ -314,18 +317,20 @@ export default function AutomationsPage() {
                     onClick={() =>
                       void act(
                         () => recoverAutomationRun(run.id),
-                        'Recovery created one bounded retry run.',
+                        'A recuperação criou uma nova tentativa limitada.',
                       )
                     }
                   >
-                    Recover
+                    Recuperar
                   </button>
                 )}
               </CanEdit>
             </article>
           ))}
         </div>
-        {runs.length === 0 && <p className="empty-state">No runs yet.</p>}
+        {runs.length === 0 && (
+          <p className="empty-state">Ainda sem execuções.</p>
+        )}
       </section>
     </main>
   );

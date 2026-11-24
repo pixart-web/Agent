@@ -20,6 +20,7 @@ import {
   updateProjectMilestone,
 } from '../../../../lib/workflow-client';
 import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
+import { label } from '../../../../lib/labels';
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +39,7 @@ export default function ProjectPage() {
       setProject(await getProject(id));
       setError('');
     } catch {
-      setError('Unable to load this project.');
+      setError('Não foi possível carregar este projeto.');
     }
   }, [id, user]);
   useEffect(() => void load(), [load]);
@@ -48,7 +49,7 @@ export default function ProjectPage() {
       await updateProject(id, { status });
       await load();
     } catch {
-      setError('Could not update project status.');
+      setError('Não foi possível atualizar o estado do projeto.');
     }
   }
 
@@ -59,7 +60,7 @@ export default function ProjectPage() {
       setMilestone('');
       await load();
     } catch {
-      setError('Could not add milestone.');
+      setError('Não foi possível adicionar o marco.');
     }
   }
 
@@ -70,12 +71,12 @@ export default function ProjectPage() {
       setResourceId('');
       await load();
     } catch {
-      setError('Could not link that workspace resource.');
+      setError('Não foi possível ligar esse recurso do workspace.');
     }
   }
 
   if (authLoading || !user)
-    return <main className="loading-page">Restoring your secure session…</main>;
+    return <main className="loading-page">A restaurar a sessão segura…</main>;
   if (!project)
     return (
       <main>
@@ -89,12 +90,12 @@ export default function ProjectPage() {
       <DashboardNav user={user} />
       <div className="section-heading">
         <div>
-          <Link href="/dashboard/projects">Projects</Link>
+          <Link href="/dashboard/projects">Projetos</Link>
           <h1 className="workflow-page-title">{project.name}</h1>
-          <p>{project.description || 'No description yet.'}</p>
+          <p>{project.description || 'Ainda sem descrição.'}</p>
         </div>
         <label>
-          Status
+          Estado
           <select
             value={project.status}
             onChange={(event) =>
@@ -102,7 +103,9 @@ export default function ProjectPage() {
             }
           >
             {PROJECT_STATUSES.map((value) => (
-              <option key={value}>{value}</option>
+              <option key={value} value={value}>
+                {label(value)}
+              </option>
             ))}
           </select>
         </label>
@@ -114,43 +117,45 @@ export default function ProjectPage() {
       )}
       <section className="project-summary">
         <div>
-          <span>Progress</span>
+          <span>Progresso</span>
           <strong>{project.progress_percentage}%</strong>
           <progress max="100" value={project.progress_percentage} />
         </div>
         <div>
-          <span>Tasks</span>
+          <span>Tarefas</span>
           <strong>
             {project.completed_task_count} / {project.task_count}
           </strong>
         </div>
         <div>
-          <span>Deadline</span>
+          <span>Prazo</span>
           <strong>
             {project.due_on
-              ? new Date(`${project.due_on}T00:00:00`).toLocaleDateString()
-              : 'Not set'}
+              ? new Date(`${project.due_on}T00:00:00`).toLocaleDateString(
+                  'pt-PT',
+                )
+              : 'Não definido'}
           </strong>
         </div>
         <div>
-          <span>Team</span>
+          <span>Equipa</span>
           <strong>{project.members.length}</strong>
         </div>
       </section>
       <div className="project-detail-grid">
         <section>
-          <h2>Milestones</h2>
+          <h2>Marcos</h2>
           <CanEdit>
             <form className="inline-form" onSubmit={createMilestone}>
               <label>
-                New milestone
+                Novo marco
                 <input
                   required
                   value={milestone}
                   onChange={(event) => setMilestone(event.target.value)}
                 />
               </label>
-              <button className="secondary-button">Add</button>
+              <button className="secondary-button">Adicionar</button>
             </form>
           </CanEdit>
           <EditFieldset>
@@ -171,7 +176,7 @@ export default function ProjectPage() {
                   </button>
                   <div>
                     <strong>{item.title}</strong>
-                    <p>{item.due_on || 'No deadline'}</p>
+                    <p>{item.due_on || 'Sem prazo'}</p>
                   </div>
                 </article>
               ))}
@@ -179,19 +184,19 @@ export default function ProjectPage() {
           </EditFieldset>
         </section>
         <section>
-          <h2>Linked work</h2>
+          <h2>Trabalho ligado</h2>
           <CanEdit>
             <form className="inline-form" onSubmit={linkResource}>
               <label>
-                Resource
+                Recurso
                 <select
                   value={resourceKind}
                   onChange={(event) =>
                     setResourceKind(event.target.value as 'tasks' | 'commands')
                   }
                 >
-                  <option value="tasks">Task</option>
-                  <option value="commands">Command</option>
+                  <option value="tasks">Tarefa</option>
+                  <option value="commands">Comando</option>
                 </select>
               </label>
               <label>
@@ -202,7 +207,7 @@ export default function ProjectPage() {
                   onChange={(event) => setResourceId(event.target.value)}
                 />
               </label>
-              <button className="secondary-button">Link</button>
+              <button className="secondary-button">Ligar</button>
             </form>
           </CanEdit>
           <div className="project-stack">
@@ -221,7 +226,7 @@ export default function ProjectPage() {
                   <Link href={`/dashboard/commands/${command.id}`}>
                     {command.input}
                   </Link>
-                  <p>Command</p>
+                  <p>Comando</p>
                 </div>
                 <StatusBadge status={command.status} />
               </article>
@@ -229,7 +234,7 @@ export default function ProjectPage() {
           </div>
         </section>
         <section>
-          <h2>Team</h2>
+          <h2>Equipa</h2>
           <div className="project-stack">
             {project.members.map((member) => (
               <article key={member.id}>
@@ -237,18 +242,18 @@ export default function ProjectPage() {
                   <strong>{member.full_name}</strong>
                   <p>{member.email}</p>
                 </div>
-                <span>{member.role}</span>
+                <span>{label(member.role)}</span>
               </article>
             ))}
           </div>
         </section>
         <section>
-          <h2>Activity</h2>
+          <h2>Atividade</h2>
           <ol className="project-activity">
             {project.activity.map((item) => (
               <li key={item.id}>
                 <strong>{item.description}</strong>
-                <time>{new Date(item.created_at).toLocaleString()}</time>
+                <time>{new Date(item.created_at).toLocaleString('pt-PT')}</time>
               </li>
             ))}
           </ol>

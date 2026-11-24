@@ -34,6 +34,7 @@ import {
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
 import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
+import { label } from '../../../../lib/labels';
 
 function localDateTime(value: string | null): string {
   if (!value) return '';
@@ -92,7 +93,7 @@ export default function TaskDetailPage() {
       setError(
         loadError instanceof WorkflowApiError
           ? loadError.message
-          : 'Unable to load this task.',
+          : 'Não foi possível carregar esta tarefa.',
       );
     } finally {
       setLoading(false);
@@ -120,7 +121,7 @@ export default function TaskDetailPage() {
       setError(
         saveError instanceof WorkflowApiError
           ? saveError.message
-          : 'Unable to save the task.',
+          : 'Não foi possível guardar a tarefa.',
       );
     }
   }
@@ -135,7 +136,7 @@ export default function TaskDetailPage() {
       setError(
         transitionError instanceof WorkflowApiError
           ? transitionError.message
-          : 'Unable to change status.',
+          : 'Não foi possível alterar o estado.',
       );
     }
   }
@@ -149,7 +150,7 @@ export default function TaskDetailPage() {
       setError(
         dependencyError instanceof WorkflowApiError
           ? dependencyError.message
-          : 'Unable to add the dependency.',
+          : 'Não foi possível adicionar a dependência.',
       );
     }
   }
@@ -163,7 +164,7 @@ export default function TaskDetailPage() {
       setError(
         dependencyError instanceof WorkflowApiError
           ? dependencyError.message
-          : 'Unable to remove the dependency.',
+          : 'Não foi possível remover a dependência.',
       );
     }
   }
@@ -177,13 +178,13 @@ export default function TaskDetailPage() {
       setError(
         scheduleError instanceof WorkflowApiError
           ? scheduleError.message
-          : 'Unable to evaluate this task.',
+          : 'Não foi possível avaliar esta tarefa.',
       );
     }
   }
 
   if (authLoading || !user || loading)
-    return <main className="loading-page">Loading task…</main>;
+    return <main className="loading-page">A carregar a tarefa…</main>;
 
   return (
     <main>
@@ -198,24 +199,24 @@ export default function TaskDetailPage() {
           <section className="workflow-panel">
             <div className="workflow-panel__heading">
               <div>
-                <p className="eyebrow">Task · {task.plan_title}</p>
+                <p className="eyebrow">Tarefa · {task.plan_title}</p>
                 <h1>{task.title}</h1>
               </div>
               <StatusBadge status={task.status} />
             </div>
             <Link href={`/dashboard/commands/${task.command_id}`}>
-              View parent command: {task.command_input}
+              Ver o comando de origem: {task.command_input}
             </Link>
           </section>
           <section className="workflow-panel workflow-form-panel">
-            <h2>Task settings</h2>
+            <h2>Definições da tarefa</h2>
             <EditFieldset>
               <form
                 className="workflow-form workflow-form--grid"
                 onSubmit={save}
               >
                 <label>
-                  Title
+                  Título
                   <input
                     required
                     value={title}
@@ -223,7 +224,7 @@ export default function TaskDetailPage() {
                   />
                 </label>
                 <label>
-                  Agent
+                  Agente
                   <select
                     value={agentId}
                     onChange={(event) =>
@@ -238,7 +239,7 @@ export default function TaskDetailPage() {
                   </select>
                 </label>
                 <label>
-                  Priority
+                  Prioridade
                   <select
                     value={priority}
                     onChange={(event) =>
@@ -246,12 +247,14 @@ export default function TaskDetailPage() {
                     }
                   >
                     {TASK_PRIORITIES.map((value) => (
-                      <option key={value}>{value}</option>
+                      <option key={value} value={value}>
+                        {label(value)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Risk
+                  Risco
                   <select
                     value={risk}
                     onChange={(event) =>
@@ -259,12 +262,14 @@ export default function TaskDetailPage() {
                     }
                   >
                     {RISK_LEVELS.map((value) => (
-                      <option key={value}>{value}</option>
+                      <option key={value} value={value}>
+                        {label(value)}
+                      </option>
                     ))}
                   </select>
                 </label>
                 <label>
-                  Deadline
+                  Prazo
                   <input
                     type="datetime-local"
                     value={dueAt}
@@ -272,7 +277,7 @@ export default function TaskDetailPage() {
                   />
                 </label>
                 <label className="workflow-form__wide">
-                  Instructions
+                  Instruções
                   <textarea
                     required
                     rows={5}
@@ -281,7 +286,7 @@ export default function TaskDetailPage() {
                   />
                 </label>
                 <button className="primary-button" type="submit">
-                  Save task
+                  Guardar tarefa
                 </button>
               </form>
             </EditFieldset>
@@ -289,24 +294,26 @@ export default function TaskDetailPage() {
           <CanEdit>
             {TASK_TRANSITIONS[task.status].length > 0 && (
               <section className="workflow-panel">
-                <h2>Change status</h2>
+                <h2>Alterar estado</h2>
                 <div className="task-transition-controls">
                   <select
-                    aria-label="Next status"
+                    aria-label="Próximo estado"
                     value={nextStatus}
                     onChange={(event) =>
                       setNextStatus(event.target.value as TaskStatus)
                     }
                   >
                     {TASK_TRANSITIONS[task.status].map((value) => (
-                      <option key={value}>{value}</option>
+                      <option key={value} value={value}>
+                        {label(value)}
+                      </option>
                     ))}
                   </select>
                   <input
-                    aria-label="Transition reason"
+                    aria-label="Motivo da mudança"
                     value={reason}
                     maxLength={2000}
-                    placeholder="Reason (optional)"
+                    placeholder="Motivo (opcional)"
                     onChange={(event) => setReason(event.target.value)}
                   />
                   <button
@@ -314,7 +321,7 @@ export default function TaskDetailPage() {
                     type="button"
                     onClick={() => void transition()}
                   >
-                    Update status
+                    Atualizar estado
                   </button>
                 </div>
               </section>
@@ -323,8 +330,8 @@ export default function TaskDetailPage() {
           <section className="workflow-panel">
             <div className="workflow-panel__heading">
               <div>
-                <p className="eyebrow">Plan graph</p>
-                <h2>Dependencies</h2>
+                <p className="eyebrow">Grafo do plano</p>
+                <h2>Dependências</h2>
               </div>
               <CanEdit>
                 {(task.status === 'ready' || task.status === 'blocked') && (
@@ -333,13 +340,13 @@ export default function TaskDetailPage() {
                     type="button"
                     onClick={() => void schedule()}
                   >
-                    Evaluate schedule
+                    Avaliar agendamento
                   </button>
                 )}
               </CanEdit>
             </div>
             {dependencies.length === 0 ? (
-              <p className="empty-state">No dependencies configured.</p>
+              <p className="empty-state">Sem dependências configuradas.</p>
             ) : (
               <ul className="task-dependencies">
                 {dependencies.map((dependency) => {
@@ -351,7 +358,7 @@ export default function TaskDetailPage() {
                       <Link
                         href={`/dashboard/tasks/${dependency.depends_on_task_id}`}
                       >
-                        {dependencyTask?.title ?? 'Plan task'}
+                        {dependencyTask?.title ?? 'Tarefa do plano'}
                       </Link>
                       <StatusBadge
                         status={dependencyTask?.status ?? 'pending'}
@@ -361,7 +368,7 @@ export default function TaskDetailPage() {
                           type="button"
                           onClick={() => void removeDependency(dependency.id)}
                         >
-                          Remove
+                          Remover
                         </button>
                       </CanEdit>
                     </li>
@@ -379,7 +386,7 @@ export default function TaskDetailPage() {
               ) && (
                 <div className="dependency-add-controls">
                   <select
-                    aria-label="Dependency task"
+                    aria-label="Tarefa de que depende"
                     value={dependencyTaskId}
                     onChange={(event) =>
                       setDependencyTaskId(event.target.value)
@@ -406,19 +413,21 @@ export default function TaskDetailPage() {
                     disabled={!dependencyTaskId}
                     onClick={() => void addDependency()}
                   >
-                    Add dependency
+                    Adicionar dependência
                   </button>
                 </div>
               )}
             </CanEdit>
           </section>
           <section className="workflow-panel">
-            <h2>History</h2>
+            <h2>Histórico</h2>
             <ol className="task-history">
               {task.history.map((item) => (
                 <li key={item.id}>
                   <StatusBadge status={item.to_status} />
-                  <span>{new Date(item.created_at).toLocaleString()}</span>
+                  <span>
+                    {new Date(item.created_at).toLocaleString('pt-PT')}
+                  </span>
                   {item.reason && <p>{item.reason}</p>}
                 </li>
               ))}
@@ -426,7 +435,7 @@ export default function TaskDetailPage() {
           </section>
         </>
       ) : (
-        <p className="empty-state">Task unavailable.</p>
+        <p className="empty-state">Tarefa indisponível.</p>
       )}
     </main>
   );

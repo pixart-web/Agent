@@ -12,7 +12,7 @@ export function generateStaticParams() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<main className="loading-page">Loading…</main>}>
+    <Suspense fallback={<main className="loading-page">A carregar…</main>}>
       <ClientPage />
     </Suspense>
   );

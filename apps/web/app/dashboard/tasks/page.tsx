@@ -18,6 +18,7 @@ import {
   listWorkspaceTasks,
   type Agent,
 } from '../../../lib/workflow-client';
+import { label } from '../../../lib/labels';
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -51,7 +52,7 @@ export default function TasksPage() {
         setAgents(loadedAgents);
         setError('');
       } catch {
-        if (active) setError('Unable to load tasks right now.');
+        if (active) setError('Não foi possível carregar as tarefas agora.');
       } finally {
         if (active) setLoading(false);
       }
@@ -68,7 +69,7 @@ export default function TasksPage() {
   }
 
   if (authLoading || !user) {
-    return <main className="loading-page">Restoring your secure session…</main>;
+    return <main className="loading-page">A restaurar a sessão segura…</main>;
   }
 
   return (
@@ -77,76 +78,76 @@ export default function TasksPage() {
       <div className="section-heading">
         <div>
           <p className="eyebrow">Workspace</p>
-          <h1 className="workflow-page-title">Tasks</h1>
+          <h1 className="workflow-page-title">Tarefas</h1>
         </div>
-        <div className="view-switcher" aria-label="Task view">
+        <div className="view-switcher" aria-label="Vista de tarefas">
           <button
             type="button"
             aria-pressed={view === 'list'}
             onClick={() => setView('list')}
           >
-            List
+            Lista
           </button>
           <button
             type="button"
             aria-pressed={view === 'board'}
             onClick={() => setView('board')}
           >
-            Board
+            Quadro
           </button>
-          <span>{tasks.length} visible</span>
+          <span>{tasks.length} visíveis</span>
         </div>
       </div>
       <form className="task-filters" onSubmit={submitSearch}>
         <label>
-          Search
+          Pesquisar
           <input
             type="search"
             value={searchDraft}
             maxLength={200}
-            placeholder="Task, instruction or command…"
+            placeholder="Tarefa, instrução ou comando…"
             onChange={(event) => setSearchDraft(event.target.value)}
           />
         </label>
         <label>
-          Status
+          Estado
           <select
             value={status}
             onChange={(event) =>
               setStatus(event.target.value as TaskStatus | '')
             }
           >
-            <option value="">All</option>
+            <option value="">Todos</option>
             {TASK_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {label(value)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Priority
+          Prioridade
           <select
             value={priority}
             onChange={(event) =>
               setPriority(event.target.value as TaskPriority | '')
             }
           >
-            <option value="">All</option>
+            <option value="">Todos</option>
             {TASK_PRIORITIES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {label(value)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Agent
+          Agente
           <select
             value={agentId}
             onChange={(event) => setAgentId(event.target.value)}
           >
-            <option value="">All</option>
+            <option value="">Todos</option>
             {agents.map((agent) => (
               <option key={agent.id} value={agent.id}>
                 {agent.name}
@@ -155,7 +156,7 @@ export default function TasksPage() {
           </select>
         </label>
         <button className="secondary-button" type="submit">
-          Search
+          Pesquisar
         </button>
       </form>
       {error && (
@@ -164,9 +165,11 @@ export default function TasksPage() {
         </p>
       )}
       {loading ? (
-        <p>Loading tasks…</p>
+        <p>A carregar as tarefas…</p>
       ) : tasks.length === 0 ? (
-        <p className="empty-state">No tasks match these filters.</p>
+        <p className="empty-state">
+          Nenhuma tarefa corresponde a estes filtros.
+        </p>
       ) : view === 'list' ? (
         <div className="workspace-task-list">
           {tasks.map((task) => (
@@ -175,11 +178,11 @@ export default function TasksPage() {
                 <Link href={`/dashboard/tasks/${task.id}`}>{task.title}</Link>
                 <p>{task.command_input}</p>
               </div>
-              <span>{task.priority}</span>
+              <span>{label(task.priority)}</span>
               <span>
                 {task.due_at
-                  ? new Date(task.due_at).toLocaleDateString()
-                  : 'No deadline'}
+                  ? new Date(task.due_at).toLocaleDateString('pt-PT')
+                  : 'Sem prazo'}
               </span>
               <StatusBadge status={task.status} />
             </article>
@@ -209,15 +212,15 @@ export default function TasksPage() {
                         {task.title}
                       </Link>
                       <p>{task.command_input}</p>
-                      <span>{task.priority}</span>
+                      <span>{label(task.priority)}</span>
                       <span>
                         {task.due_at
-                          ? new Date(task.due_at).toLocaleDateString()
-                          : 'No deadline'}
+                          ? new Date(task.due_at).toLocaleDateString('pt-PT')
+                          : 'Sem prazo'}
                       </span>
                     </article>
                   ))}
-                  {columnTasks.length === 0 && <p>No tasks</p>}
+                  {columnTasks.length === 0 && <p>Sem tarefas</p>}
                 </div>
               </section>
             );

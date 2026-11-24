@@ -14,6 +14,7 @@ import { confirmAction } from '../../../../lib/confirm';
 import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../../lib/workspace-access';
+import { label } from '../../../../lib/labels';
 
 export default function CalendarIntegrationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -28,7 +29,9 @@ export default function CalendarIntegrationPage() {
         setIntegration(status);
         setAccounts(values);
       })
-      .catch(() => setError('Unable to load Calendar integration.'));
+      .catch(() =>
+        setError('Não foi possível carregar a integração de calendário.'),
+      );
   }
 
   useEffect(() => {
@@ -40,29 +43,29 @@ export default function CalendarIntegrationPage() {
       const value = await connectCalendar();
       await startExternalAuthorization(value.authorization_url);
     } catch {
-      setError('Unable to start Google Calendar authorization.');
+      setError('Não foi possível iniciar a autorização do Google Calendar.');
     }
   }
 
   async function handleDisconnect(accountId: string) {
-    if (!(await confirmAction('Disconnect this Calendar account?'))) return;
+    if (!(await confirmAction('Desligar esta conta de calendário?'))) return;
     await disconnectCalendar(accountId);
     await refresh();
   }
 
   if (loading || !user)
-    return <main className="loading-page">Loading Calendar…</main>;
+    return <main className="loading-page">A carregar o calendário…</main>;
 
   return (
     <main>
       <DashboardNav user={user} />
       <section className="section-heading">
         <div>
-          <p className="eyebrow">Integration</p>
+          <p className="eyebrow">Integração</p>
           <h1>Google Calendar</h1>
           <p>
-            OAuth credentials stay encrypted on the backend. Calendar content is
-            untrusted.
+            As credenciais OAuth ficam cifradas no servidor. O conteúdo do
+            calendário não é de confiança.
           </p>
         </div>
         <CanEdit>
@@ -72,7 +75,7 @@ export default function CalendarIntegrationPage() {
             disabled={!integration?.enabled}
             onClick={() => void handleConnect()}
           >
-            Connect Google Calendar
+            Ligar Google Calendar
           </button>
         </CanEdit>
       </section>
@@ -80,19 +83,19 @@ export default function CalendarIntegrationPage() {
       {integration && (
         <section className="workflow-panel integration-health">
           <div>
-            <p className="eyebrow">Operational state</p>
-            <h2>{integration.operational_state.replaceAll('_', ' ')}</h2>
+            <p className="eyebrow">Estado operacional</p>
+            <h2>{label(integration.operational_state)}</h2>
           </div>
           <p>
-            {integration.unresolved_writes} delivery outcomes require
-            reconciliation · {integration.pending_writes} pending ·{' '}
-            {integration.failed_writes} failed
+            {integration.unresolved_writes} entregas por confirmar ·{' '}
+            {integration.pending_writes} pendentes · {integration.failed_writes}{' '}
+            falhadas
           </p>
           <p>
             Last provider sync:{' '}
             {integration.last_sync_at
-              ? new Date(integration.last_sync_at).toLocaleString()
-              : 'Never'}
+              ? new Date(integration.last_sync_at).toLocaleString('pt-PT')
+              : 'Nunca'}
           </p>
           {integration.unresolved_writes > 0 && (
             <p className="workflow-alert">
@@ -103,20 +106,20 @@ export default function CalendarIntegrationPage() {
         </section>
       )}
       <section className="workflow-panel">
-        <h2>Connected accounts</h2>
+        <h2>Contas ligadas</h2>
         <p>
-          Writes:{' '}
-          {integration?.write_enabled ? 'enabled with approval' : 'disabled'}
+          Escritas:{' '}
+          {integration?.write_enabled ? 'ativo com aprovação' : 'desativado'}
         </p>
         {accounts.length === 0 ? (
-          <p className="empty-state">No Calendar account connected.</p>
+          <p className="empty-state">Nenhuma conta de calendário ligada.</p>
         ) : (
           <div className="agent-grid">
             {accounts.map((account) => (
               <article className="agent-card" key={account.id}>
                 <p className="eyebrow">{account.provider}</p>
                 <h3>{account.email_address}</h3>
-                <p>Status: {account.status}</p>
+                <p>Estado: {label(account.status)}</p>
                 <p>Scopes: {account.scopes.join(', ')}</p>
                 <CanEdit>
                   <button
@@ -124,7 +127,7 @@ export default function CalendarIntegrationPage() {
                     type="button"
                     onClick={() => void handleDisconnect(account.id)}
                   >
-                    Disconnect
+                    Desligar
                   </button>
                 </CanEdit>
               </article>

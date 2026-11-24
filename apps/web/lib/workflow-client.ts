@@ -963,7 +963,7 @@ export async function downloadCrmExport(
     `/api/v1/crm/export?resource=${resource}&format=csv`,
   );
   if (!response.ok) {
-    throw new WorkflowApiError('CRM export failed.', response.status);
+    throw new WorkflowApiError('A exportação do CRM falhou.', response.status);
   }
   await saveDownload(await response.blob(), `crm-${resource}.csv`);
 }
