@@ -148,8 +148,8 @@ synchronous `run-agent`/`rerun-agent` endpoints remain for API clients.
 Known local AI failures (runtime not reachable, model not installed, timeout, worker not
 answering) are shown in the web and desktop UI with a recovery hint (`lib/ai-errors.ts`).
 
-On a single local worker (`--pool=solo`) a plan generation occupies the worker for about a
-minute; production workers run with concurrency.
+A plan generation takes about a minute on an M4. It occupies the AI worker only; actions and
+automations keep running on the `celery` queue.
 
 ## 6. Configuration
 
