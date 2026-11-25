@@ -89,7 +89,7 @@ class ProjectService:
             self.projects.add(project)
             self.session.flush()
             self.projects.add(ProjectMember(project_id=project.id, user_id=user_id, role="owner"))
-            self._activity(project, user_id, "project.created", f"Created project {project.name}")
+            self._activity(project, user_id, "project.created", f"Projeto criado: {project.name}")
             self.session.commit()
         except Exception:
             self.session.rollback()
@@ -134,7 +134,7 @@ class ProjectService:
                 raise WorkflowConflictError("due_on cannot be before starts_on")
             for field, value in values.items():
                 setattr(project, field, value)
-            self._activity(project, user_id, "project.updated", "Updated project details")
+            self._activity(project, user_id, "project.updated", "Detalhes do projeto atualizados")
             self.session.commit()
         except Exception:
             self.session.rollback()
@@ -154,7 +154,9 @@ class ProjectService:
             if membership is None:
                 raise WorkflowNotFoundError("Workspace member not found")
             self.projects.add(ProjectMember(project_id=project.id, **data.model_dump()))
-            self._activity(project, user_id, "member.added", f"Added project member {data.user_id}")
+            self._activity(
+                project, user_id, "member.added", f"Membro adicionado ao projeto: {data.user_id}"
+            )
             self.session.commit()
         except IntegrityError as error:
             self.session.rollback()
@@ -178,7 +180,7 @@ class ProjectService:
                 raise WorkflowConflictError("The project owner cannot be removed")
             self.session.delete(member)
             self._activity(
-                project, user_id, "member.removed", f"Removed project member {member.user_id}"
+                project, user_id, "member.removed", f"Membro removido do projeto: {member.user_id}"
             )
             self.session.commit()
         except Exception:
@@ -192,7 +194,7 @@ class ProjectService:
             project = self._project(project_id, user_id)
             milestone = ProjectMilestone(project_id=project.id, **data.model_dump())
             self.projects.add(milestone)
-            self._activity(project, user_id, "milestone.created", f"Created milestone {data.title}")
+            self._activity(project, user_id, "milestone.created", f"Marco criado: {data.title}")
             self.session.commit()
         except Exception:
             self.session.rollback()
@@ -211,7 +213,7 @@ class ProjectService:
             for field, value in data.model_dump(exclude_unset=True).items():
                 setattr(milestone, field, value)
             self._activity(
-                project, user_id, "milestone.updated", f"Updated milestone {milestone.title}"
+                project, user_id, "milestone.updated", f"Marco atualizado: {milestone.title}"
             )
             self.session.commit()
         except Exception:
@@ -232,7 +234,12 @@ class ProjectService:
                     raise WorkflowNotFoundError("Command not found")
                 model = ProjectCommand
             self.projects.link(model, project.id, resource_id)
-            self._activity(project, user_id, f"{kind}.linked", f"Linked {kind} {resource_id}")
+            self._activity(
+                project,
+                user_id,
+                f"{kind}.linked",
+                f"{'Tarefa ligada' if kind == 'task' else 'Comando ligado'}: {resource_id}",
+            )
             self.session.commit()
         except IntegrityError as error:
             self.session.rollback()
@@ -247,7 +254,12 @@ class ProjectService:
             model = ProjectTask if kind == "task" else ProjectCommand
             if not self.projects.unlink(model, project.id, resource_id):
                 raise WorkflowNotFoundError(f"Linked {kind} not found")
-            self._activity(project, user_id, f"{kind}.unlinked", f"Unlinked {kind} {resource_id}")
+            self._activity(
+                project,
+                user_id,
+                f"{kind}.unlinked",
+                f"{'Tarefa desligada' if kind == 'task' else 'Comando desligado'}: {resource_id}",
+            )
             self.session.commit()
         except Exception:
             self.session.rollback()

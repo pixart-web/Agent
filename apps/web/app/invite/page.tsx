@@ -31,12 +31,12 @@ function InviteContent() {
     try {
       await acceptWorkspaceInvitation(token);
       setAccepted(true);
-      setMessage('Invitation accepted. Your workspace is ready.');
+      setMessage('Convite aceite. O teu workspace está pronto.');
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to accept this invitation.',
+          : 'Não foi possível aceitar este convite.',
       );
     }
   }
@@ -45,16 +45,16 @@ function InviteContent() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="invite-title">
         <KikoLogo />
-        <p className="eyebrow">Workspace invitation</p>
+        <p className="eyebrow">Convite para workspace</p>
         <h1 id="invite-title" className="auth-title">
-          Join your team on Kiko
+          Junta-te à tua equipa no Kiko
         </h1>
         {!token ? (
           <p className="form-message" role="alert">
-            This invitation link is incomplete.
+            Este link de convite está incompleto.
           </p>
         ) : checking ? (
-          <p className="auth-intro">Checking your secure session…</p>
+          <p className="auth-intro">A verificar a sessão segura…</p>
         ) : user ? (
           <>
             <p className="auth-intro">Signed in as {user.email}.</p>
@@ -64,7 +64,7 @@ function InviteContent() {
                 type="button"
                 onClick={() => void accept()}
               >
-                Accept invitation
+                Aceitar convite
               </button>
             )}
             {message && (
@@ -74,23 +74,23 @@ function InviteContent() {
             )}
             {accepted && (
               <p className="auth-switch">
-                <Link href="/dashboard/knowledge">Open workspace</Link>
+                <Link href="/dashboard/knowledge">Abrir workspace</Link>
               </p>
             )}
           </>
         ) : (
           <>
             <p className="auth-intro">
-              Sign in with the invited email address, or create and verify that
-              account first.
+              Entra com o email convidado, ou cria e verifica primeiro essa
+              conta.
             </p>
             <p className="auth-switch">
               <Link href={`/login?next=${encodeURIComponent(returnPath)}`}>
-                Sign in to accept
+                Entra para aceitar
               </Link>
             </p>
             <p className="auth-switch">
-              <Link href="/register">Create an account</Link>
+              <Link href="/register">Criar uma conta</Link>
             </p>
           </>
         )}
@@ -102,7 +102,7 @@ function InviteContent() {
 export default function InvitePage() {
   return (
     <Suspense
-      fallback={<main className="loading-page">Loading invitation…</main>}
+      fallback={<main className="loading-page">A carregar o convite…</main>}
     >
       <InviteContent />
     </Suspense>

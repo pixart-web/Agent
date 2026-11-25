@@ -2,23 +2,26 @@ phase('register', async () => {
   await step('launch without a session opens sign-in', () => atPath('/login'));
   await step('open registration', async () => {
     await go('/register/');
-    await seeText('Create your account');
+    await seeText('Cria a tua conta');
   });
   await step('submit registration', async () => {
-    await fill('Full name', 'Desktop Owner');
+    await fill('Nome completo', 'Desktop Owner');
     await fill('Email', K.email);
-    await fill('Password', K.password);
-    await fill('Confirm password', K.password);
-    await check('I accept the Terms');
-    await check('I accept the Privacy');
-    await click('Create account');
+    await fill('Palavra-passe', K.password);
+    await fill('Confirmar palavra-passe', K.password);
+    await check('Aceito os Termos');
+    await check('Aceito a Política');
+    await click('Criar conta');
     await atPath('/verify-email');
   });
   await step('unverified account cannot sign in', async () => {
     await go('/login/');
     await fill('Email', K.email);
-    await fill('Password', K.password);
-    await click('Sign in');
-    await seeText('verification');
+    await fill('Palavra-passe', K.password);
+    await click('Entrar');
+    await waitFor(
+      () => /verification|verifica/i.test(pageText()),
+      'verification required message',
+    );
   });
 });

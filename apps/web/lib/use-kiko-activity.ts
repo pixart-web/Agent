@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { listNotifications } from './notification-client';
 import type { RecentExecution } from './operations-client';
 import { getPlan, getPlanProgress, listCommands } from './workflow-client';
+import { serverText } from './labels';
 
 export type ActiveExecution = {
   command: Command;
@@ -62,7 +63,7 @@ export function buildActivity(
     ...notifications.map((item) => ({
       id: `n-${item.id}`,
       kind: 'notification' as const,
-      title: item.title,
+      title: serverText(item.title),
       at: item.created_at,
       href: item.href,
       tone: /fail|error|falh/i.test(item.kind)

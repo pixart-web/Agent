@@ -34,7 +34,7 @@ import {
   WorkflowApiError,
 } from '../../../../lib/workflow-client';
 import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
-import { label } from '../../../../lib/labels';
+import { label, serverText } from '../../../../lib/labels';
 
 function localDateTime(value: string | null): string {
   if (!value) return '';
@@ -428,7 +428,7 @@ export default function TaskDetailPage() {
                   <span>
                     {new Date(item.created_at).toLocaleString('pt-PT')}
                   </span>
-                  {item.reason && <p>{item.reason}</p>}
+                  {item.reason && <p>{serverText(item.reason)}</p>}
                 </li>
               ))}
             </ol>

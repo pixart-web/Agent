@@ -21,6 +21,7 @@ import {
 } from '../lib/desktop-bridge';
 import { rememberRoute } from '../lib/desktop-routes';
 import { listNotifications } from '../lib/notification-client';
+import { serverText } from '../lib/labels';
 
 const NOTIFICATION_POLL_MS = 60_000;
 
@@ -287,7 +288,7 @@ export function DesktopShell() {
       for (const item of unread) {
         if (seenNotifications.current.has(item.id)) continue;
         seenNotifications.current.add(item.id);
-        void notify(item.title, item.body);
+        void notify(serverText(item.title), item.body);
       }
     } catch {
       // Signed out or offline: the connectivity banner and auth redirects handle it.

@@ -135,6 +135,6 @@ class ExecutionCancellationService:
                     from_status=previous,
                     to_status=TaskStatus.CANCELLED,
                     changed_by_user_id=user_id,
-                    reason="Command cancelled",
+                    reason="Comando cancelado",
                 )
             )

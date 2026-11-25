@@ -47,7 +47,7 @@ export default function DesktopLaunchPage() {
           detail:
             error instanceof Error
               ? error.message
-              : 'The Kiko server could not be reached.',
+              : 'Não foi possível contactar o servidor Kiko.',
         });
       }
     })();
@@ -59,7 +59,7 @@ export default function DesktopLaunchPage() {
   if (state.status === 'starting') {
     return (
       <main className="loading-page" aria-live="polite">
-        Opening Kiko…
+        A abrir o Kiko…
       </main>
     );
   }
@@ -68,9 +68,9 @@ export default function DesktopLaunchPage() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="offline-title">
         <KikoLogo />
-        <p className="eyebrow">Connection</p>
+        <p className="eyebrow">Ligação</p>
         <h1 id="offline-title" className="auth-title">
-          Kiko can’t reach its server
+          O Kiko não consegue contactar o servidor
         </h1>
         <p className="auth-intro">
           {state.info ? `Server: ${state.info.apiBaseUrl}. ` : ''}
@@ -87,10 +87,10 @@ export default function DesktopLaunchPage() {
               setAttempt((value) => value + 1);
             }}
           >
-            Try again
+            Tentar de novo
           </button>
           <Link className="secondary-button" href="/desktop/connection/">
-            Change server
+            Mudar de servidor
           </Link>
         </div>
       </section>

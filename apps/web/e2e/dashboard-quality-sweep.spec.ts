@@ -92,16 +92,16 @@ test.describe('dashboard quality sweep', () => {
     const email = await verifiedAccount(request);
     await page.goto('/login');
     await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email);
-    await page.getByLabel('Password').fill(password);
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(page).toHaveURL(/\/onboarding/);
-    await page.getByLabel('Company name').fill('Quality Sweep Lda');
+    await page.getByLabel('Nome da empresa').fill('Quality Sweep Lda');
     await page
-      .getByLabel('What does your company do?')
+      .getByLabel('O que faz a tua empresa?')
       .fill('Synthetic workspace for the dashboard quality sweep.');
-    await page.getByLabel('Organize business tasks').check();
+    await page.getByLabel('Organizar tarefas do negócio').check();
     await page
-      .getByRole('button', { name: 'Finish and create my first command' })
+      .getByRole('button', { name: 'Concluir e criar o meu primeiro comando' })
       .click();
     await expect(page).toHaveURL(/\/dashboard\/commands\/new/);
 

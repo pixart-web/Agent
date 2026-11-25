@@ -11,7 +11,7 @@ import {
   type Notification,
 } from '../../../lib/notification-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
-import { label } from '../../../lib/labels';
+import { label, serverText } from '../../../lib/labels';
 
 export default function NotificationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
               <p className="eyebrow">
                 {label(item.kind)} · {item.read_at ? 'read' : 'unread'}
               </p>
-              <h2>{item.title}</h2>
+              <h2>{serverText(item.title)}</h2>
               <p>{item.body}</p>
               <p>{new Date(item.created_at).toLocaleString('pt-PT')}</p>
               <div className="button-row">
