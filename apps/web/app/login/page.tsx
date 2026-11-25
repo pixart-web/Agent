@@ -36,7 +36,7 @@ export default function LoginPage() {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to sign in right now.',
+          : 'Não foi possível entrar agora.',
       );
     } finally {
       setLoading(false);
@@ -49,10 +49,10 @@ export default function LoginPage() {
         <KikoLogo />
         <p className="eyebrow">PIXART Ecosystem</p>
         <h1 id="login-title" className="auth-title">
-          Sign in to Kiko
+          Entrar no Kiko
         </h1>
         <p className="auth-intro">
-          Continue to the Pixart AI Operating System.
+          Continua para o sistema operativo de IA da Pixart.
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -73,7 +73,7 @@ export default function LoginPage() {
           )}
 
           <label>
-            Password
+            Palavra-passe
             <input
               type="password"
               autoComplete="current-password"
@@ -95,15 +95,15 @@ export default function LoginPage() {
           )}
 
           <button className="primary-button" type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'A entrar…' : 'Entrar'}
           </button>
         </form>
 
         <p className="auth-switch">
-          New to Kiko? <Link href="/register">Create an account</Link>
+          Ainda não tens conta? <Link href="/register">Criar uma conta</Link>
         </p>
         <p className="auth-switch">
-          <Link href="/forgot-password">Forgot your password?</Link>
+          <Link href="/forgot-password">Esqueceste-te da palavra-passe?</Link>
         </p>
       </section>
     </main>

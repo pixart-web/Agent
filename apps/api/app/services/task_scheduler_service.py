@@ -37,7 +37,7 @@ class TaskSchedulerService:
                         from_status=previous,
                         to_status=target,
                         changed_by_user_id=None,
-                        reason="Dependency scheduler evaluation",
+                        reason="Avaliação automática das dependências",
                     )
                 )
             self.session.commit()

@@ -48,7 +48,7 @@ export default function RegisterPage() {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to create the account right now.',
+          : 'Não foi possível criar a conta agora.',
       );
     } finally {
       setLoading(false);
@@ -61,13 +61,13 @@ export default function RegisterPage() {
         <KikoLogo />
         <p className="eyebrow">PIXART Ecosystem</p>
         <h1 id="register-title" className="auth-title">
-          Create your account
+          Cria a tua conta
         </h1>
-        <p className="auth-intro">Start a secure Kiko session.</p>
+        <p className="auth-intro">Começa uma sessão segura no Kiko.</p>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label>
-            Full name
+            Nome completo
             <input
               type="text"
               autoComplete="name"
@@ -91,7 +91,7 @@ export default function RegisterPage() {
           {errors.email && <span className="field-error">{errors.email}</span>}
 
           <label>
-            Password
+            Palavra-passe
             <input
               type="password"
               autoComplete="new-password"
@@ -104,7 +104,7 @@ export default function RegisterPage() {
           )}
 
           <label>
-            Confirm password
+            Confirmar palavra-passe
             <input
               type="password"
               autoComplete="new-password"
@@ -122,7 +122,7 @@ export default function RegisterPage() {
               checked={termsAccepted}
               onChange={(event) => setTermsAccepted(event.target.checked)}
             />
-            <span>I accept the Terms of Service.</span>
+            <span>Aceito os Termos de Serviço.</span>
           </label>
           {errors.termsAccepted && (
             <span className="field-error">{errors.termsAccepted}</span>
@@ -134,7 +134,7 @@ export default function RegisterPage() {
               checked={privacyAccepted}
               onChange={(event) => setPrivacyAccepted(event.target.checked)}
             />
-            <span>I accept the Privacy Policy.</span>
+            <span>Aceito a Política de Privacidade.</span>
           </label>
           {errors.privacyAccepted && (
             <span className="field-error">{errors.privacyAccepted}</span>
@@ -147,12 +147,12 @@ export default function RegisterPage() {
           )}
 
           <button className="primary-button" type="submit" disabled={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? 'A criar a conta…' : 'Criar conta'}
           </button>
         </form>
 
         <p className="auth-switch">
-          Already registered? <Link href="/login">Sign in</Link>
+          Já tens conta? <Link href="/login">Entrar</Link>
         </p>
       </section>
     </main>

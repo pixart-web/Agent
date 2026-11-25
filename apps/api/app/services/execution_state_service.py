@@ -40,7 +40,7 @@ class ExecutionStateService:
                     from_status=previous,
                     to_status=TaskStatus.RUNNING,
                     changed_by_user_id=None,
-                    reason="Execution worker started",
+                    reason="Execução iniciada pelo worker",
                 )
             )
         if plan.status == PlanStatus.READY:
@@ -75,7 +75,7 @@ class ExecutionStateService:
                 from_status=previous,
                 to_status=TaskStatus.COMPLETED,
                 changed_by_user_id=None,
-                reason="All required actions completed",
+                reason="Todas as ações necessárias concluídas",
             )
         )
         self.audit.record(

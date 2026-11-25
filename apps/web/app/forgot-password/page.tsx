@@ -16,12 +16,14 @@ export default function ForgotPasswordPage() {
     setBusy(true);
     try {
       await requestPasswordReset(email.trim());
-      setMessage('If the account is eligible, a reset email was queued.');
+      setMessage(
+        'Se a conta for elegível, foi enviado um email para repor a palavra-passe.',
+      );
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to request a password reset.',
+          : 'Não foi possível pedir a reposição da palavra-passe.',
       );
     } finally {
       setBusy(false);
@@ -32,13 +34,13 @@ export default function ForgotPasswordPage() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="forgot-title">
         <KikoLogo />
-        <p className="eyebrow">Account recovery</p>
+        <p className="eyebrow">Recuperação de conta</p>
         <h1 id="forgot-title" className="auth-title">
-          Reset your password
+          Repõe a tua palavra-passe
         </h1>
         <p className="auth-intro">
-          Enter your account email. The response is identical whether an account
-          exists or not.
+          Indica o email da tua conta. A resposta é a mesma quer a conta exista
+          ou não.
         </p>
         <form className="auth-form" onSubmit={submit}>
           <label>
@@ -53,11 +55,11 @@ export default function ForgotPasswordPage() {
           </label>
           {message && <p role="status">{message}</p>}
           <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? 'Requesting…' : 'Request reset'}
+            {busy ? 'A pedir…' : 'Pedir reposição'}
           </button>
         </form>
         <p className="auth-switch">
-          <Link href="/login">Return to sign in</Link>
+          <Link href="/login">Voltar a entrar</Link>
         </p>
       </section>
     </main>

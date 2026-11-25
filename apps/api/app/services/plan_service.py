@@ -101,7 +101,7 @@ class PlanService:
                         from_status=TaskStatus.PENDING,
                         to_status=TaskStatus.READY,
                         changed_by_user_id=user_id,
-                        reason="Plan approved",
+                        reason="Plano aprovado",
                     )
                 )
             plan.status = PlanStatus.READY

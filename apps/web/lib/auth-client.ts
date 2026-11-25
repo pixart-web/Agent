@@ -40,12 +40,38 @@ export function describeErrorDetail(detail: unknown): string | null {
   return null;
 }
 
+// Portuguese for the authentication messages the API returns.
+const AUTH_MESSAGES: Record<string, string> = {
+  'Authentication required': 'É preciso entrar novamente.',
+  'Authentication temporarily unavailable':
+    'A autenticação está temporariamente indisponível. Tenta de novo daqui a pouco.',
+  'Current password is incorrect': 'A palavra-passe atual está incorreta.',
+  'Email verification required':
+    'Confirma primeiro o teu email: segue o link de verificação que te enviámos.',
+  'Inactive user': 'Esta conta está desativada.',
+  'Insufficient permissions': 'Não tens permissões para esta ação.',
+  'Invalid email or password': 'Email ou palavra-passe incorretos.',
+  'Invalid or expired password reset token':
+    'O link para repor a palavra-passe é inválido ou expirou.',
+  'Invalid or expired verification token':
+    'O link de verificação é inválido ou expirou.',
+  'Origin not allowed': 'Este endereço não está autorizado a usar o Kiko.',
+  'Session not found': 'A sessão terminou. Entra de novo.',
+  'Too many authentication attempts':
+    'Demasiadas tentativas. Espera um minuto e tenta de novo.',
+};
+
+export function authMessage(detail: string): string {
+  return AUTH_MESSAGES[detail] ?? detail;
+}
+
 async function errorMessage(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { detail?: unknown };
-    return describeErrorDetail(body.detail) ?? 'Authentication request failed.';
+    const detail = describeErrorDetail(body.detail);
+    return detail ? authMessage(detail) : 'O pedido de autenticação falhou.';
   } catch {
-    return 'Authentication request failed.';
+    return 'O pedido de autenticação falhou.';
   }
 }
 

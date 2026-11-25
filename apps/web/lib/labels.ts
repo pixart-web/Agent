@@ -131,3 +131,46 @@ export function operationalMessage(message: string | null | undefined): string {
     return 'Agente desativado neste workspace';
   return message;
 }
+
+// Texts the server stored in English before it switched to Portuguese.
+const SERVER_TEXT: Record<string, string> = {
+  'Approval required': 'Aprovação necessária',
+  'Execution failed': 'Execução falhou',
+  'Automation failed': 'Automatização falhou',
+  'Integration requires attention': 'Integração precisa de atenção',
+  'Updated project details': 'Detalhes do projeto atualizados',
+  'Dependency scheduler evaluation': 'Avaliação automática das dependências',
+  'Execution worker started': 'Execução iniciada pelo worker',
+  'All required actions completed': 'Todas as ações necessárias concluídas',
+  'Plan approved': 'Plano aprovado',
+  'Command cancelled': 'Comando cancelado',
+};
+
+const SERVER_PATTERNS: [RegExp, (match: RegExpExecArray) => string][] = [
+  [/^Created project (.+)$/, (m) => `Projeto criado: ${m[1]}`],
+  [
+    /^Added project member (.+)$/,
+    (m) => `Membro adicionado ao projeto: ${m[1]}`,
+  ],
+  [
+    /^Removed project member (.+)$/,
+    (m) => `Membro removido do projeto: ${m[1]}`,
+  ],
+  [/^Created milestone (.+)$/, (m) => `Marco criado: ${m[1]}`],
+  [/^Updated milestone (.+)$/, (m) => `Marco atualizado: ${m[1]}`],
+  [/^Linked task (.+)$/, (m) => `Tarefa ligada: ${m[1]}`],
+  [/^Linked command (.+)$/, (m) => `Comando ligado: ${m[1]}`],
+  [/^Unlinked task (.+)$/, (m) => `Tarefa desligada: ${m[1]}`],
+  [/^Unlinked command (.+)$/, (m) => `Comando desligado: ${m[1]}`],
+];
+
+/** Portuguese for server-generated texts, including records stored in English earlier. */
+export function serverText(text: string | null | undefined): string {
+  if (!text) return '';
+  if (SERVER_TEXT[text]) return SERVER_TEXT[text];
+  for (const [pattern, render] of SERVER_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match) return render(match);
+  }
+  return text;
+}

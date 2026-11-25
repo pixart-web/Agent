@@ -42,7 +42,7 @@ export default function DesktopConnectionPage() {
       setError(
         typeof failure === 'string'
           ? failure
-          : 'This server address cannot be used.',
+          : 'Este endereço de servidor não pode ser usado.',
       );
     } finally {
       setBusy(false);
@@ -57,15 +57,15 @@ export default function DesktopConnectionPage() {
           Kiko for macOS{info ? ` · ${info.version}` : ''}
         </p>
         <h1 id="connection-title" className="auth-title">
-          Server connection
+          Ligação ao servidor
         </h1>
         <p className="auth-intro">
-          Kiko runs your business data, agents and approvals on the Kiko server.
-          Enter the HTTPS address your administrator gave you.
+          O Kiko guarda os dados do negócio, os agentes e as aprovações no
+          servidor Kiko. Indica o endereço HTTPS que o administrador te deu.
         </p>
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <label>
-            Server address
+            Endereço do servidor
             <input
               type="url"
               inputMode="url"
@@ -79,7 +79,7 @@ export default function DesktopConnectionPage() {
             />
           </label>
           <p id="connection-hint" className="form-hint">
-            HTTPS is required. Plain HTTP is accepted only for a server on this
+            É obrigatório HTTPS. HTTP simples só é aceite para um servidor neste
             Mac (localhost).
           </p>
           {error ? (
@@ -88,10 +88,10 @@ export default function DesktopConnectionPage() {
             </p>
           ) : null}
           <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? 'Saving…' : 'Save and connect'}
+            {busy ? 'A guardar…' : 'Guardar e ligar'}
           </button>
           <Link className="secondary-button" href="/desktop/">
-            Cancel
+            Cancelar
           </Link>
         </form>
       </section>

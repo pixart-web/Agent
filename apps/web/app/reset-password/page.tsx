@@ -16,18 +16,20 @@ function ResetContent() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!token) return setMessage('This reset link is incomplete.');
+    if (!token) return setMessage('Este link de reposição está incompleto.');
     if (password !== confirmPassword)
-      return setMessage('Passwords do not match.');
+      return setMessage('As palavras-passe não coincidem.');
     setBusy(true);
     try {
       await confirmPasswordReset(token, password);
-      setMessage('Password changed. All existing sessions were revoked.');
+      setMessage(
+        'Palavra-passe alterada. Todas as sessões abertas foram terminadas.',
+      );
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to reset the password.',
+          : 'Não foi possível repor a palavra-passe.',
       );
     } finally {
       setBusy(false);
@@ -38,13 +40,13 @@ function ResetContent() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="reset-title">
         <KikoLogo />
-        <p className="eyebrow">Account recovery</p>
+        <p className="eyebrow">Recuperação de conta</p>
         <h1 id="reset-title" className="auth-title">
-          Choose a new password
+          Escolhe uma nova palavra-passe
         </h1>
         <form className="auth-form" onSubmit={submit}>
           <label>
-            New password
+            Nova palavra-passe
             <input
               type="password"
               autoComplete="new-password"
@@ -55,7 +57,7 @@ function ResetContent() {
             />
           </label>
           <label>
-            Confirm password
+            Confirmar palavra-passe
             <input
               type="password"
               autoComplete="new-password"
@@ -67,11 +69,11 @@ function ResetContent() {
           </label>
           {message && <p role="status">{message}</p>}
           <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? 'Saving…' : 'Save new password'}
+            {busy ? 'A guardar…' : 'Guardar nova palavra-passe'}
           </button>
         </form>
         <p className="auth-switch">
-          <Link href="/login">Return to sign in</Link>
+          <Link href="/login">Voltar a entrar</Link>
         </p>
       </section>
     </main>
@@ -80,7 +82,7 @@ function ResetContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<main className="loading-page">Loading…</main>}>
+    <Suspense fallback={<main className="loading-page">A carregar…</main>}>
       <ResetContent />
     </Suspense>
   );

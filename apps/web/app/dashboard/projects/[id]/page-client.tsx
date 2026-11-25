@@ -20,7 +20,7 @@ import {
   updateProjectMilestone,
 } from '../../../../lib/workflow-client';
 import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
-import { label } from '../../../../lib/labels';
+import { label, serverText } from '../../../../lib/labels';
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -252,7 +252,7 @@ export default function ProjectPage() {
           <ol className="project-activity">
             {project.activity.map((item) => (
               <li key={item.id}>
-                <strong>{item.description}</strong>
+                <strong>{serverText(item.description)}</strong>
                 <time>{new Date(item.created_at).toLocaleString('pt-PT')}</time>
               </li>
             ))}

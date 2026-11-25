@@ -18,20 +18,20 @@ function VerificationContent() {
   const [email, setEmail] = useState(initialEmail);
   const [message, setMessage] = useState(
     token
-      ? 'Verifying your email…'
-      : 'Check your inbox for a verification link.',
+      ? 'A verificar o teu email…'
+      : 'Procura na tua caixa de correio o link de verificação.',
   );
   const [busy, setBusy] = useState(Boolean(token));
 
   useEffect(() => {
     if (!token) return;
     void verifyEmail(token)
-      .then(() => setMessage('Email verified. You can now sign in.'))
+      .then(() => setMessage('Email verificado. Já podes entrar.'))
       .catch((error) =>
         setMessage(
           error instanceof AuthClientError
             ? error.message
-            : 'Unable to verify this email.',
+            : 'Não foi possível verificar este email.',
         ),
       )
       .finally(() => setBusy(false));
@@ -43,13 +43,13 @@ function VerificationContent() {
     try {
       await resendVerification(email.trim());
       setMessage(
-        'If the account is eligible, a new verification email was queued.',
+        'Se a conta for elegível, foi enviado um novo email de verificação.',
       );
     } catch (error) {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to request another email.',
+          : 'Não foi possível pedir outro email.',
       );
     } finally {
       setBusy(false);
@@ -60,9 +60,9 @@ function VerificationContent() {
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="verify-title">
         <KikoLogo />
-        <p className="eyebrow">Secure identity</p>
+        <p className="eyebrow">Identidade segura</p>
         <h1 id="verify-title" className="auth-title">
-          Verify your email
+          Verifica o teu email
         </h1>
         <p className="auth-intro" role="status">
           {message}
@@ -80,12 +80,12 @@ function VerificationContent() {
               />
             </label>
             <button className="primary-button" type="submit" disabled={busy}>
-              {busy ? 'Requesting…' : 'Resend verification email'}
+              {busy ? 'A pedir…' : 'Reenviar email de verificação'}
             </button>
           </form>
         )}
         <p className="auth-switch">
-          <Link href="/login">Return to sign in</Link>
+          <Link href="/login">Voltar a entrar</Link>
         </p>
       </section>
     </main>
@@ -94,7 +94,7 @@ function VerificationContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<main className="loading-page">Loading…</main>}>
+    <Suspense fallback={<main className="loading-page">A carregar…</main>}>
       <VerificationContent />
     </Suspense>
   );

@@ -129,7 +129,7 @@ class NotificationService:
                 dict(
                     event_key=f"approval:{item.id}",
                     kind="approval_required",
-                    title="Approval required",
+                    title="Aprovação necessária",
                     body=item.title,
                     href="/dashboard/approvals",
                     created_at=item.requested_at,
@@ -151,7 +151,7 @@ class NotificationService:
                 dict(
                     event_key=f"execution:{item.id}",
                     kind="execution_failed",
-                    title="Execution failed",
+                    title="Execução falhou",
                     body=item.title,
                     href="/dashboard/executions",
                     created_at=item.created_at,
@@ -168,7 +168,7 @@ class NotificationService:
                 dict(
                     event_key=f"automation:{item.id}",
                     kind="automation_failed",
-                    title="Automation failed",
+                    title="Automatização falhou",
                     body=item.name,
                     href="/dashboard/automations",
                     created_at=item.created_at,
@@ -190,7 +190,7 @@ class NotificationService:
                 dict(
                     event_key=f"integration:{item.id}:{item.updated_at.isoformat()}",
                     kind="integration_disconnected",
-                    title="Integration requires attention",
+                    title="Integração precisa de atenção",
                     body=item.provider,
                     href="/dashboard/integrations",
                     created_at=item.updated_at,

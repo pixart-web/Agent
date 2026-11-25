@@ -3,21 +3,21 @@ phase('verify-and-onboard', async () => {
     await atPath('/login');
     await go(`/verify-email/?token=${encodeURIComponent(K.token)}`);
     await waitFor(
-      () => /verified/i.test(pageText()),
+      () => /verified|verificado/i.test(pageText()),
       'verification confirmation',
     );
   });
   await step('sign in', async () => {
     await go('/login/');
     await fill('Email', K.email);
-    await fill('Password', K.password);
-    await click('Sign in');
+    await fill('Palavra-passe', K.password);
+    await click('Entrar');
     await atPath('/onboarding');
   });
   await step('configure company', async () => {
-    await fill('Company name', 'Pixart Desktop QA');
+    await fill('Nome da empresa', 'Pixart Desktop QA');
     await fill(
-      'What does your company do?',
+      'O que faz a tua empresa?',
       'Validates the Kiko macOS client end to end.',
     );
     const box = await waitFor(
@@ -26,7 +26,7 @@ phase('verify-and-onboard', async () => {
       'objective checkbox',
     );
     box.click();
-    await click('Finish and create');
+    await click('Concluir e criar');
     await atPath('/dashboard/commands/new');
   });
 });

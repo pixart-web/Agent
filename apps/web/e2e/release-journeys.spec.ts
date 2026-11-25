@@ -58,27 +58,27 @@ test('Journey A: registration, login and onboarding persist in the real API', as
   });
   const email = `journey-a-${Date.now()}@example.com`;
   await page.goto('/register');
-  await page.getByLabel('Full name').fill('Release Owner');
+  await page.getByLabel('Nome completo').fill('Release Owner');
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByLabel('Confirm password').fill(password);
-  await page.getByLabel('I accept the Terms of Service.').check();
-  await page.getByLabel('I accept the Privacy Policy.').check();
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+  await page.getByLabel('Confirmar palavra-passe').fill(password);
+  await page.getByLabel('Aceito os Termos de Serviço.').check();
+  await page.getByLabel('Aceito a Política de Privacidade.').check();
+  await page.getByRole('button', { name: 'Criar conta' }).click();
   await expect(page).toHaveURL(/\/verify-email/);
-  await page.getByRole('link', { name: 'Return to sign in' }).click();
+  await page.getByRole('link', { name: 'Voltar a entrar' }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page).toHaveURL(/\/onboarding/);
-  await page.getByLabel('Company name').fill('Northstar Release Lab');
+  await page.getByLabel('Nome da empresa').fill('Northstar Release Lab');
   await page
-    .getByLabel('What does your company do?')
+    .getByLabel('O que faz a tua empresa?')
     .fill('A synthetic QA workspace.');
-  await page.getByLabel('Organize business tasks').check();
+  await page.getByLabel('Organizar tarefas do negócio').check();
   await page
-    .getByRole('button', { name: 'Finish and create my first command' })
+    .getByRole('button', { name: 'Concluir e criar o meu primeiro comando' })
     .click();
   await expect(page).toHaveURL(/\/dashboard\/commands\/new/);
   await expect(

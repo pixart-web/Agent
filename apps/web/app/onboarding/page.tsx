@@ -12,11 +12,11 @@ import type { OnboardingState } from '../../lib/auth-types';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
 
 const objectiveOptions = [
-  'Organize business tasks',
-  'Prepare marketing campaigns',
-  'Analyze the customer pipeline',
-  'Plan meetings and follow-ups',
-  'Coordinate development work',
+  'Organizar tarefas do negócio',
+  'Preparar campanhas de marketing',
+  'Analisar o pipeline de clientes',
+  'Planear reuniões e seguimentos',
+  'Coordenar o trabalho de desenvolvimento',
 ];
 
 export default function OnboardingPage() {
@@ -46,7 +46,7 @@ export default function OnboardingPage() {
         setMessage(
           error instanceof AuthClientError
             ? error.message
-            : 'Unable to load onboarding.',
+            : 'Não foi possível carregar a configuração inicial.',
         ),
       );
   }, [router, user]);
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
       setMessage(
         error instanceof AuthClientError
           ? error.message
-          : 'Unable to save onboarding.',
+          : 'Não foi possível guardar a configuração inicial.',
       );
     } finally {
       setSaving(false);
@@ -89,25 +89,25 @@ export default function OnboardingPage() {
   }
 
   if (loading || !user || !state) {
-    return <main className="loading-page">Preparing your workspace…</main>;
+    return <main className="loading-page">A preparar o teu workspace…</main>;
   }
 
   if (!state.can_edit_company) {
     return (
       <main className="onboarding-shell">
         <section className="onboarding-card">
-          <p className="eyebrow">Welcome to Kiko</p>
+          <p className="eyebrow">Bem-vindo ao Kiko</p>
           <h1>Join {state.company_name}</h1>
           <p className="lede">
-            Your team has already set up this workspace. Only owners and admins
-            can change the company profile.
+            A tua equipa já configurou este workspace. Só donos e
+            administradores podem alterar o perfil da empresa.
           </p>
           <dl className="onboarding-profile">
-            <dt>Company</dt>
+            <dt>Empresa</dt>
             <dd>{state.company_name}</dd>
-            <dt>What the company does</dt>
-            <dd>{state.company_description || 'Not filled in yet.'}</dd>
-            <dt>Primary objectives</dt>
+            <dt>O que a empresa faz</dt>
+            <dd>{state.company_description || 'Ainda não preenchido.'}</dd>
+            <dt>Objetivos principais</dt>
             <dd>
               {state.primary_objectives.length > 0 ? (
                 <ul>
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
                   ))}
                 </ul>
               ) : (
-                'Not filled in yet.'
+                'Ainda não preenchido.'
               )}
             </dd>
           </dl>
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
                 disabled={saving}
                 type="submit"
               >
-                {saving ? 'Opening…' : 'Continue to the workspace'}
+                {saving ? 'A abrir…' : 'Continuar para o workspace'}
               </button>
             </div>
           </form>
@@ -144,15 +144,15 @@ export default function OnboardingPage() {
   return (
     <main className="onboarding-shell">
       <section className="onboarding-card">
-        <p className="eyebrow">Welcome to Kiko</p>
-        <h1>Set up your company workspace</h1>
+        <p className="eyebrow">Bem-vindo ao Kiko</p>
+        <h1>Configura o workspace da tua empresa</h1>
         <p className="lede">
-          Tell Kiko what your company does and what you want to achieve. You can
-          connect optional integrations after this setup.
+          Diz ao Kiko o que a tua empresa faz e o que queres alcançar. Podes
+          ligar integrações opcionais depois desta configuração.
         </p>
         <form className="auth-form" onSubmit={complete}>
           <label>
-            Company name
+            Nome da empresa
             <input
               required
               minLength={2}
@@ -161,7 +161,7 @@ export default function OnboardingPage() {
             />
           </label>
           <label>
-            What does your company do?
+            O que faz a tua empresa?
             <textarea
               required
               maxLength={2000}
@@ -171,7 +171,7 @@ export default function OnboardingPage() {
             />
           </label>
           <fieldset className="onboarding-objectives">
-            <legend>Primary objectives</legend>
+            <legend>Objetivos principais</legend>
             {objectiveOptions.map((objective) => (
               <label key={objective}>
                 <input
@@ -189,10 +189,12 @@ export default function OnboardingPage() {
               disabled={saving || objectives.length === 0}
               type="submit"
             >
-              {saving ? 'Saving…' : 'Finish and create my first command'}
+              {saving
+                ? 'A guardar…'
+                : 'Concluir e criar o meu primeiro comando'}
             </button>
             <span className="form-note">
-              Optional integrations can be connected after setup.
+              As integrações opcionais podem ser ligadas depois da configuração.
             </span>
           </div>
         </form>
@@ -202,7 +204,7 @@ export default function OnboardingPage() {
           </p>
         )}
         <p className="form-note">
-          No external action is performed during setup.
+          Nenhuma ação externa é feita durante a configuração.
         </p>
       </section>
     </main>
