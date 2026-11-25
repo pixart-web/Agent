@@ -47,6 +47,7 @@ import {
 } from '../../../../lib/workflow-client';
 import { CanEdit } from '../../../../lib/workspace-access';
 import { label } from '../../../../lib/labels';
+import { apiMessage } from '../../../../lib/api-messages';
 
 export default function CommandDetailPage() {
   const { id: commandId } = useParams<{ id: string }>();
@@ -137,7 +138,7 @@ export default function CommandDetailPage() {
         if (cancelled) return;
         if (finished?.status === 'failed') {
           setSupervisorError(
-            finished.error_message ||
+            (finished.error_message && apiMessage(finished.error_message)) ||
               'Não foi possível gerar o plano. Tenta novamente.',
           );
         }

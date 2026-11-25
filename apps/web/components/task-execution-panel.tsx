@@ -19,6 +19,7 @@ import {
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
 import { label } from '../lib/labels';
+import { apiMessage } from '../lib/api-messages';
 
 const TOOLS = [
   'internal.echo',
@@ -168,7 +169,7 @@ export function TaskExecutionPanel({
                       ? ` · ${execution.duration_ms}ms`
                       : ''}
                     {execution.error_message
-                      ? ` · ${execution.error_message}`
+                      ? ` · ${apiMessage(execution.error_message)}`
                       : ''}
                   </li>
                 ))}

@@ -8,6 +8,7 @@ import { DashboardNav } from '../../../../components/dashboard-nav';
 import { StatusBadge } from '../../../../components/status-badge';
 import { getCodexRun } from '../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
+import { apiMessage } from '../../../../lib/api-messages';
 
 export default function CodexRunDetailPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -78,7 +79,7 @@ export default function CodexRunDetailPage() {
             <h2>Resumo</h2>
             <p>{run.summary || 'Pendentes'}</p>
             {run.error_message && (
-              <p className="workflow-alert">{run.error_message}</p>
+              <p className="workflow-alert">{apiMessage(run.error_message)}</p>
             )}
             <h2>Ficheiros alterados</h2>
             <ul>

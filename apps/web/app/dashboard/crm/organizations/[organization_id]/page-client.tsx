@@ -12,6 +12,7 @@ import {
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 import { label } from '../../../../../lib/labels';
+import { failureMessage } from '../../../../../lib/api-messages';
 
 export default function CrmOrganizationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -63,8 +64,13 @@ export default function CrmOrganizationPage() {
                       status: event.target.value,
                     }),
                   );
-                } catch {
-                  setError('Não foi possível atualizar esta organização.');
+                } catch (failure) {
+                  setError(
+                    failureMessage(
+                      failure,
+                      'Não foi possível atualizar esta organização.',
+                    ),
+                  );
                 }
               }}
             >

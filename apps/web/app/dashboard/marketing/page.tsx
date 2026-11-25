@@ -13,6 +13,7 @@ import {
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../lib/workspace-access';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function MarketingPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -101,8 +102,13 @@ export default function MarketingPage() {
                 setName('');
                 setObjective('');
                 await refresh(query.trim());
-              } catch {
-                setError('Não foi possível criar esta campanha.');
+              } catch (failure) {
+                setError(
+                  failureMessage(
+                    failure,
+                    'Não foi possível criar esta campanha.',
+                  ),
+                );
               } finally {
                 setSaving(false);
               }

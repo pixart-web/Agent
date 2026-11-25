@@ -20,6 +20,7 @@ import {
   restoreCommand,
   WorkflowApiError,
 } from '../../../lib/workflow-client';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function CommandsPage() {
   const router = useRouter();
@@ -76,8 +77,14 @@ export default function CommandsPage() {
             ),
           );
         }
-      } catch {
-        if (active) setError('Não foi possível carregar os comandos agora.');
+      } catch (failure) {
+        if (active)
+          setError(
+            failureMessage(
+              failure,
+              'Não foi possível carregar os comandos agora.',
+            ),
+          );
       } finally {
         if (active) setLoading(false);
       }

@@ -20,6 +20,17 @@ import {
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../lib/workspace-access';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
+
+function formatWindow(seconds: number): string {
+  if (seconds % 86400 === 0) {
+    const days = seconds / 86400;
+    return days === 1 ? '1 dia' : `${days} dias`;
+  }
+  if (seconds % 3600 === 0) return `${seconds / 3600} h`;
+  if (seconds % 60 === 0) return `${seconds / 60} min`;
+  return `${seconds} s`;
+}
 
 export default function AutomationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -60,8 +71,13 @@ export default function AutomationsPage() {
       await operation();
       await refresh();
       setNotice(message);
-    } catch {
-      setError('Não foi possível concluir a operação da automatização.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível concluir a operação da automatização.',
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -223,13 +239,14 @@ export default function AutomationsPage() {
             <article className="agent-card" key={automation.id}>
               <p className="eyebrow">
                 {label(automation.trigger_type)} ·{' '}
-                {automation.enabled ? 'active' : 'paused'}
+                {automation.enabled ? 'Ativa' : 'Em pausa'}
               </p>
               <h3>{automation.name}</h3>
               <p>{automation.command_template}</p>
               <p>
-                Depth {automation.max_depth} · {automation.max_runs_per_window}{' '}
-                runs / {automation.window_seconds}s
+                Profundidade máx. {automation.max_depth} · até{' '}
+                {automation.max_runs_per_window} execuções em{' '}
+                {formatWindow(automation.window_seconds)}
               </p>
               <CanEdit>
                 <div className="button-row">

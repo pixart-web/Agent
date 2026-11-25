@@ -1,5 +1,6 @@
 import { saveDownload } from './downloads';
 import { authFetch } from './auth-client';
+import { apiError } from './api-messages';
 
 export type WorkspaceSettings = {
   id: string;
@@ -26,8 +27,9 @@ export type WorkspaceSettings = {
 
 async function json(response: Response): Promise<WorkspaceSettings> {
   if (!response.ok)
-    throw new Error(
-      `O pedido das definições do workspace falhou (${response.status})`,
+    throw await apiError(
+      response,
+      `O pedido das definições do workspace falhou (${response.status}).`,
     );
   return (await response.json()) as WorkspaceSettings;
 }

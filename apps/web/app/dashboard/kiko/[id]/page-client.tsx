@@ -20,6 +20,7 @@ import {
 import { CanEdit } from '../../../../lib/workspace-access';
 import { KikoWorkspaceMode } from '../../../../components/kiko/kiko-workspace';
 import type { KikoState } from '../../../../lib/kiko-state';
+import { failureMessage } from '../../../../lib/api-messages';
 
 /** Kiko's state in a conversation, from the request in flight and its operations. */
 export function conversationStage(
@@ -67,8 +68,10 @@ export default function ConversationPage() {
   const load = useCallback(async () => {
     try {
       setDetail(await getConversation(params.id));
-    } catch {
-      setError('Não foi possível carregar esta conversa.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Não foi possível carregar esta conversa.'),
+      );
     }
   }, [params.id]);
 

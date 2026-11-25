@@ -21,6 +21,7 @@ import {
 } from '../../../../lib/workflow-client';
 import { CanEdit, EditFieldset } from '../../../../lib/workspace-access';
 import { label, serverText } from '../../../../lib/labels';
+import { failureMessage } from '../../../../lib/api-messages';
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,8 +39,10 @@ export default function ProjectPage() {
     try {
       setProject(await getProject(id));
       setError('');
-    } catch {
-      setError('Não foi possível carregar este projeto.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Não foi possível carregar este projeto.'),
+      );
     }
   }, [id, user]);
   useEffect(() => void load(), [load]);
@@ -48,8 +51,13 @@ export default function ProjectPage() {
     try {
       await updateProject(id, { status });
       await load();
-    } catch {
-      setError('Não foi possível atualizar o estado do projeto.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível atualizar o estado do projeto.',
+        ),
+      );
     }
   }
 
@@ -59,8 +67,8 @@ export default function ProjectPage() {
       await addProjectMilestone(id, { title: milestone });
       setMilestone('');
       await load();
-    } catch {
-      setError('Não foi possível adicionar o marco.');
+    } catch (failure) {
+      setError(failureMessage(failure, 'Não foi possível adicionar o marco.'));
     }
   }
 
@@ -70,8 +78,13 @@ export default function ProjectPage() {
       await linkProjectResource(id, resourceKind, resourceId);
       setResourceId('');
       await load();
-    } catch {
-      setError('Não foi possível ligar esse recurso do workspace.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível ligar esse recurso do workspace.',
+        ),
+      );
     }
   }
 

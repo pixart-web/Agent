@@ -13,6 +13,7 @@ import {
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 import { label } from '../../../../../lib/labels';
+import { failureMessage } from '../../../../../lib/api-messages';
 
 function money(amountMinor: number, currency: string) {
   return new Intl.NumberFormat(undefined, {
@@ -69,8 +70,13 @@ export default function Client360Page() {
                       lifecycle_status: event.target.value,
                     });
                     setView({ ...view, client: updated });
-                  } catch {
-                    setError('Não foi possível atualizar este cliente.');
+                  } catch (failure) {
+                    setError(
+                      failureMessage(
+                        failure,
+                        'Não foi possível atualizar este cliente.',
+                      ),
+                    );
                   }
                 }}
               >

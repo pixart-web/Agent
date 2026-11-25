@@ -106,6 +106,12 @@ const LABELS: Record<string, string> = {
   task_failed: 'Tarefa falhou',
   commented: 'Comentário',
   comment: 'Comentário',
+  // Automation guardrails
+  depth_limit: 'Limite de encadeamento atingido',
+  trigger_config_not_matched: 'O evento não corresponde ao gatilho',
+  conditions_not_met: 'As condições não se verificaram',
+  cooldown: 'Em intervalo de espera',
+  execution_budget: 'Limite de execuções atingido',
 };
 
 export function label(value: string | null | undefined): string {

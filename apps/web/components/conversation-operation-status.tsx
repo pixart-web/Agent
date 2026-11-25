@@ -1,6 +1,7 @@
 import type { ConversationOperation } from '@agent/shared';
 import React from 'react';
 import { label } from '../lib/labels';
+import { apiMessage } from '../lib/api-messages';
 
 export function ConversationOperationStatus({
   operation,
@@ -46,7 +47,7 @@ export function ConversationOperationStatus({
       )}
       {operation.latest_error && (
         <p className="conversation-operation__error" role="alert">
-          {operation.latest_error}
+          {apiMessage(operation.latest_error)}
         </p>
       )}
     </section>

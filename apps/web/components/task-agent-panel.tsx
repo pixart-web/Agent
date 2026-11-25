@@ -16,6 +16,7 @@ import { AiProgress } from './ai-progress';
 import { StatusBadge } from './status-badge';
 import { CanEdit } from '../lib/workspace-access';
 import { label } from '../lib/labels';
+import { apiMessage } from '../lib/api-messages';
 
 /**
  * Agents run in the background: starting one answers at once, the panel follows the run
@@ -82,7 +83,7 @@ export function TaskAgentPanel({
               ),
             }));
           } else if (finished.error_message) {
-            setError(finished.error_message);
+            setError(apiMessage(finished.error_message));
           }
           await load();
           finishedRef.current?.();
@@ -203,7 +204,10 @@ export function TaskAgentPanel({
                 <div>
                   <dt>Resumo</dt>
                   <dd>
-                    {latest.proposal_summary ?? latest.error_message ?? '—'}
+                    {latest.proposal_summary ??
+                      (latest.error_message
+                        ? apiMessage(latest.error_message)
+                        : '—')}
                   </dd>
                 </div>
               </dl>

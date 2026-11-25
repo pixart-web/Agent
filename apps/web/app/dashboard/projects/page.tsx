@@ -14,6 +14,7 @@ import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { createProject, listProjects } from '../../../lib/workflow-client';
 import { CanEdit } from '../../../lib/workspace-access';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -38,8 +39,10 @@ export default function ProjectsPage() {
         }),
       );
       setError('');
-    } catch {
-      setError('Não foi possível carregar os projetos agora.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Não foi possível carregar os projetos agora.'),
+      );
     } finally {
       setLoading(false);
     }
@@ -60,9 +63,12 @@ export default function ProjectsPage() {
       setDescription('');
       setDueOn('');
       await load();
-    } catch {
+    } catch (failure) {
       setError(
-        'Não foi possível criar o projeto. Verifica os dados e tenta de novo.',
+        failureMessage(
+          failure,
+          'Não foi possível criar o projeto. Verifica os dados e tenta de novo.',
+        ),
       );
     } finally {
       setSaving(false);

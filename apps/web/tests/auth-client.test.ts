@@ -109,13 +109,13 @@ describe('error detail formatting', () => {
   it('formats string and validation-list details', async () => {
     const { describeErrorDetail } = await import('../lib/auth-client');
     expect(describeErrorDetail('Invalid email or password')).toBe(
-      'Invalid email or password',
+      'Email ou palavra-passe incorretos.',
     );
     expect(
       describeErrorDetail([
         { loc: ['body', 'email'], msg: 'value is not a valid email address' },
       ]),
-    ).toBe('value is not a valid email address');
+    ).toBe('Email: não é um email válido.');
     expect(describeErrorDetail([{}])).toBeNull();
     expect(describeErrorDetail(undefined)).toBeNull();
   });

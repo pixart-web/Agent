@@ -67,6 +67,7 @@ import type {
   TaskExecution,
   TaskExecutionStatus,
 } from '@agent/shared';
+import { ApiMessageError, apiError } from './api-messages';
 
 export type Agent = {
   id: AgentId;
@@ -85,26 +86,20 @@ export function updateAgentConfiguration(
   );
 }
 
-export class WorkflowApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-  ) {
-    super(message);
-  }
-}
+export class WorkflowApiError extends ApiMessageError {}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await authFetch(path, init);
   if (!response.ok) {
-    let message = 'Workflow request failed.';
-    try {
-      const body = (await response.json()) as { detail?: string };
-      message = body.detail ?? message;
-    } catch {
-      // Preserve the safe generic message for non-JSON failures.
-    }
-    throw new WorkflowApiError(message, response.status);
+    const failure = await apiError(
+      response,
+      `O pedido falhou (${response.status}).`,
+    );
+    throw new WorkflowApiError(
+      failure.message,
+      failure.status,
+      failure.fromServer,
+    );
   }
   return (await response.json()) as T;
 }
@@ -112,14 +107,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 async function requestEmpty(path: string, init: RequestInit): Promise<void> {
   const response = await authFetch(path, init);
   if (!response.ok) {
-    let message = 'Workflow request failed.';
-    try {
-      const body = (await response.json()) as { detail?: string };
-      message = body.detail ?? message;
-    } catch {
-      // Preserve the safe generic message for non-JSON failures.
-    }
-    throw new WorkflowApiError(message, response.status);
+    const failure = await apiError(
+      response,
+      `O pedido falhou (${response.status}).`,
+    );
+    throw new WorkflowApiError(
+      failure.message,
+      failure.status,
+      failure.fromServer,
+    );
   }
 }
 

@@ -13,6 +13,8 @@ import {
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import { aiErrorHint } from '../../../../lib/ai-errors';
 import { operationalMessage } from '../../../../lib/labels';
+import { apiMessage } from '../../../../lib/api-messages';
+import { failureMessage } from '../../../../lib/api-messages';
 
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -96,8 +98,13 @@ export default function AgentDetailPage() {
                   });
                   setOverview(await getAgentOverview(id));
                   setMessage('Configuração guardada.');
-                } catch {
-                  setMessage('Não foi possível guardar a configuração.');
+                } catch (failure) {
+                  setMessage(
+                    failureMessage(
+                      failure,
+                      'Não foi possível guardar a configuração.',
+                    ),
+                  );
                 } finally {
                   setSaving(false);
                 }
@@ -133,7 +140,7 @@ export default function AgentDetailPage() {
             <div>
               <strong>
                 {run.proposal_summary ??
-                  run.error_message ??
+                  (run.error_message ? apiMessage(run.error_message) : null) ??
                   'Execução do agente'}
               </strong>
               <span>

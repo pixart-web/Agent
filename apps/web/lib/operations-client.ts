@@ -1,4 +1,5 @@
 import { authFetch } from './auth-client';
+import { apiError } from './api-messages';
 
 export type RecentExecution = {
   id: string;
@@ -47,7 +48,10 @@ export type OperationsAnalytics = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`O pedido de operações falhou (${response.status})`);
+    throw await apiError(
+      response,
+      `O pedido de operações falhou (${response.status}).`,
+    );
   return (await response.json()) as T;
 }
 
