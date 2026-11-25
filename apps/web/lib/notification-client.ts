@@ -1,4 +1,5 @@
 import { authFetch } from './auth-client';
+import { apiError } from './api-messages';
 
 export type Notification = {
   id: string;
@@ -18,7 +19,10 @@ export type NotificationPreferences = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`O pedido de notificações falhou (${response.status})`);
+    throw await apiError(
+      response,
+      `O pedido de notificações falhou (${response.status}).`,
+    );
   return (await response.json()) as T;
 }
 

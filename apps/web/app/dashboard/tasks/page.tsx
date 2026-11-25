@@ -19,6 +19,7 @@ import {
   type Agent,
 } from '../../../lib/workflow-client';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -51,8 +52,14 @@ export default function TasksPage() {
         setTasks(loadedTasks);
         setAgents(loadedAgents);
         setError('');
-      } catch {
-        if (active) setError('Não foi possível carregar as tarefas agora.');
+      } catch (failure) {
+        if (active)
+          setError(
+            failureMessage(
+              failure,
+              'Não foi possível carregar as tarefas agora.',
+            ),
+          );
       } finally {
         if (active) setLoading(false);
       }

@@ -38,7 +38,7 @@ describe('Automation governance UI', () => {
   it('shows loop guardrails without exposing event payloads', () => {
     const markup = renderToStaticMarkup(<AutomationRunSummary run={run} />);
 
-    expect(markup).toContain('depth_limit');
+    expect(markup).toContain('Limite de encadeamento atingido');
     expect(markup).toContain('correlation-demo');
     expect(markup).not.toContain('event-demo');
   });

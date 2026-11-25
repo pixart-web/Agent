@@ -175,11 +175,18 @@ describe('workflow client', () => {
 
   it('exposes safe API errors to the workflow UI', async () => {
     mockedAuthFetch.mockResolvedValue(
-      jsonResponse({ detail: 'Invalid task status transition.' }, 409),
+      jsonResponse(
+        { detail: 'Task cannot transition from ready to completed' },
+        409,
+      ),
     );
 
     await expect(transitionTask('task-1', 'completed')).rejects.toEqual(
-      new WorkflowApiError('Invalid task status transition.', 409),
+      new WorkflowApiError(
+        'A tarefa não pode passar de pronta para concluída.',
+        409,
+        true,
+      ),
     );
   });
 

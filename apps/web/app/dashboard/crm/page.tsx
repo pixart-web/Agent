@@ -30,6 +30,7 @@ import type { CrmImportPreview } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { CanEdit, EditFieldset } from '../../../lib/workspace-access';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function CrmPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -72,8 +73,13 @@ export default function CrmPage() {
       setOrganizations(organizationResult.organizations);
       setPipelines(pipelineResult.pipelines);
       setOpportunities(allOpportunities);
-    } catch {
-      setError('Não foi possível carregar os registos do CRM.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível carregar os registos do CRM.',
+        ),
+      );
     }
   }
 
@@ -99,9 +105,12 @@ export default function CrmPage() {
       setJobTitle('');
       setEmail('');
       await refresh(query.trim());
-    } catch {
+    } catch (failure) {
       setError(
-        'Não foi possível criar o registo no CRM. Verifica duplicados e campos inválidos.',
+        failureMessage(
+          failure,
+          'Não foi possível criar o registo no CRM. Verifica duplicados e campos inválidos.',
+        ),
       );
     } finally {
       setSaving(false);
@@ -129,8 +138,10 @@ export default function CrmPage() {
         ],
       });
       await refresh(query.trim());
-    } catch {
-      setError('Não foi possível criar o pipeline de vendas.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Não foi possível criar o pipeline de vendas.'),
+      );
     } finally {
       setSaving(false);
     }
@@ -142,8 +153,13 @@ export default function CrmPage() {
     setError('');
     try {
       setImportPreview(await previewCrmImport(importFile));
-    } catch {
-      setError('Não foi possível pré-visualizar esta importação CSV.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível pré-visualizar esta importação CSV.',
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -158,9 +174,12 @@ export default function CrmPage() {
       setImportFile(null);
       setImportPreview(null);
       await refresh(query.trim());
-    } catch {
+    } catch (failure) {
       setError(
-        'A importação falhou. Pré-visualiza de novo o ficheiro final antes de confirmar.',
+        failureMessage(
+          failure,
+          'A importação falhou. Pré-visualiza de novo o ficheiro final antes de confirmar.',
+        ),
       );
     } finally {
       setSaving(false);

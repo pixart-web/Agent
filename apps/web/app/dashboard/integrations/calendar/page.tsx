@@ -15,6 +15,7 @@ import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../../lib/workspace-access';
 import { label } from '../../../../lib/labels';
+import { failureMessage } from '../../../../lib/api-messages';
 
 export default function CalendarIntegrationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -42,8 +43,13 @@ export default function CalendarIntegrationPage() {
     try {
       const value = await connectCalendar();
       await startExternalAuthorization(value.authorization_url);
-    } catch {
-      setError('Não foi possível iniciar a autorização do Google Calendar.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível iniciar a autorização do Google Calendar.',
+        ),
+      );
     }
   }
 

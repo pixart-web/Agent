@@ -16,6 +16,7 @@ import {
 } from '../../../lib/knowledge-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function KnowledgePage() {
   const { user, loading } = useAuthenticatedUser();
@@ -56,8 +57,8 @@ export default function KnowledgePage() {
       setName('');
       setSlug('');
       setNotice('Workspace created with you as owner.');
-    } catch {
-      setError('Não foi possível criar o workspace.');
+    } catch (failure) {
+      setError(failureMessage(failure, 'Não foi possível criar o workspace.'));
     }
   }
 
@@ -77,8 +78,13 @@ export default function KnowledgePage() {
         'Rascunho guardado. Um dono ou administrador tem de o aprovar antes de poder ser usado.',
       );
       await refresh();
-    } catch {
-      setError('Não foi possível guardar o rascunho de conhecimento.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível guardar o rascunho de conhecimento.',
+        ),
+      );
     }
   }
 
@@ -89,8 +95,8 @@ export default function KnowledgePage() {
       const result = await searchKnowledge(selected, query.trim());
       setItems(result.items);
       setNotice(result.trust_notice);
-    } catch {
-      setError('A pesquisa de conhecimento falhou.');
+    } catch (failure) {
+      setError(failureMessage(failure, 'A pesquisa de conhecimento falhou.'));
     }
   }
 
@@ -199,9 +205,12 @@ export default function KnowledgePage() {
                         'Document extracted safely and saved as a draft.',
                       );
                       await refresh();
-                    } catch {
+                    } catch (failure) {
                       setError(
-                        'Não foi possível importar o documento com segurança.',
+                        failureMessage(
+                          failure,
+                          'Não foi possível importar o documento com segurança.',
+                        ),
                       );
                     }
                   }}

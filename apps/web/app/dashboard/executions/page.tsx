@@ -12,6 +12,7 @@ import { StatusBadge } from '../../../components/status-badge';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
 import { listExecutions, WorkflowApiError } from '../../../lib/workflow-client';
 import { label } from '../../../lib/labels';
+import { apiMessage } from '../../../lib/api-messages';
 
 export default function ExecutionsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -128,7 +129,11 @@ export default function ExecutionsPage() {
               </div>
               <div>
                 <dt>Erro</dt>
-                <dd>{execution.error_message ?? '—'}</dd>
+                <dd>
+                  {execution.error_message
+                    ? apiMessage(execution.error_message)
+                    : '—'}
+                </dd>
               </div>
             </dl>
           </article>

@@ -1,4 +1,10 @@
 import type { AccessTokenResponse, OnboardingState, User } from './auth-types';
+import {
+  apiError,
+  apiMessage,
+  ApiMessageError,
+  describeApiError,
+} from './api-messages';
 import { apiBaseUrl } from './api-url';
 import { clearDesktopSession, desktopFetch } from './desktop-bridge';
 import { isDesktop } from './platform';
@@ -17,67 +23,26 @@ export const apiFetch: (path: string, init?: RequestInit) => Promise<Response> =
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
-export class AuthClientError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-  ) {
-    super(message);
-  }
-}
+export class AuthClientError extends ApiMessageError {}
 
-type ValidationIssue = { msg?: string };
+/** Human-readable Portuguese message from a FastAPI error body (string or issue list). */
+export const describeErrorDetail = describeApiError;
 
-/** Human-readable message from a FastAPI error body (string or validation-issue list). */
-export function describeErrorDetail(detail: unknown): string | null {
-  if (typeof detail === 'string' && detail.trim()) return detail;
-  if (Array.isArray(detail)) {
-    const first = (detail as ValidationIssue[]).find(
-      (issue) => typeof issue?.msg === 'string',
-    );
-    if (first?.msg) return first.msg.replace(/^Value error, /, '');
-  }
-  return null;
-}
+/** Portuguese for an authentication message the API returns. */
+export const authMessage = apiMessage;
 
-// Portuguese for the authentication messages the API returns.
-const AUTH_MESSAGES: Record<string, string> = {
-  'Authentication required': 'É preciso entrar novamente.',
-  'Authentication temporarily unavailable':
-    'A autenticação está temporariamente indisponível. Tenta de novo daqui a pouco.',
-  'Current password is incorrect': 'A palavra-passe atual está incorreta.',
-  'Email verification required':
-    'Confirma primeiro o teu email: segue o link de verificação que te enviámos.',
-  'Inactive user': 'Esta conta está desativada.',
-  'Insufficient permissions': 'Não tens permissões para esta ação.',
-  'Invalid email or password': 'Email ou palavra-passe incorretos.',
-  'Invalid or expired password reset token':
-    'O link para repor a palavra-passe é inválido ou expirou.',
-  'Invalid or expired verification token':
-    'O link de verificação é inválido ou expirou.',
-  'Origin not allowed': 'Este endereço não está autorizado a usar o Kiko.',
-  'Session not found': 'A sessão terminou. Entra de novo.',
-  'Too many authentication attempts':
-    'Demasiadas tentativas. Espera um minuto e tenta de novo.',
-};
-
-export function authMessage(detail: string): string {
-  return AUTH_MESSAGES[detail] ?? detail;
-}
-
-async function errorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { detail?: unknown };
-    const detail = describeErrorDetail(body.detail);
-    return detail ? authMessage(detail) : 'O pedido de autenticação falhou.';
-  } catch {
-    return 'O pedido de autenticação falhou.';
-  }
+async function authError(response: Response): Promise<AuthClientError> {
+  const failure = await apiError(response, 'O pedido de autenticação falhou.');
+  return new AuthClientError(
+    failure.message,
+    failure.status,
+    failure.fromServer,
+  );
 }
 
 async function expectJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new AuthClientError(await errorMessage(response), response.status);
+    throw await authError(response);
   }
   return (await response.json()) as T;
 }
@@ -278,7 +243,7 @@ export async function changePassword(
     }),
   });
   if (!response.ok) {
-    throw new AuthClientError(await errorMessage(response), response.status);
+    throw await authError(response);
   }
   clearAuthState();
 }
@@ -295,7 +260,7 @@ export async function revokeSession(id: string): Promise<void> {
     method: 'DELETE',
   });
   if (!response.ok) {
-    throw new AuthClientError(await errorMessage(response), response.status);
+    throw await authError(response);
   }
 }
 

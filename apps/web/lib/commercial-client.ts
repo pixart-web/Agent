@@ -1,4 +1,5 @@
 import { authFetch } from './auth-client';
+import { apiError } from './api-messages';
 
 export type CommercialPlan = {
   code: string;
@@ -33,7 +34,10 @@ export type Subscription = {
 
 async function json<T>(response: Response): Promise<T> {
   if (!response.ok)
-    throw new Error(`O pedido comercial falhou (${response.status})`);
+    throw await apiError(
+      response,
+      `O pedido comercial falhou (${response.status}).`,
+    );
   return (await response.json()) as T;
 }
 

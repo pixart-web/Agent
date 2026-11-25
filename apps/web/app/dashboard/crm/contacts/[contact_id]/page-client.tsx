@@ -11,6 +11,7 @@ import {
   updateCrmContact,
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
+import { failureMessage } from '../../../../../lib/api-messages';
 
 export default function CrmContactPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -59,8 +60,13 @@ export default function CrmContactPage() {
                       status: event.target.value,
                     }),
                   );
-                } catch {
-                  setError('Não foi possível atualizar este contacto.');
+                } catch (failure) {
+                  setError(
+                    failureMessage(
+                      failure,
+                      'Não foi possível atualizar este contacto.',
+                    ),
+                  );
                 }
               }}
             >

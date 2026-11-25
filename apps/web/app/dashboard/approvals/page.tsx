@@ -20,6 +20,7 @@ import {
 } from '../../../lib/workflow-client';
 import { CanEdit } from '../../../lib/workspace-access';
 import { label } from '../../../lib/labels';
+import { failureMessage } from '../../../lib/api-messages';
 
 export default function ApprovalsPage() {
   const { user, loading: authLoading } = useAuthenticatedUser();
@@ -63,8 +64,10 @@ export default function ApprovalsPage() {
       await addApprovalComment(approvalId, body);
       setComments((current) => ({ ...current, [approvalId]: '' }));
       await load();
-    } catch {
-      setError('Não foi possível adicionar o comentário.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Não foi possível adicionar o comentário.'),
+      );
     }
   }
 

@@ -14,6 +14,7 @@ import {
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../../../lib/workspace-access';
+import { failureMessage } from '../../../../../lib/api-messages';
 
 export default function MarketingCampaignPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -65,8 +66,13 @@ export default function MarketingCampaignPage() {
                       status: event.target.value,
                     }),
                   );
-                } catch {
-                  setError('Não foi possível atualizar esta campanha.');
+                } catch (failure) {
+                  setError(
+                    failureMessage(
+                      failure,
+                      'Não foi possível atualizar esta campanha.',
+                    ),
+                  );
                 }
               }}
             >
@@ -97,8 +103,13 @@ export default function MarketingCampaignPage() {
                 setTitle('');
                 setBody('');
                 setContent((await listMarketingContent(campaignId)).content);
-              } catch {
-                setError('Não foi possível criar este rascunho.');
+              } catch (failure) {
+                setError(
+                  failureMessage(
+                    failure,
+                    'Não foi possível criar este rascunho.',
+                  ),
+                );
               }
             }}
           >

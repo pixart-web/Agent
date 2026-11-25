@@ -12,6 +12,7 @@ import {
 } from '../../../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../../../lib/workspace-access';
+import { failureMessage } from '../../../../../lib/api-messages';
 
 export default function MarketingContentPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -30,8 +31,10 @@ export default function MarketingContentPage() {
         'Atualização do ciclo de vida pelo operador',
       );
       setDetail(await getMarketingContent(contentId));
-    } catch {
-      setError('Esta mudança de estado não é permitida.');
+    } catch (failure) {
+      setError(
+        failureMessage(failure, 'Esta mudança de estado não é permitida.'),
+      );
     }
   }
 
@@ -113,9 +116,12 @@ export default function MarketingContentPage() {
                         new Date(scheduledFor).toISOString(),
                       );
                       setDetail(await getMarketingContent(contentId));
-                    } catch {
+                    } catch (failure) {
                       setError(
-                        'Não foi possível agendar este conteúdo aprovado.',
+                        failureMessage(
+                          failure,
+                          'Não foi possível agendar este conteúdo aprovado.',
+                        ),
                       );
                     }
                   }}

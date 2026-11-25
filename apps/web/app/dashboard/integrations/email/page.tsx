@@ -15,6 +15,7 @@ import { startExternalAuthorization } from '../../../../lib/downloads';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import { CanEdit } from '../../../../lib/workspace-access';
 import { label } from '../../../../lib/labels';
+import { failureMessage } from '../../../../lib/api-messages';
 
 export default function EmailIntegrationPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -43,8 +44,13 @@ export default function EmailIntegrationPage() {
     try {
       const value = await connectEmail();
       await startExternalAuthorization(value.authorization_url);
-    } catch {
-      setError('Não foi possível iniciar a autorização Google.');
+    } catch (failure) {
+      setError(
+        failureMessage(
+          failure,
+          'Não foi possível iniciar a autorização Google.',
+        ),
+      );
     }
   }
 
