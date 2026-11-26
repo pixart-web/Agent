@@ -170,6 +170,9 @@ describe('desktop bridge transport', () => {
     expect(failure).toBeInstanceOf(DesktopConnectionError);
     expect(failure).toBeInstanceOf(TypeError);
     expect((failure as DesktopConnectionError).kind).toBe('offline');
+    expect((failure as DesktopConnectionError).message).toBe(
+      'Não foi possível contactar o servidor Kiko.',
+    );
     expect(events).toEqual([false]);
   });
 });

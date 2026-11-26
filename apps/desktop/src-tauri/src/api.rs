@@ -60,13 +60,13 @@ const FORWARDED_RESPONSE_HEADERS: &[&str] = &[
 #[derive(Debug, thiserror::Error, Serialize)]
 #[serde(tag = "kind", content = "message", rename_all = "snake_case")]
 pub enum ApiError {
-    #[error("invalid request: {0}")]
+    #[error("pedido inválido: {0}")]
     InvalidRequest(String),
-    #[error("the Kiko server could not be reached")]
+    #[error("Não foi possível contactar o servidor Kiko.")]
     Offline(String),
-    #[error("the Kiko server did not answer in time")]
+    #[error("O servidor Kiko não respondeu a tempo.")]
     Timeout(String),
-    #[error("secure storage is unavailable: {0}")]
+    #[error("O armazenamento seguro (Porta-chaves) não está disponível: {0}")]
     Storage(String),
 }
 

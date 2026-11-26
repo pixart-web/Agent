@@ -20,24 +20,27 @@ struct ServerFile {
 /// Accept only an origin (no path, query, credentials). HTTPS is mandatory except for
 /// loopback development servers.
 pub fn validate_api_url(raw: &str) -> Result<Url, String> {
-    let url = Url::parse(raw.trim())
-        .map_err(|_| "Enter a full URL such as https://kiko.example.com".to_owned())?;
+    let url = Url::parse(raw.trim()).map_err(|_| {
+        "Indica um endereço completo, por exemplo https://kiko.example.com.".to_owned()
+    })?;
     if !url.username().is_empty() || url.password().is_some() {
-        return Err("The server URL must not contain credentials.".into());
+        return Err("O endereço do servidor não pode conter credenciais.".into());
     }
     if url.query().is_some()
         || url.fragment().is_some()
         || !(url.path() == "/" || url.path().is_empty())
     {
-        return Err("Use the server origin only, without a path.".into());
+        return Err("Usa só a origem do servidor, sem caminho.".into());
     }
-    let host = url.host_str().ok_or("The server URL needs a host.")?;
+    let host = url
+        .host_str()
+        .ok_or("O endereço do servidor precisa de um anfitrião.")?;
     let loopback = matches!(host, "localhost" | "127.0.0.1" | "[::1]" | "::1");
     match url.scheme() {
         "https" => {}
         "http" if loopback => {}
-        "http" => return Err("Remote servers must use HTTPS.".into()),
-        _ => return Err("Only HTTPS servers are supported.".into()),
+        "http" => return Err("Os servidores remotos têm de usar HTTPS.".into()),
+        _ => return Err("Só são suportados servidores HTTPS.".into()),
     }
     Ok(Url::parse(&url.origin().ascii_serialization()).expect("origin is a valid URL"))
 }

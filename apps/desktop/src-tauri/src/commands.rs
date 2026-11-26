@@ -60,17 +60,17 @@ pub async fn set_server_url(
     let confirmed = app
         .dialog()
         .message(format!(
-            "Kiko will send your sign-in and business data to:\n\n{origin}\n\nOnly continue if your administrator gave you this address. You will be signed out of the current server."
+            "O Kiko vai enviar os teus dados de acesso e do negócio para:\n\n{origin}\n\nSó continues se o administrador te deu este endereço. A sessão no servidor atual será terminada."
         ))
-        .title("Connect to this Kiko server?")
+        .title("Ligar a este servidor Kiko?")
         .kind(MessageDialogKind::Warning)
         .buttons(MessageDialogButtons::OkCancelCustom(
-            "Connect".into(),
-            "Cancel".into(),
+            "Ligar".into(),
+            "Cancelar".into(),
         ))
         .blocking_show();
     if !confirmed {
-        return Err("Server change cancelled.".into());
+        return Err("A mudança de servidor foi cancelada.".into());
     }
     client.clear_session().await.map_err(|e| e.to_string())?;
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
@@ -81,11 +81,11 @@ pub async fn set_server_url(
 
 /// Allowed external destinations: HTTPS pages and mail links. Everything else is refused.
 pub fn validate_external_url(raw: &str) -> Result<Url, String> {
-    let url = Url::parse(raw).map_err(|_| "invalid URL".to_owned())?;
+    let url = Url::parse(raw).map_err(|_| "Endereço inválido.".to_owned())?;
     match url.scheme() {
         "https" if url.host_str().is_some() && url.username().is_empty() => Ok(url),
         "mailto" => Ok(url),
-        _ => Err("only https and mailto links can be opened".into()),
+        _ => Err("Só é possível abrir ligações https e mailto.".into()),
     }
 }
 
@@ -128,11 +128,11 @@ pub async fn save_file(
     body_base64: String,
 ) -> Result<Option<String>, String> {
     if body_base64.len() > MAX_BODY_BYTES * 4 / 3 + 4 {
-        return Err("file too large".into());
+        return Err("O ficheiro é demasiado grande.".into());
     }
     let bytes = B64
         .decode(body_base64)
-        .map_err(|_| "invalid file data".to_owned())?;
+        .map_err(|_| "Os dados do ficheiro são inválidos.".to_owned())?;
     let name = sanitise_file_name(&file_name);
     let Some(path) = app
         .dialog()
@@ -157,8 +157,8 @@ pub async fn confirm_action(app: AppHandle, message: String) -> bool {
         .title("Kiko")
         .kind(MessageDialogKind::Warning)
         .buttons(MessageDialogButtons::OkCancelCustom(
-            "Continue".into(),
-            "Cancel".into(),
+            "Continuar".into(),
+            "Cancelar".into(),
         ))
         .blocking_show()
 }
