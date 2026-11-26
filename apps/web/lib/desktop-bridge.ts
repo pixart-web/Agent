@@ -27,6 +27,15 @@ type BridgeResponse = {
 
 type BridgeError = { kind: string; message?: string };
 
+// The shell's own detail (network library text, request checks) stays in the logs; screens
+// get a Portuguese sentence for each kind of failure.
+const BRIDGE_MESSAGES: Record<string, string> = {
+  offline: 'Não foi possível contactar o servidor Kiko.',
+  timeout: 'O servidor Kiko não respondeu a tempo.',
+  storage: 'O Porta-chaves do macOS não está disponível para guardar a sessão.',
+  invalid_request: 'O Kiko recusou este pedido por não ser válido.',
+};
+
 export class DesktopConnectionError extends TypeError {
   constructor(
     public readonly kind: string,
@@ -90,9 +99,10 @@ export async function desktopFetch(
     if (bridgeError?.kind === 'offline' || bridgeError?.kind === 'timeout') {
       emitConnectivity(false);
     }
+    const kind = bridgeError?.kind ?? 'unknown';
     throw new DesktopConnectionError(
-      bridgeError?.kind ?? 'unknown',
-      bridgeError?.message ?? 'The Kiko server could not be reached.',
+      kind,
+      BRIDGE_MESSAGES[kind] ?? BRIDGE_MESSAGES.offline,
     );
   }
   emitConnectivity(true);

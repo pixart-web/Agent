@@ -10,50 +10,50 @@ pub const COMMAND_EVENT: &str = "kiko://command";
 
 /// (menu id, label, accelerator, route)
 pub const GO_ITEMS: &[(&str, &str, &str, &str)] = &[
-    ("go.home", "Home", "CmdOrCtrl+1", "/dashboard/"),
-    ("go.kiko", "Kiko AI", "CmdOrCtrl+2", "/dashboard/kiko/"),
+    ("go.home", "Início", "CmdOrCtrl+1", "/dashboard/"),
+    ("go.kiko", "Conversas", "CmdOrCtrl+2", "/dashboard/kiko/"),
     (
         "go.commands",
-        "Commands",
+        "Comandos",
         "CmdOrCtrl+3",
         "/dashboard/commands/",
     ),
-    ("go.tasks", "Tasks", "CmdOrCtrl+4", "/dashboard/tasks/"),
+    ("go.tasks", "Tarefas", "CmdOrCtrl+4", "/dashboard/tasks/"),
     (
         "go.projects",
-        "Projects",
+        "Projetos",
         "CmdOrCtrl+5",
         "/dashboard/projects/",
     ),
     (
         "go.approvals",
-        "Approvals",
+        "Aprovações",
         "CmdOrCtrl+6",
         "/dashboard/approvals/",
     ),
     ("go.crm", "CRM", "CmdOrCtrl+7", "/dashboard/crm/"),
     (
         "go.notifications",
-        "Notifications",
+        "Notificações",
         "CmdOrCtrl+8",
         "/dashboard/notifications/",
     ),
-    ("go.knowledge", "Knowledge", "", "/dashboard/knowledge/"),
+    ("go.knowledge", "Conhecimento", "", "/dashboard/knowledge/"),
     ("go.marketing", "Marketing", "", "/dashboard/marketing/"),
     (
         "go.automations",
-        "Automations",
+        "Automatizações",
         "",
         "/dashboard/automations/",
     ),
     (
         "go.integrations",
-        "Integrations",
+        "Integrações",
         "",
         "/dashboard/integrations/",
     ),
-    ("go.analytics", "Analytics", "", "/dashboard/analytics/"),
-    ("go.agents", "Agents", "", "/dashboard/agents/"),
+    ("go.analytics", "Relatórios", "", "/dashboard/analytics/"),
+    ("go.agents", "Agentes", "", "/dashboard/agents/"),
 ];
 
 pub fn route_for_menu_id(id: &str) -> Option<&'static str> {
@@ -74,7 +74,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         name: Some("Kiko".into()),
         version: Some(version),
         copyright: Some("© Pixart".into()),
-        comments: Some("Pixart AI Operating System".into()),
+        comments: Some("Sistema operativo de IA da Pixart".into()),
         ..Default::default()
     };
     let app_menu = Submenu::with_items(
@@ -82,71 +82,77 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         "Kiko",
         true,
         &[
-            &PredefinedMenuItem::about(app, Some("About Kiko"), Some(about))?,
+            &PredefinedMenuItem::about(app, Some("Acerca do Kiko"), Some(about))?,
             &PredefinedMenuItem::separator(app)?,
-            &MenuItem::with_id(app, "app.settings", "Settings…", true, Some("CmdOrCtrl+,"))?,
+            &MenuItem::with_id(
+                app,
+                "app.settings",
+                "Definições…",
+                true,
+                Some("CmdOrCtrl+,"),
+            )?,
             &MenuItem::with_id(
                 app,
                 "app.connection",
-                "Server Connection…",
+                "Ligação ao servidor…",
                 true,
                 None::<&str>,
             )?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::hide(app, None)?,
-            &PredefinedMenuItem::hide_others(app, None)?,
-            &PredefinedMenuItem::show_all(app, None)?,
+            &PredefinedMenuItem::hide(app, Some("Ocultar Kiko"))?,
+            &PredefinedMenuItem::hide_others(app, Some("Ocultar outras"))?,
+            &PredefinedMenuItem::show_all(app, Some("Mostrar todas"))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::quit(app, Some("Quit Kiko"))?,
+            &PredefinedMenuItem::quit(app, Some("Sair do Kiko"))?,
         ],
     )?;
     let file_menu = Submenu::with_items(
         app,
-        "File",
+        "Ficheiro",
         true,
         &[
             &MenuItem::with_id(
                 app,
                 "file.new_command",
-                "New Command",
+                "Novo comando",
                 true,
                 Some("CmdOrCtrl+N"),
             )?,
             &MenuItem::with_id(
                 app,
                 "file.palette",
-                "Command Palette…",
+                "Pesquisar no Kiko…",
                 true,
                 Some("CmdOrCtrl+K"),
             )?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::close_window(app, None)?,
+            &PredefinedMenuItem::close_window(app, Some("Fechar janela"))?,
         ],
     )?;
     let edit_menu = Submenu::with_items(
         app,
-        "Edit",
+        "Editar",
         true,
         &[
-            &PredefinedMenuItem::undo(app, None)?,
-            &PredefinedMenuItem::redo(app, None)?,
+            &PredefinedMenuItem::undo(app, Some("Desfazer"))?,
+            &PredefinedMenuItem::redo(app, Some("Refazer"))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::cut(app, None)?,
-            &PredefinedMenuItem::copy(app, None)?,
-            &PredefinedMenuItem::paste(app, None)?,
-            &PredefinedMenuItem::select_all(app, None)?,
+            &PredefinedMenuItem::cut(app, Some("Cortar"))?,
+            &PredefinedMenuItem::copy(app, Some("Copiar"))?,
+            &PredefinedMenuItem::paste(app, Some("Colar"))?,
+            &PredefinedMenuItem::select_all(app, Some("Selecionar tudo"))?,
         ],
     )?;
     let view_menu = Submenu::with_items(
         app,
-        "View",
+        "Ver",
         true,
         &[
-            &MenuItem::with_id(app, "view.back", "Back", true, Some("CmdOrCtrl+["))?,
-            &MenuItem::with_id(app, "view.forward", "Forward", true, Some("CmdOrCtrl+]"))?,
-            &MenuItem::with_id(app, "view.reload", "Reload", true, Some("CmdOrCtrl+R"))?,
+            &MenuItem::with_id(app, "view.back", "Recuar", true, Some("CmdOrCtrl+["))?,
+            &MenuItem::with_id(app, "view.forward", "Avançar", true, Some("CmdOrCtrl+]"))?,
+            &MenuItem::with_id(app, "view.reload", "Recarregar", true, Some("CmdOrCtrl+R"))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::fullscreen(app, None)?,
+            &PredefinedMenuItem::fullscreen(app, Some("Entrar em ecrã inteiro"))?,
         ],
     )?;
     let go_items: Vec<MenuItem<R>> = GO_ITEMS
@@ -165,14 +171,14 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .iter()
         .map(|item| item as &dyn tauri::menu::IsMenuItem<R>)
         .collect();
-    let go_menu = Submenu::with_items(app, "Go", true, &go_refs)?;
+    let go_menu = Submenu::with_items(app, "Ir", true, &go_refs)?;
     let window_menu = Submenu::with_items(
         app,
-        "Window",
+        "Janela",
         true,
         &[
-            &PredefinedMenuItem::minimize(app, None)?,
-            &PredefinedMenuItem::maximize(app, Some("Zoom"))?,
+            &PredefinedMenuItem::minimize(app, Some("Minimizar"))?,
+            &PredefinedMenuItem::maximize(app, Some("Ampliar"))?,
         ],
     )?;
     Menu::with_items(
