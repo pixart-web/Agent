@@ -187,6 +187,16 @@ pub fn is_retry_safe(method: &reqwest::Method) -> bool {
     matches!(*method, reqwest::Method::GET | reqwest::Method::HEAD)
 }
 
+/// Routes whose successful response carries a new access token (kept in Rust, never in JS).
+/// A login that needs a second factor answers with an MFA challenge instead, which passes
+/// through unchanged.
+pub fn issues_access_token(route: &str) -> bool {
+    matches!(
+        route,
+        "/api/v1/auth/login" | "/api/v1/auth/mfa/verify" | "/api/v1/auth/refresh"
+    )
+}
+
 fn is_auth_session_path(route: &str) -> bool {
     matches!(route, "/api/v1/auth/refresh" | "/api/v1/auth/logout")
 }
@@ -290,7 +300,7 @@ impl ApiClient {
         }
 
         let mut body = response.body;
-        if route == "/api/v1/auth/login" || route == "/api/v1/auth/refresh" {
+        if issues_access_token(&route) {
             if let Some((token, stripped)) = extract_access_token(&body) {
                 *self.access_token.write().await = Some(token);
                 body = stripped;
@@ -552,5 +562,7 @@ mod tests {
         assert!(text.contains(DESKTOP_TOKEN_SENTINEL));
         assert!(extract_access_token(b"{\"message\":\"ok\"}").is_none());
         assert!(extract_access_token(b"not json").is_none());
+        assert!(issues_access_token("/api/v1/auth/mfa/verify"));
+        assert!(!issues_access_token("/api/v1/auth/mfa/setup"));
     }
 }

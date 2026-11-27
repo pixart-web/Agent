@@ -13,6 +13,7 @@ export type User = {
   active_workspace_id: string | null;
   onboarding_step: number;
   onboarding_completed_at: string | null;
+  mfa_enabled?: boolean;
 };
 
 export type OnboardingState = {
@@ -45,3 +46,15 @@ export type Session = {
   ip_address: string | null;
   current: boolean;
 };
+
+export type MfaStatus = {
+  enabled: boolean;
+  enabled_at: string | null;
+  recovery_codes_remaining: number;
+  setup_pending: boolean;
+};
+
+export type MfaSetup = { secret: string; otpauth_uri: string };
+
+/** Login result: signed in, or a second step is needed. */
+export type LoginResult = { mfaToken: string | null };

@@ -2194,3 +2194,68 @@ main select:not([class]) {
   min-height: 38px;
   padding: 6px 12px;
 }
+
+/* Two-factor authentication (Settings) */
+.mfa-settings .workflow-panel__heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.mfa-setup,
+.mfa-recovery {
+  display: grid;
+  gap: 14px;
+}
+
+.mfa-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.mfa-qr {
+  background: #fff;
+  border-radius: var(--radius-control);
+  padding: 10px;
+  width: min(220px, 100%);
+}
+
+.mfa-qr svg {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.mfa-secret {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.mfa-recovery__codes {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mfa-recovery__codes code {
+  border: 1px solid var(--kiko-line);
+  border-radius: var(--radius-control);
+  display: block;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  padding: 8px 10px;
+  text-align: center;
+  user-select: all;
+}
+
+.mfa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

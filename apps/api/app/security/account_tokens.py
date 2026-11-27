@@ -34,3 +34,15 @@ def decrypt_email_payload(ciphertext: str, secret: str) -> dict[str, str]:
     ):
         raise ValueError("Invalid transactional email payload")
     return value
+
+
+def encrypt_secret(value: str, secret: str) -> str:
+    """Encrypt a short secret at rest (e.g. a TOTP seed) with the auth key."""
+    return _fernet(secret).encrypt(value.encode("utf-8")).decode("ascii")
+
+
+def decrypt_secret(ciphertext: str, secret: str) -> str:
+    try:
+        return _fernet(secret).decrypt(ciphertext.encode("ascii")).decode("utf-8")
+    except (InvalidToken, UnicodeDecodeError) as error:
+        raise ValueError("Invalid encrypted secret") from error

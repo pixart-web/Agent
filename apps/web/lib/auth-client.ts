@@ -1,4 +1,11 @@
-import type { AccessTokenResponse, OnboardingState, User } from './auth-types';
+import type {
+  AccessTokenResponse,
+  LoginResult,
+  MfaSetup,
+  MfaStatus,
+  OnboardingState,
+  User,
+} from './auth-types';
 import {
   apiError,
   apiMessage,
@@ -47,14 +54,78 @@ async function expectJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function login(email: string, password: string): Promise<void> {
+export async function login(
+  email: string,
+  password: string,
+): Promise<LoginResult> {
   const response = await apiFetch(`/api/v1/auth/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  await expectJson<{ message: string }>(response);
+  const result = await expectJson<{
+    mfa_required?: boolean;
+    mfa_token?: string;
+  }>(response);
+  return { mfaToken: result.mfa_required ? (result.mfa_token ?? null) : null };
+}
+
+/** Second sign-in step: a code from the authenticator app or a recovery code. */
+export async function verifyMfa(mfaToken: string, code: string): Promise<void> {
+  const response = await apiFetch(`/api/v1/auth/mfa/verify`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mfa_token: mfaToken, code: code.trim() }),
+  });
+  await expectJson<AccessTokenResponse>(response);
+}
+
+export async function getMfaStatus(): Promise<MfaStatus> {
+  return expectJson<MfaStatus>(await authFetch('/api/v1/auth/mfa'));
+}
+
+export async function startMfaSetup(): Promise<MfaSetup> {
+  return expectJson<MfaSetup>(
+    await authFetch('/api/v1/auth/mfa/setup', { method: 'POST' }),
+  );
+}
+
+async function postCode<T>(path: string, body: object): Promise<T> {
+  return expectJson<T>(
+    await authFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+export async function enableMfa(code: string): Promise<string[]> {
+  const result = await postCode<{ recovery_codes: string[] }>(
+    '/api/v1/auth/mfa/enable',
+    { code: code.trim() },
+  );
+  return result.recovery_codes;
+}
+
+export async function disableMfa(
+  password: string,
+  code: string,
+): Promise<MfaStatus> {
+  return postCode<MfaStatus>('/api/v1/auth/mfa/disable', {
+    password,
+    code: code.trim(),
+  });
+}
+
+export async function regenerateRecoveryCodes(code: string): Promise<string[]> {
+  const result = await postCode<{ recovery_codes: string[] }>(
+    '/api/v1/auth/mfa/recovery-codes',
+    { code: code.trim() },
+  );
+  return result.recovery_codes;
 }
 
 export async function register(

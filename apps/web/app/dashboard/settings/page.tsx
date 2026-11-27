@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
+import { MfaSettings } from '../../../components/mfa-settings';
 import {
   AuthClientError,
   changePassword,
@@ -354,6 +355,7 @@ export default function SettingsPage() {
           </div>
         </section>
       )}
+      <MfaSettings />
       <section className="workflow-panel settings-sessions">
         <div className="workflow-panel__heading">
           <h2>Sessões ativas</h2>

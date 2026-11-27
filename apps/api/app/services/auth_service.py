@@ -18,7 +18,12 @@ from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.transactional_email_repository import TransactionalEmailRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate
-from app.security.access_tokens import create_access_token
+from app.security.access_tokens import (
+    AccessTokenError,
+    create_access_token,
+    create_mfa_challenge_token,
+    decode_mfa_challenge_token,
+)
 from app.security.account_tokens import (
     encrypt_email_payload,
     generate_account_token,
@@ -27,6 +32,7 @@ from app.security.account_tokens import (
 from app.security.email import normalize_email
 from app.security.passwords import hash_password, verify_password_or_dummy
 from app.security.refresh_tokens import generate_refresh_token, hash_refresh_token
+from app.services.mfa_service import MfaService
 
 
 class InvalidCredentialsError(Exception):
@@ -47,6 +53,18 @@ class InvalidAccountTokenError(Exception):
 
 class AccountTokenRateLimitedError(Exception):
     """Raised when a token is requested inside the resend cooldown."""
+
+
+class MfaRequiredError(Exception):
+    """Raised after a correct password for an account with two-factor authentication."""
+
+    def __init__(self, challenge_token: str) -> None:
+        super().__init__("Two-factor authentication required")
+        self.challenge_token = challenge_token
+
+
+class InvalidMfaChallengeError(Exception):
+    """Raised when the MFA challenge token or code is not accepted."""
 
 
 @dataclass(frozen=True)
@@ -196,7 +214,35 @@ class AuthService:
             raise InvalidCredentialsError
         if user.email_verified_at is None:
             raise EmailVerificationRequiredError
+        if user.mfa_enabled:
+            raise MfaRequiredError(create_mfa_challenge_token(user.id))
+        return self._start_session(user, user_agent, ip_address)
 
+    def complete_mfa_login(
+        self,
+        challenge_token: str,
+        code: str,
+        user_agent: str | None,
+        ip_address: str | None,
+    ) -> AuthResult:
+        try:
+            user_id = decode_mfa_challenge_token(challenge_token)
+        except AccessTokenError as error:
+            raise InvalidMfaChallengeError from error
+        user = self.users.get_by_id(user_id)
+        if user is None or not user.is_active or not user.mfa_enabled:
+            raise InvalidMfaChallengeError
+        if not MfaService(self.session).check(user, code):
+            self.session.rollback()
+            raise InvalidMfaChallengeError
+        return self._start_session(user, user_agent, ip_address)
+
+    def _start_session(
+        self,
+        user: User,
+        user_agent: str | None,
+        ip_address: str | None,
+    ) -> AuthResult:
         try:
             user.last_login_at = utc_now()
             raw_refresh, refresh = self._build_refresh_token(

@@ -4,9 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
-import { AuthClientError, login } from '../../lib/auth-client';
+import { AuthClientError, login, verifyMfa } from '../../lib/auth-client';
 import { validateLoginForm } from '../../lib/form-validation';
 import { KikoLogo } from '../../components/kiko/kiko-logo';
+
+function destinationAfterLogin(): string {
+  const requested = new URLSearchParams(window.location.search).get('next');
+  return requested?.startsWith('/') && !requested.startsWith('//')
+    ? requested
+    : '/dashboard';
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +22,12 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+
+  function failure(error: unknown, fallback: string) {
+    setMessage(error instanceof AuthClientError ? error.message : fallback);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,22 +38,99 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      const requested = new URLSearchParams(window.location.search).get('next');
-      const destination =
-        requested?.startsWith('/') && !requested.startsWith('//')
-          ? requested
-          : '/dashboard';
-      router.replace(destination);
+      const result = await login(email.trim(), password);
+      if (result.mfaToken) {
+        setMfaToken(result.mfaToken);
+        setPassword('');
+        return;
+      }
+      router.replace(destinationAfterLogin());
     } catch (error) {
-      setMessage(
-        error instanceof AuthClientError
-          ? error.message
-          : 'Não foi possível entrar agora.',
-      );
+      failure(error, 'Não foi possível entrar agora.');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage('');
+    if (!mfaToken) return;
+    if (code.trim().length < 6) {
+      setErrors({
+        code: 'Indica o código de 6 dígitos ou um código de recuperação.',
+      });
+      return;
+    }
+    setErrors({});
+    setLoading(true);
+    try {
+      await verifyMfa(mfaToken, code);
+      router.replace(destinationAfterLogin());
+    } catch (error) {
+      failure(error, 'Não foi possível confirmar o código.');
+      setCode('');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (mfaToken) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="mfa-title">
+          <KikoLogo />
+          <p className="eyebrow">Verificação em dois passos</p>
+          <h1 id="mfa-title" className="auth-title">
+            Confirma que és tu
+          </h1>
+          <p className="auth-intro">
+            Abre a app de autenticação e indica o código de 6 dígitos do Kiko.
+            Sem o telemóvel, usa um dos códigos de recuperação.
+          </p>
+          <form className="auth-form" onSubmit={handleCode} noValidate>
+            <label>
+              Código
+              <input
+                type="text"
+                autoComplete="one-time-code"
+                autoCapitalize="off"
+                spellCheck={false}
+                autoFocus
+                maxLength={32}
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                aria-describedby={errors.code ? 'code-error' : undefined}
+              />
+            </label>
+            {errors.code && (
+              <span id="code-error" className="field-error">
+                {errors.code}
+              </span>
+            )}
+            {message && (
+              <p className="form-message" role="alert">
+                {message}
+              </p>
+            )}
+            <button className="primary-button" type="submit" disabled={loading}>
+              {loading ? 'A confirmar…' : 'Confirmar'}
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => {
+                setMfaToken(null);
+                setCode('');
+                setMessage('');
+              }}
+            >
+              Voltar
+            </button>
+          </form>
+        </section>
+      </main>
+    );
   }
 
   return (

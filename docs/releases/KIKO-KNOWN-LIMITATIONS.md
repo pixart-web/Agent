@@ -15,8 +15,9 @@
 
 ## Product limitations
 
-- MFA is not yet available; privileged accounts require compensating identity-provider and access
-  controls in the deployment environment.
+- Two-factor authentication (TOTP) is available to every account but is optional; workspaces
+  cannot yet require it for their members. Account recovery without the phone and recovery
+  codes is an operator procedure (see `docs/authentication.md`).
 - The CSP retains `'unsafe-inline'` for styles for current Next.js rendering compatibility. Scripts
   do not allow `unsafe-eval` in production; development does for the framework runtime.
 - Automated WCAG checks reduce risk but do not replace keyboard, screen-reader, contrast, zoom, and

@@ -45,3 +45,35 @@ def decode_access_token(token: str) -> UUID:
         return UUID(payload["sub"])
     except (InvalidTokenError, ValueError, TypeError, AccessTokenError) as error:
         raise AccessTokenError from error
+
+
+MFA_CHALLENGE_MINUTES = 5
+
+
+def create_mfa_challenge_token(user_id: UUID) -> str:
+    """Short-lived proof that the password step succeeded; it grants no API access."""
+    settings = get_settings()
+    issued_at = utc_now()
+    payload = {
+        "sub": str(user_id),
+        "iat": issued_at,
+        "exp": issued_at + timedelta(minutes=MFA_CHALLENGE_MINUTES),
+        "type": "mfa_challenge",
+    }
+    return jwt.encode(payload, settings.auth_secret_key, algorithm=settings.auth_algorithm)
+
+
+def decode_mfa_challenge_token(token: str) -> UUID:
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.auth_secret_key,
+            algorithms=[settings.auth_algorithm],
+            options={"require": ["sub", "iat", "exp", "type"]},
+        )
+        if payload.get("type") != "mfa_challenge":
+            raise AccessTokenError
+        return UUID(payload["sub"])
+    except (InvalidTokenError, ValueError, TypeError, AccessTokenError) as error:
+        raise AccessTokenError from error
