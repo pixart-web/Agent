@@ -26,6 +26,7 @@ import {
 import { DashboardNav } from '../../../../components/dashboard-nav';
 import { SupervisorPlanReview } from '../../../../components/supervisor-plan-review';
 import { TaskExecutionPanel } from '../../../../components/task-execution-panel';
+import { ExecutionFlow } from '../../../../components/execution-flow';
 import { useAuthenticatedUser } from '../../../../lib/use-authenticated-user';
 import {
   approvePlan,
@@ -331,6 +332,14 @@ export default function CommandDetailPage() {
             onApprove={() => void handleApprovePlan()}
             onRegenerate={() => void handleRegeneratePlan()}
           />
+          {plan && plan.status !== 'draft' && tasks.length > 0 && (
+            <ExecutionFlow
+              planId={plan.id}
+              refreshKey={tasks
+                .map((task) => `${task.id}:${task.status}:${task.updated_at}`)
+                .join('|')}
+            />
+          )}
           {plan?.status !== 'draft' && tasks.length > 0 && (
             <TaskAgentPanel
               tasks={tasks}
