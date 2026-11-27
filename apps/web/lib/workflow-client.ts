@@ -1173,3 +1173,37 @@ export function recoverAutomationRun(runId: string): Promise<AutomationRun> {
     { method: 'POST' },
   );
 }
+
+export type ExecutionGraphStep = {
+  kind: 'status' | 'agent_run' | 'execution';
+  at: string;
+  status: string;
+  title: string;
+  detail: string | null;
+  duration_ms: number | null;
+  error_message: string | null;
+  note: string | null;
+};
+
+export type ExecutionGraphNode = {
+  task_id: string;
+  title: string;
+  status: string;
+  agent_id: string;
+  risk_level: string;
+  sequence: number;
+  level: number;
+  depends_on: string[];
+  steps: ExecutionGraphStep[];
+};
+
+export type ExecutionGraph = {
+  plan_id: string;
+  levels: number;
+  nodes: ExecutionGraphNode[];
+  edges: { from_task_id: string; to_task_id: string }[];
+};
+
+export function getExecutionGraph(planId: string): Promise<ExecutionGraph> {
+  return request(`/api/v1/plans/${planId}/execution-graph`);
+}

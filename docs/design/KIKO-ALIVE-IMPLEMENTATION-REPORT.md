@@ -66,11 +66,12 @@ AI saturated beyond the existing background-run tests.
 
 ## Known gaps / follow-ups
 
-1. Module screens are translated to European Portuguese (0.3.4); server-generated messages,
-   sign-in/account screens and onboarding are still in English, and the older module layouts
-   are not restyled beyond the theme.
-2. Planning/execution mode headers exist; the dependency graph and per-step logs in the
-   execution workspace still come from the existing panels.
-3. Notification titles come from the backend in English ("Approval required").
+1. Everything a user sees is in European Portuguese since 0.3.7 (module screens, server
+   messages, sign-in/account screens, onboarding and the native macOS shell); the older module
+   layouts are not restyled beyond the theme.
+2. The command workspace shows the execution flow: tasks by dependency stage
+   (`GET /api/v1/plans/{id}/execution-graph`) and, per task, a step log of status changes,
+   agent runs and tool attempts.
+3. Notification titles are written in Portuguese by the server (0.3.5).
 4. Auth pages, onboarding and the public landing inherit the tokens but were not redesigned.
 5. Packaged-app cold start and first paint should be instrumented in the QA program.

@@ -171,3 +171,38 @@ class PlanProgressRead(BaseModel):
 
 
 DispatchResponse.model_rebuild()
+
+
+class ExecutionGraphStepRead(BaseModel):
+    kind: str
+    at: datetime
+    status: str
+    title: str
+    detail: str | None = None
+    duration_ms: int | None = None
+    error_message: str | None = None
+    note: str | None = None
+
+
+class ExecutionGraphNodeRead(BaseModel):
+    task_id: UUID
+    title: str
+    status: str
+    agent_id: str
+    risk_level: str
+    sequence: int
+    level: int
+    depends_on: list[UUID]
+    steps: list[ExecutionGraphStepRead]
+
+
+class ExecutionGraphEdgeRead(BaseModel):
+    from_task_id: UUID
+    to_task_id: UUID
+
+
+class ExecutionGraphRead(BaseModel):
+    plan_id: UUID
+    levels: int
+    nodes: list[ExecutionGraphNodeRead]
+    edges: list[ExecutionGraphEdgeRead]

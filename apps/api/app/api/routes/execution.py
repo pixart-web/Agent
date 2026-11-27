@@ -20,6 +20,10 @@ from app.schemas.execution import (
     ApprovalRequestRead,
     AuditLogRead,
     DispatchResponse,
+    ExecutionGraphEdgeRead,
+    ExecutionGraphNodeRead,
+    ExecutionGraphRead,
+    ExecutionGraphStepRead,
     PlanProgressRead,
     TaskActionCreate,
     TaskActionRead,
@@ -30,6 +34,7 @@ from app.schemas.execution import (
 from app.schemas.task import TaskRead
 from app.services.approval_service import ApprovalService
 from app.services.dependency_service import DependencyService
+from app.services.execution_graph_service import ExecutionGraphService
 from app.services.execution_service import ExecutionService
 from app.services.execution_state_service import ExecutionStateService
 from app.services.task_scheduler_service import TaskSchedulerService
@@ -332,6 +337,45 @@ def get_plan_progress(
     if PlanRepository(db).get_owned(plan_id, user.id) is None:
         _raise(WorkflowNotFoundError("Plan not found"))
     return PlanProgressRead.model_validate(ExecutionStateService(db).progress(plan_id))
+
+
+def _enum_value(value: object) -> str:
+    return str(getattr(value, "value", value))
+
+
+@router.get("/plans/{plan_id}/execution-graph", response_model=ExecutionGraphRead)
+def get_execution_graph(
+    plan_id: UUID,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> ExecutionGraphRead:
+    from app.repositories.plan_repository import PlanRepository
+
+    if PlanRepository(db).get_owned(plan_id, user.id) is None:
+        _raise(WorkflowNotFoundError("Plan not found"))
+    graph = ExecutionGraphService(db).for_plan(plan_id)
+    return ExecutionGraphRead(
+        plan_id=plan_id,
+        levels=graph.levels,
+        nodes=[
+            ExecutionGraphNodeRead(
+                task_id=node.task.id,
+                title=node.task.title,
+                status=_enum_value(node.task.status),
+                agent_id=node.task.agent_id,
+                risk_level=_enum_value(node.task.risk_level),
+                sequence=node.task.sequence,
+                level=node.level,
+                depends_on=node.depends_on,
+                steps=[ExecutionGraphStepRead(**vars(step)) for step in node.steps],
+            )
+            for node in graph.nodes
+        ],
+        edges=[
+            ExecutionGraphEdgeRead(from_task_id=source, to_task_id=target)
+            for source, target in graph.edges
+        ],
+    )
 
 
 @router.get("/commands/{command_id}/activity", response_model=list[AuditLogRead])

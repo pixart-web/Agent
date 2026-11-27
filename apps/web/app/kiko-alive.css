@@ -2259,3 +2259,132 @@ main select:not([class]) {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+/* Execution flow (command workspace) */
+.flow-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.flow-stages {
+  display: grid;
+  gap: 14px;
+  grid-auto-columns: minmax(220px, 1fr);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.flow-stage {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  position: relative;
+}
+
+.flow-stage + .flow-stage::before {
+  color: var(--kiko-text-2);
+  content: '→';
+  left: -12px;
+  position: absolute;
+  top: 2px;
+}
+
+.flow-stage__label {
+  color: var(--kiko-text-2);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.flow-node {
+  background: var(--kiko-surface-2);
+  border: 1px solid var(--kiko-line);
+  border-radius: var(--radius-card);
+  color: var(--kiko-text);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 6px;
+  justify-items: start;
+  padding: 12px 14px;
+  text-align: left;
+  transition: border-color 160ms var(--ease-out);
+}
+
+.flow-node:hover,
+.flow-node--selected {
+  border-color: var(--kiko-amber);
+}
+
+.flow-node:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.flow-node--failed,
+.flow-node--blocked {
+  border-color: color-mix(in srgb, var(--kiko-danger) 55%, var(--kiko-line));
+}
+
+.flow-node__title {
+  font-weight: 600;
+}
+
+.flow-node__meta,
+.flow-node__deps {
+  color: var(--kiko-text-2);
+  font-size: 0.85rem;
+}
+
+.flow-detail h3 {
+  margin: 0 0 10px;
+}
+
+.flow-log {
+  border-left: 1px solid var(--kiko-line-strong);
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 16px;
+}
+
+.flow-log__item {
+  display: grid;
+  gap: 2px 10px;
+  grid-template-columns: auto auto 1fr;
+}
+
+.flow-log__item time,
+.flow-log__kind {
+  color: var(--kiko-text-2);
+  font-size: 0.85rem;
+}
+
+.flow-log__error {
+  color: var(--kiko-danger);
+  grid-column: 1 / -1;
+}
+
+.flow-log__detail {
+  color: var(--kiko-text-2);
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .flow-stages {
+    grid-auto-flow: row;
+  }
+
+  .flow-stage + .flow-stage::before {
+    content: '↓';
+    left: auto;
+    position: static;
+  }
+
+  .flow-log__item {
+    grid-template-columns: 1fr;
+  }
+}
