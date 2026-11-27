@@ -67,9 +67,21 @@ keychain_has_session && echo "[keychain] refresh token stored after sign-in" | t
 if [ "$AI_MODE" = "local" ]; then
   run_phase local-ai phase-3b-local-ai.js 0 "" 420
 fi
+# Module checks (Marketing, Automations, Knowledge, two-factor enrolment) also run before the
+# work phase, for the same "last screen" reason.
+run_phase modules phase-3c-modules.js 0
+MFA_LINE="$(grep -h '^SMOKE DATA mfa ' "$WORK/modules.log" | tail -1)"
+MFA_SECRET="$(echo "$MFA_LINE" | awk '{print $4}')"
+MFA_RECOVERY="$(echo "$MFA_LINE" | awk '{print $5}')"
+[ -n "$MFA_SECRET" ] && [ -n "$MFA_RECOVERY" ] || { echo "[modules] FAIL no two-factor data" | tee -a "$RESULTS"; exit 1; }
 run_phase work phase-3-work.js 0
 run_phase persist phase-4-persist-logout.js 0
 keychain_has_session && { echo "[keychain] FAIL item still present after logout" | tee -a "$RESULTS"; exit 1; } \
   || echo "[keychain] session item removed by logout" | tee -a "$RESULTS"
-run_phase after-logout phase-5-after-logout.js 0
+run_phase after-logout phase-5-after-logout.js 0 ", \"mfaSecret\": \"$MFA_SECRET\", \"mfaRecovery\": \"$MFA_RECOVERY\""
+run_phase reset-request phase-6-reset-request.js 0
+RESET_TOKEN="$(cd "$HERE/../../api" && "$PY" "$HERE/outbox_token.py" "$EMAIL" password_reset)"
+[ -n "$RESET_TOKEN" ] || { echo "no password reset token" >&2; exit 1; }
+NEW_PASSWORD="Desktop-Reset-$(openssl rand -hex 6)1a"
+run_phase reset-confirm phase-7-reset-confirm.js 0 ", \"token\": \"$RESET_TOKEN\", \"newPassword\": \"$NEW_PASSWORD\""
 echo "ALL PHASES PASSED ($EMAIL). Logs: $WORK" | tee -a "$RESULTS"

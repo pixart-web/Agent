@@ -1,5 +1,6 @@
-"""Test helper: read the newest verification token queued for an address in a LOCAL test
-database. Uses the API's own decryption; never run against staging or production."""
+"""Test helper: read the newest account token (verification by default, or the template named
+as the second argument, e.g. password_reset) queued for an address in a LOCAL test database.
+Uses the API's own decryption; never run against staging or production."""
 
 import sys
 
@@ -17,7 +18,11 @@ if "localhost" not in settings.database_url and "127.0.0.1" not in settings.data
 with SessionLocal() as session:
     row = session.scalars(
         select(TransactionalEmailOutbox)
-        .where(TransactionalEmailOutbox.recipient == sys.argv[1])
+        .where(
+            TransactionalEmailOutbox.recipient == sys.argv[1],
+            TransactionalEmailOutbox.template
+            == (sys.argv[2] if len(sys.argv) > 2 else "email_verification"),
+        )
         .order_by(TransactionalEmailOutbox.created_at.desc())
     ).first()
     if row is None:

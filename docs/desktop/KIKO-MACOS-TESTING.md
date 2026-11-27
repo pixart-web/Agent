@@ -42,26 +42,32 @@ KIKO_API_URL=http://127.0.0.1:8765 API_PYTHON=.venv/bin/python PYTHONPATH=apps/a
   apps/desktop/e2e/run-journey.sh
 ```
 
-Latest result (three consecutive runs, all green):
+Latest result (0.4.0 development, with the local AI model):
 
 ```
-[register] launch without a session opens sign-in · open registration · submit registration ·
-           unverified account cannot sign in
-[verify]   verify email with emailed token · sign in · configure company
-[keychain] refresh token stored after sign-in
-[work]     session restored from Keychain after relaunch · submit a command ·
-           Supervisor without an AI provider shows an honest unavailable state ·
-           create a manual plan · add a task · approve the plan (human plan approval) ·
-           mark the task ready · dispatch a governed action that requires approval ·
-           approve it in the Approvals centre · approved action executed by the backend worker ·
-           task persisted and opens from the task list · create a project ·
-           Kiko AI conversation · create a CRM contact
-[persist]  relaunch restores session and last screen · CRM contact persisted ·
-           project persisted · log out
-[keychain] session item removed by logout
-[after-logout] relaunch after logout requires sign-in
-ALL PHASES PASSED — 27 steps, 5 app launches
+[register]       launch without a session opens sign-in · open registration ·
+                 submit registration · unverified account cannot sign in
+[verify]         verify email with emailed token · sign in · configure company
+[keychain]       refresh token stored after sign-in
+[local-ai]       submit a command for the local AI Supervisor · local model generates a plan
+                 shown in the app · approve the AI-generated plan
+[modules]        create a marketing campaign · create a manual automation ·
+                 save a knowledge draft · enable two-factor authentication
+[work]           session restored from Keychain after relaunch · submit a command · manual
+                 plan · task · plan approval · governed action approved in the Approvals
+                 centre and executed by the worker · project · Kiko AI conversation · CRM
+[persist]        relaunch restores session and last screen · CRM and project persisted ·
+                 log out
+[keychain]       session item removed by logout
+[after-logout]   sign-in asks for the second factor · authenticator code completes sign-in
+                 (tokens kept by the shell) · disable two-factor with a recovery code
+[reset-request]  request a password reset
+[reset-confirm]  set a new password from the emailed link · sign in with the new password
+ALL PHASES PASSED — 9 app launches
 ```
+
+The two-factor steps compute RFC 6238 codes inside the WebView (`totp()` in `e2e/lib.js`);
+the secret of the temporary account is handed between launches through a `SMOKE DATA` line.
 
 Each phase is a separate process launch, so "quit and reopen" is exercised for real.
 
@@ -92,6 +98,21 @@ Each phase is a separate process launch, so "quit and reopen" is exercised for r
 The "first" launch was not a true cold boot (files were cached from the build). Measure
 again on a clean machine before a public release.
 
+### Cold-start measurement on real installs (0.4.0+)
+
+Every launch of the app records, in `~/Library/Logs/pt.pixart.kiko/startup.jsonl` (last 200
+launches, nothing leaves the Mac): when the main window existed, when the first page finished
+loading and when the first usable screen (sign-in or dashboard, not a loading placeholder)
+was on display, all in milliseconds from process start, plus the version and the screen
+(route without ids or tokens). To benchmark the installed app (quit Kiko first):
+
+```bash
+scripts/local/kiko-local.sh startup 5
+```
+
+It opens and quits `/Applications/Kiko.app` five times and prints the median and p95 of each
+milestone.
+
 ## 5. Not yet verified (honest gaps)
 
 - **OS-level deep links**: route parsing is unit-tested, but `open kiko://…` could not be
@@ -103,8 +124,10 @@ again on a clean machine before a public release.
 - **Native dialogs, notifications banners, menu clicks and the save panel** need a person
   (or UI automation with Accessibility permission) to click them.
 - **Gmail/Calendar OAuth hand-off, GitHub/Codex**: providers disabled in the test backend.
-- **Workspace switching, invitations, password reset, Marketing, Automations, Knowledge
-  upload, Calendar, Email** reuse the web code paths but have no desktop E2E step yet.
+- **Workspace switching, invitations, Knowledge document upload, Calendar, Email** reuse the
+  web code paths but have no desktop E2E step yet. Marketing (campaign), Automations (manual
+  automation), Knowledge (draft), two-factor enrolment and sign-in, and password reset are
+  covered by the journey since 0.4.0.
 - **Accessibility** (VoiceOver, keyboard-only, contrast) on the desktop shell.
 - **Intel Macs**.
 
