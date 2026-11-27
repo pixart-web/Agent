@@ -73,5 +73,6 @@ AI saturated beyond the existing background-run tests.
    (`GET /api/v1/plans/{id}/execution-graph`) and, per task, a step log of status changes,
    agent runs and tool attempts.
 3. Notification titles are written in Portuguese by the server (0.3.5).
-4. Auth pages, onboarding and the public landing inherit the tokens but were not redesigned.
+4. The public landing uses the Kiko Alive identity (logo, animated Kiko, midnight/amber) in
+   Portuguese; sign-in, account and onboarding screens use the Kiko card and logo.
 5. Packaged-app cold start and first paint should be instrumented in the QA program.
