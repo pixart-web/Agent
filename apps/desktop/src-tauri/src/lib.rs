@@ -13,6 +13,7 @@ pub mod menu;
 pub mod protocol;
 #[cfg(debug_assertions)]
 pub mod smoke;
+pub mod startup;
 
 use tauri::http::{header, Response, StatusCode};
 use tauri::utils::config::BackgroundThrottlingPolicy;
@@ -115,6 +116,7 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::notify,
         commands::confirm_action,
         commands::take_pending_route,
+        startup::report_startup,
     ]
 }
 
@@ -131,12 +133,14 @@ fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + 
         commands::notify,
         commands::confirm_action,
         commands::take_pending_route,
+        startup::report_startup,
         smoke::smoke_report,
     ]
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    startup::mark_process_start();
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             focus_main(app)
@@ -162,6 +166,7 @@ pub fn run() {
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
             app.manage(client);
             app.manage(deep_link::PendingRoute::default());
+            app.manage(startup::StartupTimes::default());
 
             let handle = app.handle().clone();
             app.set_menu(menu::build(&handle)?)?;
@@ -181,6 +186,12 @@ pub fn run() {
                 .background_throttling(BackgroundThrottlingPolicy::Throttle)
                 .on_navigation(|url| url.scheme() == UI_SCHEME)
                 .on_page_load(|_webview, _payload| {
+                    if matches!(_payload.event(), tauri::webview::PageLoadEvent::Finished) {
+                        _webview
+                            .app_handle()
+                            .state::<startup::StartupTimes>()
+                            .mark_page_loaded();
+                    }
                     #[cfg(debug_assertions)]
                     eprintln!("[page-load] {:?} {}", _payload.event(), _payload.url());
                     #[cfg(debug_assertions)]
@@ -191,6 +202,7 @@ pub fn run() {
                     }
                 })
                 .build()?;
+            app.state::<startup::StartupTimes>().mark_window();
 
             let deep_link_handle = handle.clone();
             app.deep_link().on_open_url(move |event| {

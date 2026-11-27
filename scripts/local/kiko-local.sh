@@ -30,6 +30,7 @@
 #   ai-eval           evaluate every AI flow with the real local model (slow, minutes)
 #   idor-sweep        cross-tenant authorization sweep over every API operation with an id
 #   perf              bounded latency/concurrency probe of the main API endpoints
+#   startup [runs]    cold-start the installed /Applications/Kiko.app N times (default 5); median/p95
 #   open-link <url>   open an emailed http://localhost:3000/... link in the Kiko macOS app
 #   accounts          create temporary acceptance accounts (owner + every role) -> ~/.kiko-local/test-accounts.txt
 #   role-matrix       role permission sweep (viewer read-only, members cannot administer)
@@ -500,6 +501,44 @@ cmd_desktop_e2e() {
     API_PYTHON="$PY" "$REPO/apps/desktop/e2e/run-journey.sh")
 }
 
+cmd_startup() {
+  local runs="${1:-5}" app="/Applications/Kiko.app" log="$HOME/Library/Logs/pt.pixart.kiko/startup.jsonl"
+  [ -d "$app" ] || die "Kiko is not installed in /Applications"
+  # Never touch a Kiko the owner is using: the benchmark quits the app between runs.
+  pgrep -f "$app/Contents/MacOS/kiko-desktop" >/dev/null && die "quit the Kiko app first (the benchmark opens and quits it)"
+  local before=0 i
+  [ -f "$log" ] && before=$(wc -l <"$log" | tr -d ' ')
+  for i in $(seq 1 "$runs"); do
+    open -a "$app"
+    # Wait for this launch's line (the UI reports when the first usable screen is shown).
+    local waited=0
+    until [ -f "$log" ] && [ "$(wc -l <"$log" | tr -d ' ')" -gt "$((before + i - 1))" ]; do
+      sleep 1; waited=$((waited + 1))
+      [ "$waited" -lt 60 ] || die "run $i: no startup report after 60 s"
+    done
+    osascript -e 'quit app "Kiko"' >/dev/null 2>&1 || true
+    waited=0
+    while pgrep -f "$app/Contents/MacOS/kiko-desktop" >/dev/null; do
+      sleep 1; waited=$((waited + 1)); [ "$waited" -lt 30 ] || die "Kiko did not quit"
+    done
+    sleep 2
+  done
+  tail -n "$runs" "$log" | "$PY" -c '
+import json, statistics, sys
+rows = [json.loads(line) for line in sys.stdin if line.strip()]
+def stats(key):
+    values = sorted(r[key] for r in rows if r.get(key) is not None)
+    if not values:
+        return "n/a"
+    p95 = values[min(len(values) - 1, round(0.95 * (len(values) - 1)))]
+    return f"median {statistics.median(values):.0f} ms, p95 {p95} ms"
+print(f"Kiko {rows[-1]["version"]}: {len(rows)} cold starts, first screen {rows[-1]["screen"]}")
+print("  window created :", stats("window_ms"))
+print("  page loaded    :", stats("page_loaded_ms"))
+print("  first screen   :", stats("ui_ready_ms"))
+'
+}
+
 cmd_open_link() {
   local url="${1:?usage: open-link <emailed link>}" path
   path="${url#http://localhost:$WEB_PORT/}"
@@ -539,8 +578,9 @@ case "${1:-}" in
   ai-eval) cmd_ai_eval ;;
   idor-sweep) cmd_idor_sweep ;;
   perf) cmd_perf ;;
+  startup) shift; cmd_startup "$@" ;;
   open-link) shift; cmd_open_link "$@" ;;
   psql) init_home; pg_env; exec "$PG_BIN/psql" -h 127.0.0.1 -p "$PG_PORT" -U kiko_local kiko_local ;;
   env) cmd_env ;;
-  *) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

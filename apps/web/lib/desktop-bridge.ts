@@ -165,6 +165,31 @@ export function takePendingRoute(): Promise<string | null> {
   return invoke<string | null>('take_pending_route');
 }
 
+/** Tell the shell the first usable screen is on display (recorded once per launch). */
+export function reportStartup(route: string): Promise<number | null> {
+  return invoke<number | null>('report_startup', { route });
+}
+
+/**
+ * Wait until the page shows real content (no loading placeholder) and report the cold start.
+ * Gives up after `timeoutMs`, so a screen stuck loading is not recorded as a fast start.
+ */
+export function reportWhenReady(route: string, timeoutMs = 20_000): void {
+  const started = performance.now();
+  const check = () => {
+    const ready =
+      document.querySelector('main') !== null &&
+      document.querySelector('.loading-page') === null;
+    if (ready) {
+      void reportStartup(route).catch(() => undefined);
+      return;
+    }
+    // setTimeout, not requestAnimationFrame: frames pause while the window is covered.
+    if (performance.now() - started < timeoutMs) setTimeout(check, 50);
+  };
+  setTimeout(check, 0);
+}
+
 export function onCommand(
   handler: (command: string) => void,
 ): Promise<UnlistenFn> {
