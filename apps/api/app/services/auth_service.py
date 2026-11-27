@@ -170,7 +170,7 @@ class AuthService:
             self.users.add(user)
             self.session.flush()
             workspace = Workspace(
-                name=f"{user.full_name}'s Workspace",
+                name=f"Workspace de {user.full_name}",
                 slug=f"personal-{user.id.hex}",
                 created_by_user_id=user.id,
             )

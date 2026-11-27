@@ -106,6 +106,14 @@ const LABELS: Record<string, string> = {
   task_failed: 'Tarefa falhou',
   commented: 'Comentário',
   comment: 'Comentário',
+  // Pixart ecosystem registry
+  unsupported: 'Sem contrato verificado',
+  requires_setup: 'Requer configuração',
+  available: 'Disponível',
+  unavailable: 'Indisponível',
+  healthy: 'A responder',
+  unreachable: 'Sem resposta',
+  error: 'Com erro',
   // Automation guardrails
   depth_limit: 'Limite de encadeamento atingido',
   trigger_config_not_matched: 'O evento não corresponde ao gatilho',

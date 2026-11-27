@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { DashboardNav } from '../../../components/dashboard-nav';
+import { PixartAppsAdmin } from '../../../components/pixart-apps-admin';
 import {
   getPlatformOverview,
   listPlatformUsers,
@@ -157,6 +158,7 @@ export default function PlatformAdminPage() {
           ))}
         </div>
       </section>
+      <PixartAppsAdmin />
     </main>
   );
 }
