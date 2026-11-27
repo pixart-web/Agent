@@ -113,3 +113,4 @@ class UserPublic(BaseModel):
     active_workspace_id: UUID | None
     onboarding_step: int
     onboarding_completed_at: datetime | None
+    mfa_enabled: bool = False

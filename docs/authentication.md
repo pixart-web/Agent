@@ -91,6 +91,34 @@ preventing rotation races and retry loops. Logout clears backend and in-memory s
 failed renewal redirects to `/login`. Password confirmation is validated only in the
 browser and is not sent to the API.
 
+## Two-factor authentication (TOTP)
+
+Any account can turn on two-factor authentication in **Definições → Verificação em dois
+passos**. It uses standard time-based codes (RFC 6238: HMAC-SHA1, 30 s, 6 digits), so any
+authenticator app works.
+
+- **Enrolment:** `POST /api/v1/auth/mfa/setup` returns a new secret and an `otpauth://` URI
+  (shown as a QR code). Nothing changes until `POST /api/v1/auth/mfa/enable` receives a valid
+  code; it then returns ten single-use recovery codes, shown once.
+- **Sign-in:** after a correct password, `POST /api/v1/auth/login` answers
+  `{"mfa_required": true, "mfa_token": "…"}` with no tokens and no refresh cookie. The
+  challenge token is a JWT of type `mfa_challenge`, valid for 5 minutes, and is not accepted as
+  an access token. `POST /api/v1/auth/mfa/verify` with that token and a code (or a recovery
+  code) completes the sign-in exactly like a password login.
+- **Storage:** the TOTP secret is encrypted with the auth key (Fernet); recovery codes are
+  stored as SHA-256 hashes and removed when used. The last accepted time step is stored, so a
+  code is accepted once (replay protection); one step of clock drift is tolerated each way.
+- **Management:** `GET /api/v1/auth/mfa` (status and remaining recovery codes),
+  `POST /api/v1/auth/mfa/recovery-codes` (new set, needs a code) and
+  `POST /api/v1/auth/mfa/disable` (needs the password and a code).
+- **Rate limiting:** verify, enable, disable and regeneration share the `mfa` bucket of the
+  authentication rate limiter.
+- **Desktop:** the macOS shell treats `/auth/mfa/verify` like a login and keeps the tokens
+  in Rust and the Keychain.
+
+A lost phone and lost recovery codes need an operator: clear the `mfa_*` columns of that user
+after verifying their identity out of band.
+
 ## Rate limiting
 
 Register, login, and refresh use a Redis fixed window keyed by endpoint and a SHA-256
@@ -153,5 +181,4 @@ python -m app.scripts.cleanup_refresh_tokens
 ```
 
 The command removes expired tokens and tokens revoked before the configured retention
-period. Social login, MFA, workspace-wide authorization, and administrative user
-management remain future work.
+period. Social login and administrative user management remain future work.

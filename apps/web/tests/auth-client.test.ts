@@ -5,6 +5,7 @@ import {
   clearAuthState,
   login,
   logout,
+  verifyMfa,
   refreshAccessToken,
 } from '../lib/auth-client';
 
@@ -41,6 +42,43 @@ describe('auth client', () => {
 
     const finalHeaders = new Headers(fetchMock.mock.calls[2][1]?.headers);
     expect(finalHeaders.has('Authorization')).toBe(false);
+  });
+
+  it('returns the second-step token when the account uses MFA', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ mfa_required: true, mfa_token: 'challenge' }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ access_token: 'a', token_type: 'bearer', user: {} }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await login('user@example.com', 'securePassword123');
+    expect(result.mfaToken).toBe('challenge');
+    await verifyMfa('challenge', ' 123456 ');
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      '/api/v1/auth/mfa/verify',
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      mfa_token: 'challenge',
+      code: '123456',
+    });
+  });
+
+  it('reports a rejected code in Portuguese', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ detail: 'Invalid or expired verification code' }, 401),
+        ),
+    );
+    await expect(verifyMfa('challenge', '000000')).rejects.toThrow(
+      'O código de verificação é inválido ou expirou.',
+    );
   });
 
   it('does not loop after a failed refresh', async () => {

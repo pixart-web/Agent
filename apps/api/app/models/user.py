@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.core.time import utc_now
@@ -78,6 +78,16 @@ class User(Base):
     onboarding_completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    mfa_secret_encrypted: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    mfa_pending_secret_encrypted: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    mfa_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    mfa_last_used_step: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    mfa_recovery_code_hashes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+
+    @property
+    def mfa_enabled(self) -> bool:
+        return self.mfa_enabled_at is not None and self.mfa_secret_encrypted is not None
 
     @validates("email")
     def normalize_email_value(self, _key: str, value: str) -> str:

@@ -20,6 +20,13 @@ from app.schemas.auth import (
     AccessTokenResponse,
     AuthResponse,
     MessageResponse,
+    MfaChallengeResponse,
+    MfaCodeRequest,
+    MfaDisableRequest,
+    MfaRecoveryCodesResponse,
+    MfaSetupResponse,
+    MfaStatus,
+    MfaVerifyRequest,
     SessionRead,
 )
 from app.schemas.user import (
@@ -39,7 +46,15 @@ from app.services.auth_service import (
     EmailVerificationRequiredError,
     InvalidAccountTokenError,
     InvalidCredentialsError,
+    InvalidMfaChallengeError,
     InvalidRefreshTokenError,
+    MfaRequiredError,
+)
+from app.services.mfa_service import (
+    MfaCodeInvalidError,
+    MfaPasswordInvalidError,
+    MfaService,
+    MfaStateError,
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -79,7 +94,7 @@ def register(
 
 @router.post(
     "/login",
-    response_model=AuthResponse,
+    response_model=AuthResponse | MfaChallengeResponse,
     dependencies=[
         Depends(require_allowed_origin),
         Depends(auth_rate_limit("login")),
@@ -90,7 +105,7 @@ def login(
     request: Request,
     response: Response,
     db: Annotated[Session, Depends(get_db)],
-) -> AuthResponse:
+) -> AuthResponse | MfaChallengeResponse:
     user_agent, ip_address = _request_context(request)
     try:
         result = AuthService(db).login(
@@ -110,9 +125,128 @@ def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email verification required",
         ) from error
+    except MfaRequiredError as challenge:
+        return MfaChallengeResponse(mfa_token=challenge.challenge_token)
 
     set_refresh_cookie(response, result.refresh_token)
     return _auth_response(result)
+
+
+@router.post(
+    "/mfa/verify",
+    response_model=AuthResponse,
+    dependencies=[
+        Depends(require_allowed_origin),
+        Depends(auth_rate_limit("mfa")),
+    ],
+)
+def verify_mfa(
+    data: MfaVerifyRequest,
+    request: Request,
+    response: Response,
+    db: Annotated[Session, Depends(get_db)],
+) -> AuthResponse:
+    user_agent, ip_address = _request_context(request)
+    try:
+        result = AuthService(db).complete_mfa_login(
+            data.mfa_token, data.code, user_agent, ip_address
+        )
+    except InvalidMfaChallengeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired verification code",
+        ) from error
+    set_refresh_cookie(response, result.refresh_token)
+    return _auth_response(result)
+
+
+def _mfa_status(user: User) -> MfaStatus:
+    return MfaStatus(
+        enabled=user.mfa_enabled,
+        enabled_at=user.mfa_enabled_at,
+        recovery_codes_remaining=MfaService.recovery_codes_remaining(user),
+        setup_pending=user.mfa_pending_secret_encrypted is not None and not user.mfa_enabled,
+    )
+
+
+def _mfa_error(error: Exception) -> HTTPException:
+    if isinstance(error, MfaCodeInvalidError):
+        return HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid verification code")
+    if isinstance(error, MfaPasswordInvalidError):
+        return HTTPException(status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    return HTTPException(status.HTTP_409_CONFLICT, detail=str(error))
+
+
+@router.get("/mfa", response_model=MfaStatus)
+def mfa_status(user: Annotated[User, Depends(get_current_active_user)]) -> MfaStatus:
+    return _mfa_status(user)
+
+
+@router.post(
+    "/mfa/setup",
+    response_model=MfaSetupResponse,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def mfa_setup(
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MfaSetupResponse:
+    try:
+        setup = MfaService(db).start_setup(user)
+    except MfaStateError as error:
+        raise _mfa_error(error) from error
+    return MfaSetupResponse(secret=setup.secret, otpauth_uri=setup.otpauth_uri)
+
+
+@router.post(
+    "/mfa/enable",
+    response_model=MfaRecoveryCodesResponse,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("mfa"))],
+)
+def mfa_enable(
+    data: MfaCodeRequest,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MfaRecoveryCodesResponse:
+    try:
+        codes = MfaService(db).enable(user, data.code)
+    except (MfaStateError, MfaCodeInvalidError) as error:
+        raise _mfa_error(error) from error
+    return MfaRecoveryCodesResponse(recovery_codes=codes)
+
+
+@router.post(
+    "/mfa/disable",
+    response_model=MfaStatus,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("mfa"))],
+)
+def mfa_disable(
+    data: MfaDisableRequest,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MfaStatus:
+    try:
+        MfaService(db).disable(user, data.password, data.code)
+    except (MfaStateError, MfaCodeInvalidError, MfaPasswordInvalidError) as error:
+        raise _mfa_error(error) from error
+    return _mfa_status(user)
+
+
+@router.post(
+    "/mfa/recovery-codes",
+    response_model=MfaRecoveryCodesResponse,
+    dependencies=[Depends(require_allowed_origin), Depends(auth_rate_limit("mfa"))],
+)
+def mfa_recovery_codes(
+    data: MfaCodeRequest,
+    user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> MfaRecoveryCodesResponse:
+    try:
+        codes = MfaService(db).regenerate_recovery_codes(user, data.code)
+    except (MfaStateError, MfaCodeInvalidError) as error:
+        raise _mfa_error(error) from error
+    return MfaRecoveryCodesResponse(recovery_codes=codes)
 
 
 @router.post(

@@ -4,6 +4,17 @@
  * through `apiMessage()`. Unknown messages are shown as they are.
  */
 const MESSAGES: Record<string, string> = {
+  // Two-factor authentication
+  'Invalid or expired verification code':
+    'O código de verificação é inválido ou expirou.',
+  'Invalid verification code': 'O código de verificação não é válido.',
+  'Two-factor authentication is already enabled':
+    'A verificação em dois passos já está ativa.',
+  'Start two-factor setup first':
+    'Começa primeiro a configuração da verificação em dois passos.',
+  'Two-factor authentication is not enabled':
+    'A verificação em dois passos não está ativa.',
+
   // Sign-in, account and session
   'Authentication required': 'É preciso entrar novamente.',
   'Authentication temporarily unavailable':
@@ -750,6 +761,7 @@ const FIELD_LABELS: Record<string, string> = {
   password: 'Palavra-passe',
   current_password: 'Palavra-passe atual',
   new_password: 'Nova palavra-passe',
+  code: 'Código',
   full_name: 'Nome',
   name: 'Nome',
   title: 'Título',
