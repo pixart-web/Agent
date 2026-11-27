@@ -17,6 +17,7 @@ import {
   onCommand,
   onNavigate,
   openExternal,
+  reportWhenReady,
   takePendingRoute,
 } from '../lib/desktop-bridge';
 import { rememberRoute } from '../lib/desktop-routes';
@@ -221,6 +222,15 @@ export function DesktopShell() {
 
   useEffect(() => {
     if (pathname) rememberRoute(pathname);
+  }, [pathname]);
+
+  // Cold-start measurement: the first screen after the /desktop/ bootstrap redirect.
+  const startupReported = useRef(false);
+  useEffect(() => {
+    if (!pathname || pathname.startsWith('/desktop') || startupReported.current)
+      return;
+    startupReported.current = true;
+    reportWhenReady(pathname);
   }, [pathname]);
 
   useEffect(() => {
