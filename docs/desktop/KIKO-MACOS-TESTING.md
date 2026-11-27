@@ -111,7 +111,8 @@ scripts/local/kiko-local.sh startup 5
 ```
 
 It opens and quits `/Applications/Kiko.app` five times and prints the median and p95 of each
-milestone.
+milestone. 0.4.0 on this Mac (signed out, first screen `/login`): window 163 ms (p95 173),
+page loaded 253 ms (p95 342), first usable screen 294 ms (p95 380).
 
 ## 5. Not yet verified (honest gaps)
 

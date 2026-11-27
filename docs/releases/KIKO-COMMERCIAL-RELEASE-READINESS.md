@@ -125,7 +125,8 @@ registry digests in the manifest before Compose interpolation can succeed.
 ## 16. Remaining limitations
 
 Real providers, target infrastructure, registry digests, manual accessibility/usability, legal and
-support gates remain. MFA is absent. Style CSP retains `unsafe-inline`. Full details and mitigations
+support gates remain. Two-factor authentication (TOTP) is available since 0.4.0 but optional per
+account. Style CSP retains `unsafe-inline`. Full details and mitigations
 are in `docs/releases/KIKO-KNOWN-LIMITATIONS.md`.
 
 ## 17. Known defects and severity
