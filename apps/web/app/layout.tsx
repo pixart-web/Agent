@@ -7,9 +7,9 @@ import './globals.css';
 import './kiko-alive.css';
 
 export const metadata: Metadata = {
-  title: 'Kiko | Pixart AI Operating System',
+  title: 'Kiko | Sistema operativo de IA da Pixart',
   description:
-    'Kiko coordinates safe, auditable multi-agent operations for Pixart.',
+    'O Kiko transforma pedidos em planos, coordena agentes especializados e pede aprovação antes de ações sensíveis.',
 };
 
 export default function RootLayout({

@@ -1,213 +1,230 @@
-import Image from 'next/image';
 import Link from 'next/link';
+
+import { KikoAvatar } from '../components/kiko/kiko-avatar';
+import { KikoLogo } from '../components/kiko/kiko-logo';
 
 const capabilities = [
   [
-    'Kiko AI',
-    'Turns a business request into a governed plan, assigned work and persisted results.',
+    'Pedidos que viram planos',
+    'Escreves o que precisas em linguagem natural. O Supervisor divide o trabalho em tarefas e atribui cada uma ao agente certo.',
   ],
   [
-    'Execution control',
-    'Routes sensitive actions through approvals, exact payload review and an immutable audit trail.',
+    'Aprovação antes de agir',
+    'Envios, alterações externas e ações sensíveis esperam por uma pessoa. Vês exatamente o que vai ser feito antes de aprovar.',
   ],
   [
-    'Business context',
-    'Connects CRM, projects, marketing, automations and approved knowledge inside one workspace.',
+    'O contexto do negócio num só sítio',
+    'CRM, projetos, marketing, automatizações e conhecimento aprovado ficam no mesmo workspace, ao alcance dos agentes.',
   ],
   [
-    'Operational evidence',
-    'Shows real command, agent, tool and automation activity without invented business metrics.',
+    'Histórico verificável',
+    'Cada passo fica registado: quem pediu, que agente trabalhou, que ferramenta correu e com que resultado.',
   ],
 ];
 
-const agents = ['Supervisor', 'Sales', 'Marketing', 'Support', 'Development'];
+const steps = [
+  ['Descreve o resultado', 'Numa conversa que fica guardada no workspace.'],
+  [
+    'Revê o plano',
+    'O Supervisor propõe tarefas, dependências e agentes; tu aprovas ou pedes outra versão.',
+  ],
+  [
+    'Controla as ações',
+    'A política de risco decide o que corre sozinho e o que precisa de aprovação.',
+  ],
+  [
+    'Consulta a evidência',
+    'Resultados, falhas e auditoria continuam disponíveis depois da execução.',
+  ],
+];
+
+const agents = [
+  ['Supervisor', 'planeia e coordena'],
+  ['Vendas', 'propostas e seguimento comercial'],
+  ['Marketing', 'campanhas e conteúdos'],
+  ['Suporte', 'pedidos de clientes'],
+  ['Desenvolvimento', 'trabalho técnico'],
+];
+
+const safeguards = [
+  'IA local: os dados do negócio não saem para fornecedores externos de IA',
+  'Funções por workspace: dono, administrador, gestor, membro e leitura',
+  'Verificação em dois passos com app de autenticação',
+  'App para macOS com a sessão guardada no Porta-chaves',
+];
 
 export default function Home() {
   return (
     <main className="landing">
-      <nav className="landing-nav" aria-label="Public navigation">
-        <Link className="landing-brand" href="/">
-          Kiko
+      <nav className="landing-nav" aria-label="Navegação pública">
+        <Link className="landing-brand" href="/" aria-label="Kiko — início">
+          <KikoLogo width={150} />
         </Link>
         <div className="landing-nav__links">
-          <a href="#capabilities">Capabilities</a>
-          <a href="#governance">Governance</a>
-          <a href="#plans">Plans</a>
+          <a href="#capacidades">Capacidades</a>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#planos">Planos</a>
         </div>
         <div className="landing-nav__actions">
-          <Link href="/login">Log in</Link>
+          <Link href="/login">Entrar</Link>
           <Link
             className="landing-button landing-button--small"
             href="/register"
           >
-            Start trial
+            Experimentar
           </Link>
         </div>
       </nav>
+
       <section className="landing-hero">
         <div className="landing-hero__copy">
-          <p className="landing-kicker">AI business operations</p>
-          <h1>Turn intent into governed work.</h1>
+          <p className="landing-kicker">Sistema operativo de IA da Pixart</p>
+          <h1>Diz ao Kiko o que precisas. Ele organiza o trabalho.</h1>
           <p>
-            Kiko coordinates agents, business context and approvals so teams can
-            move from request to accountable execution.
+            O Kiko transforma pedidos em planos, coordena agentes especializados
+            e pede a tua aprovação antes de qualquer ação sensível.
           </p>
           <div className="landing-actions">
             <Link className="landing-button" href="/register">
-              Start trial
+              Criar um workspace
             </Link>
-            <a className="landing-text-link" href="#how-it-works">
-              See how it works
+            <a className="landing-text-link" href="#como-funciona">
+              Ver como funciona
             </a>
           </div>
         </div>
-        <Image
-          className="landing-hero__image"
-          src="/images/kiko-orchestration-hero.png"
-          width={1536}
-          height={1024}
-          priority
-          alt="Abstract network of structured operational flows converging on one orchestration layer"
-        />
+        <div className="landing-stage" aria-hidden="true">
+          <div className="landing-stage__orbit" />
+          <KikoAvatar state="idle" size={260} />
+          <div className="landing-chip landing-chip--plan">
+            <span className="landing-chip__dot" />
+            Plano com 3 tarefas
+          </div>
+          <div className="landing-chip landing-chip--approval">
+            <span className="landing-chip__dot" />À espera de aprovação
+          </div>
+          <div className="landing-chip landing-chip--done">
+            <span className="landing-chip__dot" />
+            Proposta enviada ao cliente
+          </div>
+        </div>
       </section>
-      <section
-        className="landing-proof"
-        aria-label="Available product areas"
-        tabIndex={0}
-      >
+
+      <section className="landing-proof" aria-label="Áreas do produto">
         {[
-          'Commands',
-          'Approvals',
+          'Conversas',
+          'Comandos',
+          'Aprovações',
           'CRM',
-          'Automations',
-          'Knowledge',
-          'Analytics',
+          'Automatizações',
+          'Conhecimento',
+          'Relatórios',
         ].map((item) => (
           <span key={item}>{item}</span>
         ))}
       </section>
-      <section className="landing-section" id="capabilities">
-        <h2>One operating layer for coordinated work.</h2>
+
+      <section className="landing-section" id="capacidades">
+        <h2>Uma camada que liga pedidos, pessoas e agentes.</h2>
         <div className="landing-capabilities">
-          {capabilities.map(([title, description], index) => (
-            <article
-              className={
-                index === 0 || index === 3
-                  ? 'landing-capability landing-capability--tint'
-                  : 'landing-capability'
-              }
-              key={title}
-            >
+          {capabilities.map(([title, description]) => (
+            <article className="landing-capability" key={title}>
               <h3>{title}</h3>
               <p>{description}</p>
             </article>
           ))}
         </div>
       </section>
-      <section className="landing-section landing-process" id="how-it-works">
+
+      <section className="landing-section landing-process" id="como-funciona">
         <div>
-          <h2>A request becomes visible work.</h2>
+          <h2>Um pedido torna-se trabalho visível.</h2>
           <p>
-            Kiko keeps the plan, decisions, external actions and outcomes
-            connected to the original business intent.
+            O plano, as decisões, as ações externas e os resultados ficam
+            ligados ao pedido original, do início ao fim.
           </p>
         </div>
         <ol>
-          <li>
-            <strong>Describe the outcome</strong>
-            <span>
-              Use natural language inside a persistent workspace conversation.
-            </span>
-          </li>
-          <li>
-            <strong>Review the plan</strong>
-            <span>
-              The Supervisor decomposes work and assigns the right specialist
-              agents.
-            </span>
-          </li>
-          <li>
-            <strong>Govern the action</strong>
-            <span>
-              Risk policy and approvals control external writes before
-              execution.
-            </span>
-          </li>
-          <li>
-            <strong>Inspect the evidence</strong>
-            <span>
-              Results, failures and audit history remain available after
-              execution.
-            </span>
-          </li>
+          {steps.map(([title, text]) => (
+            <li key={title}>
+              <strong>{title}</strong>
+              <span>{text}</span>
+            </li>
+          ))}
         </ol>
       </section>
-      <section className="landing-section landing-governance" id="governance">
+
+      <section className="landing-section landing-governance">
         <div className="landing-governance__statement">
-          <p className="landing-kicker">Built for accountable AI</p>
-          <h2>Control stays with your team.</h2>
-          <p>
-            Workspace roles, tenant boundaries, approval fingerprints, provider
-            allowlists and audit records are enforced by the application.
-          </p>
+          <p className="landing-kicker">IA com responsabilidade</p>
+          <h2>O controlo fica com a tua equipa.</h2>
+          <ul className="landing-safeguards">
+            {safeguards.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </div>
         <div className="landing-agent-list">
-          <h3>Coordinated specialist agents</h3>
-          {agents.map((agent) => (
-            <span key={agent}>{agent}</span>
+          <h3>Agentes especializados</h3>
+          {agents.map(([name, role]) => (
+            <span key={name}>
+              <strong>{name}</strong>
+              {role}
+            </span>
           ))}
         </div>
       </section>
-      <section className="landing-section landing-plans" id="plans">
-        <h2>Plans that match operating scale.</h2>
+
+      <section className="landing-section landing-plans" id="planos">
+        <h2>Planos à medida da operação.</h2>
         <p>
-          Final commercial pricing is confirmed with the product owner.
-          Entitlements are already enforced by workspace.
+          Os preços finais são confirmados com a Pixart. Os limites de cada
+          plano já são aplicados por workspace.
         </p>
         <div className="landing-plan-grid">
           <article>
-            <h3>Trial</h3>
+            <h3>Experimental</h3>
             <p>
-              Time-limited evaluation for a small team with governed core
-              capabilities.
+              14 dias para uma equipa pequena avaliar as capacidades principais.
             </p>
-            <Link href="/register">Start trial</Link>
+            <Link href="/register">Começar</Link>
           </article>
           <article>
             <h3>Business</h3>
             <p>
-              Expanded usage, automations, integrations, storage and operational
-              support.
+              Mais utilização, automatizações, integrações, armazenamento e
+              suporte.
             </p>
             <a href="mailto:hello@pixart.pt?subject=Kiko%20Business">
-              Contact sales
+              Falar com a Pixart
             </a>
           </article>
           <article>
             <h3>Enterprise</h3>
             <p>
-              Configurable scale, retention, support and platform administration
-              controls.
+              Escala, retenção, suporte e administração da plataforma à medida.
             </p>
             <a href="mailto:hello@pixart.pt?subject=Kiko%20Enterprise">
-              Contact sales
+              Falar com a Pixart
             </a>
           </article>
         </div>
       </section>
+
       <section className="landing-final">
-        <h2>Make AI work accountable.</h2>
-        <p>Start with a real workspace and a server-enforced 14-day trial.</p>
+        <h2>Põe a IA a trabalhar com regras.</h2>
+        <p>Cria um workspace e experimenta durante 14 dias.</p>
         <Link className="landing-button" href="/register">
-          Start trial
+          Criar um workspace
         </Link>
       </section>
+
       <footer className="landing-footer">
         <strong>Kiko by Pixart</strong>
-        <span>AI operating system for governed business work.</span>
+        <span>Sistema operativo de IA para trabalho com regras.</span>
         <div>
-          <Link href="/login">Log in</Link>
-          <Link href="/register">Register</Link>
+          <Link href="/login">Entrar</Link>
+          <Link href="/register">Criar conta</Link>
         </div>
       </footer>
     </main>

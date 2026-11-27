@@ -10,6 +10,7 @@ import {
 } from '../../lib/auth-client';
 import type { OnboardingState } from '../../lib/auth-types';
 import { useAuthenticatedUser } from '../../lib/use-authenticated-user';
+import { KikoLogo } from '../../components/kiko/kiko-logo';
 
 const objectiveOptions = [
   'Organizar tarefas do negócio',
@@ -96,8 +97,9 @@ export default function OnboardingPage() {
     return (
       <main className="onboarding-shell">
         <section className="onboarding-card">
+          <KikoLogo />
           <p className="eyebrow">Bem-vindo ao Kiko</p>
-          <h1>Join {state.company_name}</h1>
+          <h1>Junta-te a {state.company_name}</h1>
           <p className="lede">
             A tua equipa já configurou este workspace. Só donos e
             administradores podem alterar o perfil da empresa.
@@ -144,6 +146,7 @@ export default function OnboardingPage() {
   return (
     <main className="onboarding-shell">
       <section className="onboarding-card">
+        <KikoLogo />
         <p className="eyebrow">Bem-vindo ao Kiko</p>
         <h1>Configura o workspace da tua empresa</h1>
         <p className="lede">
