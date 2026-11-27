@@ -2388,3 +2388,38 @@ main select:not([class]) {
     grid-template-columns: 1fr;
   }
 }
+
+/* Pixart products (platform admin) */
+.pixart-app-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+}
+
+.pixart-app-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.pixart-app-row {
+  align-items: center;
+  border-top: 1px solid var(--kiko-line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto auto;
+  padding-top: 10px;
+}
+
+.pixart-app-row p {
+  margin: 4px 0 0;
+}
+
+@media (max-width: 640px) {
+  .pixart-app-row {
+    grid-template-columns: 1fr;
+  }
+}

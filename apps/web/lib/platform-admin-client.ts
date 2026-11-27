@@ -82,3 +82,65 @@ export function setPlatformUserStatus(
     body: JSON.stringify({ is_active: isActive }),
   }).then((response) => json<PlatformUser>(response));
 }
+
+export type PixartAppStatus =
+  'unsupported' | 'requires_setup' | 'available' | 'unavailable';
+
+export type PixartApp = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  base_url: string | null;
+  api_version: string | null;
+  docs_url: string | null;
+  status: PixartAppStatus;
+  last_health_status: string | null;
+  last_health_at: string | null;
+};
+
+export function listPixartApps(): Promise<PixartApp[]> {
+  return authFetch('/api/v1/pixart-apps').then((response) =>
+    json<PixartApp[]>(response),
+  );
+}
+
+export function registerPixartApp(value: {
+  key: string;
+  name: string;
+  description?: string | null;
+  base_url?: string | null;
+}): Promise<PixartApp> {
+  return authFetch('/api/v1/platform-admin/pixart-apps', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value),
+  }).then((response) => json<PixartApp>(response));
+}
+
+export function updatePixartApp(
+  id: string,
+  value: Partial<
+    Pick<
+      PixartApp,
+      | 'name'
+      | 'description'
+      | 'base_url'
+      | 'api_version'
+      | 'docs_url'
+      | 'status'
+    >
+  >,
+): Promise<PixartApp> {
+  return authFetch(`/api/v1/platform-admin/pixart-apps/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value),
+  }).then((response) => json<PixartApp>(response));
+}
+
+export function checkPixartAppHealth(id: string): Promise<PixartApp> {
+  return authFetch(`/api/v1/platform-admin/pixart-apps/${id}/health`, {
+    method: 'POST',
+  }).then((response) => json<PixartApp>(response));
+}

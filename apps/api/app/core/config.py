@@ -118,6 +118,10 @@ class Settings(BaseSettings):
     email_send_enabled: bool = False
     email_mark_read_enabled: bool = False
     integration_encryption_key: SecretStr | None = None
+    # Pixart ecosystem registry: read-only health checks of registered products (off by
+    # default). Loopback/private addresses are refused unless explicitly allowed (local tests).
+    pixart_apps_health_checks_enabled: bool = False
+    pixart_apps_allow_private_hosts: bool = False
     email_max_recipients: int = Field(default=10, ge=1, le=100)
     email_max_search_results: int = Field(default=100, ge=1, le=500)
     email_api_timeout_seconds: float = Field(default=30, gt=0, le=120)

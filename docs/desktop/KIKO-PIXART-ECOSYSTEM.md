@@ -1,8 +1,8 @@
 # Kiko in the Pixart ecosystem — foundation design
 
-**Status:** design only. No live connector to another Pixart product was built, because no
-product's integration API has been verified yet. Nothing here should be presented to users as
-available.
+**Status:** the application registry (section 3) is implemented; no connector exists. No
+product's integration API has been verified yet, so every product stays "Sem contrato
+verificado" and nothing is presented to users as available.
 
 ## 1. Products in scope (to be audited before any connector)
 
@@ -41,6 +41,23 @@ Connection status vocabulary shown in the Integration Hub (desktop and web):
 `available` · `connected` · `disconnected` · `requires_setup` · `unsupported` · `unavailable`.
 The existing Integrations screen already reports real state for Gmail, Calendar, GitHub and
 Codex; Pixart products will appear only once registered with a verified contract.
+
+### Implemented (0.4.0)
+
+- `pixart_applications` (migration `20261127_0038`): key, name, description, base URL, API
+  version, docs URL, status (`unsupported` · `requires_setup` · `available` · `unavailable`)
+  and the last health result. No credentials.
+- `GET /api/v1/pixart-apps` lists the registry for any signed-in user (Integrations →
+  "Produtos Pixart"). Platform admins register and edit products
+  (`POST/PATCH /api/v1/platform-admin/pixart-apps`, audited) in Administração.
+- A product can only be marked `available` once its base URL, API version and docs URL are
+  recorded.
+- Optional read-only health check (`POST …/{id}/health`, a `GET {base_url}/health` with a
+  5 s timeout and no redirects). Off unless `PIXART_APPS_HEALTH_CHECKS_ENABLED=true`; HTTPS
+  only, and private/loopback/link-local addresses are refused unless
+  `PIXART_APPS_ALLOW_PRIVATE_HOSTS=true` (local testing).
+- `workspace_app_connections` is **not** built: it needs a verified contract and scoped
+  credentials from the product first.
 
 ## 4. Identity and future SSO
 
@@ -81,6 +98,6 @@ Links only navigate; they never perform an action without user interaction in th
 ## 8. Next steps
 
 1. Audit each product's API (auth, versioning, rate limits, tenancy) and record it here.
-2. Add the registry tables and an admin-only registration endpoint.
+2. ~~Add the registry tables and an admin-only registration endpoint.~~ Done in 0.4.0.
 3. Build the first read-only connector behind a feature flag; add write tools only with
    approval policies.

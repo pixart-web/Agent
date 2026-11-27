@@ -4,6 +4,21 @@
  * through `apiMessage()`. Unknown messages are shown as they are.
  */
 const MESSAGES: Record<string, string> = {
+  // Pixart ecosystem registry
+  'A Pixart product with this key already exists':
+    'Já existe um produto Pixart com esta chave.',
+  'Pixart product not found': 'Produto Pixart não encontrado.',
+  'Record the API address, version and documentation before marking it available':
+    'Regista o endereço, a versão e a documentação da API antes de o marcar como disponível.',
+  'Health checks of Pixart products are disabled':
+    'As verificações de estado dos produtos Pixart estão desativadas.',
+  'Private network addresses are not allowed':
+    'Endereços de rede privada não são permitidos.',
+  'The product address must use HTTPS':
+    'O endereço do produto tem de usar HTTPS.',
+  'The product address is not valid': 'O endereço do produto não é válido.',
+  'The product has no address': 'O produto não tem endereço.',
+  'Use a full http(s) address': 'Usa um endereço http(s) completo.',
   // Two-factor authentication
   'Invalid or expired verification code':
     'O código de verificação é inválido ou expirou.',

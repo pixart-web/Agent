@@ -15,6 +15,11 @@ import {
   getGitHubIntegrationStatus,
 } from '../../../lib/workflow-client';
 import { useAuthenticatedUser } from '../../../lib/use-authenticated-user';
+import { label } from '../../../lib/labels';
+import {
+  listPixartApps,
+  type PixartApp,
+} from '../../../lib/platform-admin-client';
 
 export default function IntegrationsPage() {
   const { user, loading } = useAuthenticatedUser();
@@ -23,12 +28,16 @@ export default function IntegrationsPage() {
   const [calendar, setCalendar] = useState<CalendarIntegrationStatus | null>(
     null,
   );
+  const [pixartApps, setPixartApps] = useState<PixartApp[] | null>(null);
 
   useEffect(() => {
     if (user) {
       void getGitHubIntegrationStatus().then(setGitHub);
       void getEmailIntegrationStatus().then(setEmail);
       void getCalendarIntegrationStatus().then(setCalendar);
+      void listPixartApps()
+        .then(setPixartApps)
+        .catch(() => setPixartApps([]));
     }
   }, [user]);
 
@@ -80,8 +89,32 @@ export default function IntegrationsPage() {
             Estado: {calendar?.connected_accounts ? 'Ligado' : 'Não ligado'}
           </p>
           <p>Provider: {calendar?.provider || 'google_calendar'}</p>
-        </Link>{' '}
+        </Link>
       </div>
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">Ecossistema</p>
+          <h2>Produtos Pixart</h2>
+          <p>
+            Cada produto só fica disponível depois de verificado o contrato da
+            sua API.
+          </p>
+        </div>
+      </section>
+      {pixartApps && pixartApps.length === 0 ? (
+        <p className="empty-state">Ainda não há produtos Pixart registados.</p>
+      ) : (
+        <div className="agent-grid">
+          {(pixartApps ?? []).map((app) => (
+            <article className="agent-card" key={app.id}>
+              <p className="eyebrow">Pixart</p>
+              <h2>{app.name}</h2>
+              <p>Estado: {label(app.status)}</p>
+              {app.description ? <p>{app.description}</p> : null}
+            </article>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

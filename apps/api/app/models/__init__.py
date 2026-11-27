@@ -56,6 +56,7 @@ from app.models.marketing import (
 )
 from app.models.notification import Notification, NotificationPreference
 from app.models.outbox_event import OutboxEvent
+from app.models.pixart_application import PixartApplication
 from app.models.plan import Plan
 from app.models.project import (
     Project,
@@ -76,6 +77,7 @@ from app.models.transactional_email import TransactionalEmailOutbox
 from app.models.user import User
 
 __all__ = [
+    "PixartApplication",
     "AgentRun",
     "AccountToken",
     "Agent",

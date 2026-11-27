@@ -22,6 +22,7 @@ from app.api.routes import (
     metrics,
     notifications,
     operations,
+    pixart_apps,
     plans,
     platform_admin,
     projects,
@@ -63,4 +64,5 @@ api_router.include_router(marketing.router, prefix="/api/v1", dependencies=EDITO
 api_router.include_router(notifications.router, prefix="/api/v1")
 api_router.include_router(operations.router, prefix="/api/v1", dependencies=EDITOR)
 api_router.include_router(platform_admin.router, prefix="/api/v1")
+api_router.include_router(pixart_apps.router, prefix="/api/v1")
 api_router.include_router(metrics.router)
