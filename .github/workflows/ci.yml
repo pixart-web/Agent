@@ -155,7 +155,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Enable pnpm with Corepack
         run: |
@@ -250,7 +250,7 @@ jobs:
       - run: python -m pip install -e "apps/api[dev]"
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '26'
       - name: Enable pnpm with Corepack
         run: |
           corepack enable
@@ -310,7 +310,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Enable pnpm with Corepack
         run: |
