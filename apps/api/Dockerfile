@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y ca-certificates curl git \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_26.x | bash - \
     && apt-get install --no-install-recommends -y nodejs \
     && npm install --global "pnpm@${PNPM_VERSION}" \
     && rm -rf /var/lib/apt/lists/*
