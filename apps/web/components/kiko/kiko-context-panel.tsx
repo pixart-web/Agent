@@ -36,7 +36,9 @@ export function KikoContextPanel({
   const activity = useKikoActivity(live.refreshedAt);
   const panel = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
   const feed = buildActivity(
     activity.notifications,
     live.overview?.recent_executions ?? [],
