@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.15'
           cache: pip
           cache-dependency-path: apps/api/pyproject.toml
 
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.15'
           cache: pip
           cache-dependency-path: apps/api/pyproject.toml
       - run: python -m pip install -e "apps/api[dev]"
@@ -244,7 +244,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.15'
           cache: pip
           cache-dependency-path: apps/api/pyproject.toml
       - run: python -m pip install -e "apps/api[dev]"
