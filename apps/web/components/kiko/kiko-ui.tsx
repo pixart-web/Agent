@@ -232,11 +232,14 @@ const TONE_ICON: Record<ActivityItem['tone'], KikoIconName> = {
 
 export function KikoActivityFeed({
   items,
-  now = Date.now(),
+  now: nowProp,
 }: {
   items: ActivityItem[];
   now?: number;
 }) {
+  // Read the clock once per mount (a lazy initializer), not on every render.
+  const [mountedAt] = useState(() => Date.now());
+  const now = nowProp ?? mountedAt;
   if (items.length === 0)
     return (
       <KikoEmptyState

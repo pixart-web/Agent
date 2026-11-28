@@ -35,6 +35,8 @@ const nextConfig: NextConfig = {
   trailingSlash: isStaticExport,
   images: isStaticExport ? { unoptimized: true } : undefined,
   transpilePackages: ['@agent/shared'],
+  // `next dev` would otherwise write AGENTS.md/CLAUDE.md into apps/web on every start.
+  agentRules: false,
   // Inlined at build time so route modules can decide what to pre-render.
   env: { KIKO_STATIC_EXPORT: isStaticExport ? 'true' : 'false' },
   headers: isStaticExport ? undefined : securityHeaders,

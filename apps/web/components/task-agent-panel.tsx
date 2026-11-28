@@ -37,7 +37,9 @@ export function TaskAgentPanel({
   const [error, setError] = useState('');
   // Kept in a ref so a new callback from the page does not restart the pollers.
   const finishedRef = useRef(onFinished);
-  finishedRef.current = onFinished;
+  useEffect(() => {
+    finishedRef.current = onFinished;
+  }, [onFinished]);
 
   const load = useCallback(async () => {
     const pairs = await Promise.all(

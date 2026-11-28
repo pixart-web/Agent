@@ -116,10 +116,11 @@ export function signalsFrom(data: KikoLiveData): KikoSignals {
  * re-rendering on every mouse move.
  */
 export function useIdleTime(threshold = 5 * 60_000): number {
-  const last = useRef(Date.now());
+  const last = useRef(0);
   const [idle, setIdle] = useState(0);
   const idleRef = useRef(0);
   useEffect(() => {
+    last.current = Date.now();
     const update = () => {
       idleRef.current = Math.max(0, Date.now() - last.current);
       setIdle(idleRef.current);
